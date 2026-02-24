@@ -495,6 +495,7 @@ function App() {
               projectId={currentProject?.id}
               chapters={chapters}
               currentChapterId={currentChapter?.id}
+              characters={characters}
               onCreateCharacter={handleQuickCreateCharacter}
               onCreateWorldView={handleQuickCreateWorldView}
             />

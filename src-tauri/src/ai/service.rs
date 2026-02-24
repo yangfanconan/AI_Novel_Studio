@@ -912,10 +912,10 @@ impl AIService {
             .join("\n");
 
         // 获取当前内容的最后部分作为上下文
-        let content_preview = if request.current_content.len() > 500 {
-            &request.current_content[request.current_content.len() - 500..]
+        let content_preview = if request.current_content.chars().count() > 500 {
+            request.current_content.chars().rev().take(500).collect::<String>().chars().rev().collect::<String>()
         } else {
-            &request.current_content
+            request.current_content.clone()
         };
 
         let system_prompt = r#"你是一位专业的小说创作顾问，擅长分析剧情走向并提供多种续写方向。
@@ -1028,10 +1028,10 @@ impl AIService {
             .join("、");
 
         // 获取内容的最后1000字符进行分析
-        let content_to_check = if request.content.len() > 1000 {
-            &request.content[request.content.len() - 1000..]
+        let content_to_check = if request.content.chars().count() > 1000 {
+            request.content.chars().rev().take(1000).collect::<String>().chars().rev().collect::<String>()
         } else {
-            &request.content
+            request.content.clone()
         };
 
         let system_prompt = r#"你是一位专业的小说编辑，擅长检查文本的一致性和设定冲突。

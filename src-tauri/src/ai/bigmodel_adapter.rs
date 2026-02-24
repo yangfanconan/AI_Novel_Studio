@@ -70,11 +70,17 @@ pub struct BigModelAdapter {
 
 impl BigModelAdapter {
     pub fn new(api_key: String, model: String) -> Self {
+        let client = Client::builder()
+            .timeout(std::time::Duration::from_secs(60))
+            .connect_timeout(std::time::Duration::from_secs(10))
+            .build()
+            .unwrap_or_else(|_| Client::new());
+        
         Self {
             api_key,
             base_url: "https://open.bigmodel.cn/api/paas/v4".to_string(),
             model,
-            client: Client::new(),
+            client,
             logger: Logger::new().with_feature("bigmodel-adapter"),
         }
     }

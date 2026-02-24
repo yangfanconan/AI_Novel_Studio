@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, RefreshCw, Loader2, ChevronDown, AlignLeft, Film } from 'lucide-react';
+import { Sparkles, RefreshCw, Loader2, ChevronDown, AlignLeft, Film, FileText, BookOpen, Palette } from 'lucide-react';
 import { aiService } from '../services/ai.service';
 import { aiGeneratorService } from '../services/api';
 import { logger } from '../utils/logger';
 import { debugLogger } from '../utils/debugLogger';
 import { StoryboardDialog } from './StoryboardDialog';
-import type { Chapter, FormatOptions, FormattedContent } from '../types';
+import { StoryboardGeneratorDialog } from './StoryboardGeneratorDialog';
+import { ScriptConverterDialog } from './ScriptConverterDialog';
+import { ComicGeneratorDialog } from './ComicGeneratorDialog';
+import { IllustrationGeneratorDialog } from './IllustrationGeneratorDialog';
+import type { Chapter, FormatOptions, FormattedContent, Character } from '../types';
 
 interface AIToolbarProps {
   content: string;
@@ -15,6 +19,8 @@ interface AIToolbarProps {
   projectId?: string;
   chapters?: Chapter[];
   currentChapterId?: string;
+  characters?: Character[];
+  selectedText?: string;
 }
 
 export const AIToolbar: React.FC<AIToolbarProps> = ({
@@ -25,6 +31,8 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
   projectId,
   chapters = [],
   currentChapterId,
+  characters = [],
+  selectedText,
 }) => {
   const [models, setModels] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>('');
@@ -34,6 +42,11 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
   const [isFormatting, setIsFormatting] = useState(false);
   const [showFormatMenu, setShowFormatMenu] = useState(false);
   const [isStoryboardOpen, setIsStoryboardOpen] = useState(false);
+  const [isStoryboardGeneratorOpen, setIsStoryboardGeneratorOpen] = useState(false);
+  const [isScriptConverterOpen, setIsScriptConverterOpen] = useState(false);
+  const [isComicGeneratorOpen, setIsComicGeneratorOpen] = useState(false);
+  const [isIllustrationGeneratorOpen, setIsIllustrationGeneratorOpen] = useState(false);
+  const [showMultimediaMenu, setShowMultimediaMenu] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -398,6 +411,70 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
           <Film className="w-3 h-3" />
           生成分镜
         </button>
+
+        {/* 多媒体生成 */}
+        <div className="relative">
+          <button
+            onClick={() => setShowMultimediaMenu(!showMultimediaMenu)}
+            disabled={disabled || !currentChapterId}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-md hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Sparkles className="w-3 h-3" />
+            多媒体
+            <ChevronDown className="w-3 h-3" />
+          </button>
+
+          {showMultimediaMenu && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setShowMultimediaMenu(false)}
+              />
+              <div className="absolute top-full left-0 mt-1 w-44 bg-popover border border-border rounded-md shadow-lg z-20">
+                <button
+                  onClick={() => {
+                    setShowMultimediaMenu(false);
+                    setIsStoryboardGeneratorOpen(true);
+                  }}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2"
+                >
+                  <Film className="w-4 h-4 text-purple-500" />
+                  分镜脚本生成
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMultimediaMenu(false);
+                    setIsScriptConverterOpen(true);
+                  }}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4 text-blue-500" />
+                  剧本格式转换
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMultimediaMenu(false);
+                    setIsComicGeneratorOpen(true);
+                  }}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2"
+                >
+                  <BookOpen className="w-4 h-4 text-orange-500" />
+                  漫画分镜生成
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMultimediaMenu(false);
+                    setIsIllustrationGeneratorOpen(true);
+                  }}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center gap-2"
+                >
+                  <Palette className="w-4 h-4 text-pink-500" />
+                  插画生成
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* 分镜对话框 */}
@@ -408,6 +485,52 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
           projectId={projectId}
           chapters={chapters}
           currentChapterId={currentChapterId}
+        />
+      )}
+
+      {/* 分镜脚本生成对话框 */}
+      {projectId && (
+        <StoryboardGeneratorDialog
+          isOpen={isStoryboardGeneratorOpen}
+          onClose={() => setIsStoryboardGeneratorOpen(false)}
+          projectId={projectId}
+          chapters={chapters}
+          currentChapterId={currentChapterId}
+        />
+      )}
+
+      {/* 剧本格式转换对话框 */}
+      {projectId && (
+        <ScriptConverterDialog
+          isOpen={isScriptConverterOpen}
+          onClose={() => setIsScriptConverterOpen(false)}
+          projectId={projectId}
+          chapters={chapters}
+          currentChapterId={currentChapterId}
+        />
+      )}
+
+      {/* 漫画分镜生成对话框 */}
+      {projectId && (
+        <ComicGeneratorDialog
+          isOpen={isComicGeneratorOpen}
+          onClose={() => setIsComicGeneratorOpen(false)}
+          projectId={projectId}
+          chapters={chapters}
+          currentChapterId={currentChapterId}
+        />
+      )}
+
+      {/* 插画生成对话框 */}
+      {projectId && (
+        <IllustrationGeneratorDialog
+          isOpen={isIllustrationGeneratorOpen}
+          onClose={() => setIsIllustrationGeneratorOpen(false)}
+          projectId={projectId}
+          chapters={chapters}
+          characters={characters}
+          currentChapterId={currentChapterId}
+          selectedText={selectedText}
         />
       )}
     </>

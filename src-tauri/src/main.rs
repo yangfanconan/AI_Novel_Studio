@@ -143,6 +143,11 @@ fn main() {
             commands::get_api_keys,
             commands::set_api_key,
             commands::get_models_with_default,
+            // 多媒体生成命令
+            commands::multimedia_generate_storyboard,
+            commands::multimedia_generate_script,
+            commands::multimedia_generate_comic,
+            commands::multimedia_generate_illustration,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

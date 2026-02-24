@@ -4067,3 +4067,566 @@ pub async fn sync_worldview_to_knowledge(
         Ok(entry)
     }
 }
+
+// ============== 多媒体生成命令 ==============
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StoryboardRequest {
+    pub chapter_id: Option<String>,
+    pub content: Option<String>,
+    pub options: Option<StoryboardOptions>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StoryboardOptions {
+    pub format: Option<String>,
+    pub style: Option<String>,
+    pub detail_level: Option<String>,
+    pub include_dialogue: Option<bool>,
+    pub include_camera_movement: Option<bool>,
+    pub include_sound_effects: Option<bool>,
+    pub include_visual_prompts: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StoryboardResult {
+    pub id: String,
+    pub title: String,
+    pub format: String,
+    pub style: String,
+    pub scenes: Vec<StoryboardScene>,
+    pub total_duration: i32,
+    pub metadata: StoryboardMetadata,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StoryboardScene {
+    pub scene_number: i32,
+    pub title: String,
+    pub location: String,
+    pub time_of_day: String,
+    pub shots: Vec<Shot>,
+    pub estimated_duration: i32,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Shot {
+    pub shot_number: i32,
+    pub shot_type: String,
+    pub description: String,
+    pub camera: Option<CameraMovement>,
+    pub characters: Vec<String>,
+    pub action: Option<String>,
+    pub dialogue: Option<Dialogue>,
+    pub sound_effects: Option<Vec<String>>,
+    pub duration: i32,
+    pub visual_prompt: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CameraMovement {
+    pub movement_type: String,
+    pub direction: Option<String>,
+    pub speed: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Dialogue {
+    pub character: String,
+    pub text: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StoryboardMetadata {
+    pub generated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ScriptRequest {
+    pub chapter_id: Option<String>,
+    pub content: Option<String>,
+    pub options: ScriptOptions,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ScriptOptions {
+    pub target_format: Option<String>,
+    pub include_scene_numbers: Option<bool>,
+    pub include_character_descriptions: Option<bool>,
+    pub dialogue_style: Option<String>,
+    pub include_camera_directions: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ScriptResult {
+    pub id: String,
+    pub title: String,
+    pub format: String,
+    pub scenes: Vec<ScriptScene>,
+    pub characters: Vec<ScriptCharacter>,
+    pub metadata: ScriptMetadata,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ScriptScene {
+    pub scene_number: i32,
+    pub heading: String,
+    pub action: String,
+    pub characters: Vec<ScriptCharacter>,
+    pub dialogue: Vec<ScriptDialogue>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ScriptCharacter {
+    pub name: String,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ScriptDialogue {
+    pub character: String,
+    pub parenthetical: Option<String>,
+    pub text: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ScriptMetadata {
+    pub generated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ComicRequest {
+    pub chapter_id: Option<String>,
+    pub content: Option<String>,
+    pub options: ComicOptions,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ComicOptions {
+    pub style: Option<String>,
+    pub page_layout: Option<String>,
+    pub panels_per_page: Option<i32>,
+    pub include_captions: Option<bool>,
+    pub include_sound_effects: Option<bool>,
+    pub generate_images: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ComicResult {
+    pub id: String,
+    pub title: String,
+    pub style: String,
+    pub pages: Vec<ComicPage>,
+    pub characters: Vec<ComicCharacter>,
+    pub metadata: ComicMetadata,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ComicPage {
+    pub page_number: i32,
+    pub layout: String,
+    pub panels: Vec<ComicPanel>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ComicPanel {
+    pub panel_number: i32,
+    pub shape: String,
+    pub description: String,
+    pub caption: Option<String>,
+    pub dialogue: Vec<ComicDialogue>,
+    pub sound_effects: Option<Vec<String>>,
+    pub visual_prompt: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ComicDialogue {
+    pub character: String,
+    pub text: String,
+    pub balloon_type: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ComicCharacter {
+    pub name: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ComicMetadata {
+    pub generated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct IllustrationRequest {
+    pub scene_id: Option<String>,
+    pub content: Option<String>,
+    pub character_ids: Option<Vec<String>>,
+    pub options: IllustrationOptions,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct IllustrationOptions {
+    pub style: Option<String>,
+    pub aspect_ratio: Option<String>,
+    pub quality: Option<String>,
+    pub custom_prompt: Option<String>,
+    pub negative_prompt: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct IllustrationResult {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub style: String,
+    pub prompt: String,
+    pub negative_prompt: Option<String>,
+    pub aspect_ratio: String,
+    pub image_data: Option<String>,
+    pub metadata: IllustrationMetadata,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct IllustrationMetadata {
+    pub generated_at: String,
+}
+
+/// 生成分镜脚本
+#[tauri::command]
+pub async fn multimedia_generate_storyboard(
+    app: AppHandle,
+    request: StoryboardRequest,
+) -> Result<StoryboardResult, String> {
+    let logger = Logger::new().with_feature("multimedia");
+    log_command_start(&logger, "multimedia_generate_storyboard", &format!("chapter: {:?}", request.chapter_id));
+
+    let content = if let Some(chapter_id) = &request.chapter_id {
+        let db_path = get_db_path(&app)?;
+        let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+        let content: String = conn
+            .query_row("SELECT content FROM chapters WHERE id = ?", [chapter_id], |row| row.get(0))
+            .map_err(|e| e.to_string())?;
+        content
+    } else if let Some(content) = &request.content {
+        content.clone()
+    } else {
+        return Err("请提供章节ID或内容".to_string());
+    };
+
+    let ai_service = app.state::<std::sync::Arc<tokio::sync::RwLock<AIService>>>();
+    let service = ai_service.read().await;
+
+    let style = request.options.as_ref()
+        .and_then(|o| o.style.clone())
+        .unwrap_or_else(|| "cinematic".to_string());
+
+    let prompt = format!(
+        "请将以下小说内容转换为专业的分镜脚本格式。\
+        \n\n小说内容：\n{}\
+        \n\n请按以下JSON格式输出分镜脚本（不要包含任何其他说明文字）：\
+        {{\
+          \"title\": \"分镜标题\",\
+          \"scenes\": [\
+            {{\
+              \"scene_number\": 1,\
+              \"title\": \"场景标题\",\
+              \"location\": \"地点\",\
+              \"time_of_day\": \"morning/afternoon/evening/night\",\
+              \"shots\": [\
+                {{\
+                  \"shot_number\": 1,\
+                  \"shot_type\": \"close_up/medium_shot/long_shot\",\
+                  \"description\": \"镜头描述\",\
+                  \"camera\": {{\"movement_type\": \"static/pan/tilt/dolly\", \"direction\": \"left/right\"}},\
+                  \"characters\": [\"角色名\"],\
+                  \"action\": \"动作描述\",\
+                  \"dialogue\": {{\"character\": \"角色\", \"text\": \"台词\"}},\
+                  \"duration\": 5,\
+                  \"visual_prompt\": \"用于AI生成图像的英文提示词\"\
+                }}\
+              ],\
+              \"estimated_duration\": 30,\
+              \"notes\": \"备注\"\
+            }}\
+          ],\
+          \"total_duration\": 120\
+        }}",
+        content.chars().take(3000).collect::<String>()
+    );
+
+    let model_id = "glm-4-flash".to_string();
+    let response = service.complete(&model_id, "你是一位专业的分镜师，请根据用户的要求生成JSON格式的分镜脚本。只返回JSON，不要包含任何其他文字。", &prompt).await.map_err(|e| e.to_string())?;
+
+    let json_start = response.find('{').unwrap_or(0);
+    let json_end = response.rfind('}').map(|i| i + 1).unwrap_or(response.len());
+    let json_str = &response[json_start..json_end];
+
+    let parsed: serde_json::Value = serde_json::from_str(json_str).unwrap_or(serde_json::json!({}));
+
+    let scenes = parsed.get("scenes")
+        .and_then(|s| serde_json::from_value(s.clone()).ok())
+        .unwrap_or_default();
+
+    let total_duration = parsed.get("total_duration")
+        .and_then(|d| d.as_i64())
+        .unwrap_or(0) as i32;
+
+    let title = parsed.get("title")
+        .and_then(|t| t.as_str())
+        .unwrap_or("分镜脚本")
+        .to_string();
+
+    let result = StoryboardResult {
+        id: Uuid::new_v4().to_string(),
+        title,
+        format: "film".to_string(),
+        style,
+        scenes,
+        total_duration,
+        metadata: StoryboardMetadata {
+            generated_at: Utc::now().to_rfc3339(),
+        },
+    };
+
+    log_command_success(&logger, "multimedia_generate_storyboard", &result.id);
+    Ok(result)
+}
+
+/// 生成剧本
+#[tauri::command]
+pub async fn multimedia_generate_script(
+    app: AppHandle,
+    request: ScriptRequest,
+) -> Result<ScriptResult, String> {
+    let logger = Logger::new().with_feature("multimedia");
+    log_command_start(&logger, "multimedia_generate_script", &format!("chapter: {:?}", request.chapter_id));
+
+    let content = if let Some(chapter_id) = &request.chapter_id {
+        let db_path = get_db_path(&app)?;
+        let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+        let content: String = conn
+            .query_row("SELECT content FROM chapters WHERE id = ?", [chapter_id], |row| row.get(0))
+            .map_err(|e| e.to_string())?;
+        content
+    } else if let Some(content) = &request.content {
+        content.clone()
+    } else {
+        return Err("请提供章节ID或内容".to_string());
+    };
+
+    let ai_service = app.state::<std::sync::Arc<tokio::sync::RwLock<AIService>>>();
+    let service = ai_service.read().await;
+
+    let target_format = request.options.target_format.as_ref()
+        .map(|s| s.as_str())
+        .unwrap_or("standard");
+
+    let prompt = format!(
+        "请将以下小说内容转换为{}格式的剧本。\
+        \n\n小说内容：\n{}\
+        \n\n请按以下JSON格式输出剧本（不要包含任何其他说明文字）：\
+        {{\
+          \"title\": \"剧本标题\",\
+          \"scenes\": [\
+            {{\
+              \"scene_number\": 1,\
+              \"heading\": \"场景标题（如：内景 客厅 日\"），\
+              \"action\": \"场景描述和动作\",\
+              \"characters\": [{{\"name\": \"角色名\", \"description\": \"简短描述\"}}],\
+              \"dialogue\": [\
+                {{\"character\": \"角色名\", \"parenthetical\": \"情绪/动作\", \"text\": \"台词\"}}\
+              ],\
+              \"notes\": \"备注\"\
+            }}\
+          ],\
+          \"characters\": [{{\"name\": \"角色名\", \"description\": \"角色描述\"}}]\
+        }}",
+        target_format,
+        content.chars().take(3000).collect::<String>()
+    );
+
+    let model_id = "glm-4-flash".to_string();
+    let response = service.complete(&model_id, "你是一位专业的编剧，请根据用户的要求将小说转换为JSON格式的剧本。只返回JSON，不要包含任何其他文字。", &prompt).await.map_err(|e| e.to_string())?;
+
+    let json_start = response.find('{').unwrap_or(0);
+    let json_end = response.rfind('}').map(|i| i + 1).unwrap_or(response.len());
+    let json_str = &response[json_start..json_end];
+
+    let parsed: serde_json::Value = serde_json::from_str(json_str).unwrap_or(serde_json::json!({}));
+
+    let scenes: Vec<ScriptScene> = parsed.get("scenes")
+        .and_then(|s| serde_json::from_value(s.clone()).ok())
+        .unwrap_or_default();
+
+    let characters: Vec<ScriptCharacter> = parsed.get("characters")
+        .and_then(|c| serde_json::from_value(c.clone()).ok())
+        .unwrap_or_default();
+
+    let title = parsed.get("title")
+        .and_then(|t| t.as_str())
+        .unwrap_or("剧本")
+        .to_string();
+
+    let result = ScriptResult {
+        id: Uuid::new_v4().to_string(),
+        title,
+        format: target_format.to_string(),
+        scenes,
+        characters,
+        metadata: ScriptMetadata {
+            generated_at: Utc::now().to_rfc3339(),
+        },
+    };
+
+    log_command_success(&logger, "multimedia_generate_script", &result.id);
+    Ok(result)
+}
+
+/// 生成漫画分镜
+#[tauri::command]
+pub async fn multimedia_generate_comic(
+    app: AppHandle,
+    request: ComicRequest,
+) -> Result<ComicResult, String> {
+    let logger = Logger::new().with_feature("multimedia");
+    log_command_start(&logger, "multimedia_generate_comic", &format!("chapter: {:?}", request.chapter_id));
+
+    let content = if let Some(chapter_id) = &request.chapter_id {
+        let db_path = get_db_path(&app)?;
+        let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+        let content: String = conn
+            .query_row("SELECT content FROM chapters WHERE id = ?", [chapter_id], |row| row.get(0))
+            .map_err(|e| e.to_string())?;
+        content
+    } else if let Some(content) = &request.content {
+        content.clone()
+    } else {
+        return Err("请提供章节ID或内容".to_string());
+    };
+
+    let ai_service = app.state::<std::sync::Arc<tokio::sync::RwLock<AIService>>>();
+    let service = ai_service.read().await;
+
+    let style = request.options.style.as_ref()
+        .map(|s| s.clone())
+        .unwrap_or_else(|| "anime".to_string());
+
+    let panels_per_page = request.options.panels_per_page.unwrap_or(4);
+
+    let prompt = format!(
+        "请将以下小说内容转换为漫画分镜脚本格式。\
+        \n\n小说内容：\n{}\
+        \n\n请按以下JSON格式输出漫画分镜（不要包含任何其他说明文字）：\
+        {{\
+          \"title\": \"漫画标题\",\
+          \"pages\": [\
+            {{\
+              \"page_number\": 1,\
+              \"layout\": \"four_grid\",\
+              \"panels\": [\
+                {{\
+                  \"panel_number\": 1,\
+                  \"shape\": \"rectangle\",\
+                  \"description\": \"画面描述\",\
+                  \"caption\": \"旁白文字\",\
+                  \"dialogue\": [{{\"character\": \"角色\", \"text\": \"台词\", \"balloon_type\": \"speech\"}}],\
+                  \"sound_effects\": [\"音效文字\"],\
+                  \"visual_prompt\": \"用于AI生成图像的英文提示词，包含画面构图、角色动作、表情等\"\
+                }}\
+              ],\
+              \"notes\": \"页面备注\"\
+            }}\
+          ],\
+          \"characters\": [{{\"name\": \"角色名\"}}]\
+        }}\
+        \n\n注意：每个页面大约{}个分格",
+        content.chars().take(3000).collect::<String>(),
+        panels_per_page
+    );
+
+    let model_id = "glm-4-flash".to_string();
+    let response = service.complete(&model_id, "你是一位专业的漫画分镜师，请根据用户的要求将小说转换为JSON格式的漫画分镜。只返回JSON，不要包含任何其他文字。", &prompt).await.map_err(|e| e.to_string())?;
+
+    let json_start = response.find('{').unwrap_or(0);
+    let json_end = response.rfind('}').map(|i| i + 1).unwrap_or(response.len());
+    let json_str = &response[json_start..json_end];
+
+    let parsed: serde_json::Value = serde_json::from_str(json_str).unwrap_or(serde_json::json!({}));
+
+    let pages: Vec<ComicPage> = parsed.get("pages")
+        .and_then(|p| serde_json::from_value(p.clone()).ok())
+        .unwrap_or_default();
+
+    let characters: Vec<ComicCharacter> = parsed.get("characters")
+        .and_then(|c| serde_json::from_value(c.clone()).ok())
+        .unwrap_or_default();
+
+    let title = parsed.get("title")
+        .and_then(|t| t.as_str())
+        .unwrap_or("漫画分镜")
+        .to_string();
+
+    let result = ComicResult {
+        id: Uuid::new_v4().to_string(),
+        title,
+        style,
+        pages,
+        characters,
+        metadata: ComicMetadata {
+            generated_at: Utc::now().to_rfc3339(),
+        },
+    };
+
+    log_command_success(&logger, "multimedia_generate_comic", &result.id);
+    Ok(result)
+}
+
+/// 生成插画
+#[tauri::command]
+pub async fn multimedia_generate_illustration(
+    request: IllustrationRequest,
+) -> Result<IllustrationResult, String> {
+    let logger = Logger::new().with_feature("multimedia");
+    log_command_start(&logger, "multimedia_generate_illustration", &format!("scene: {:?}", request.scene_id));
+
+    let content = request.content.clone().unwrap_or_default();
+
+    let style = request.options.style.clone().unwrap_or_else(|| "cinematic".to_string());
+    let aspect_ratio = request.options.aspect_ratio.clone().unwrap_or_else(|| "16:9".to_string());
+    let custom_prompt = request.options.custom_prompt.clone().unwrap_or_default();
+    let negative_prompt = request.options.negative_prompt.clone();
+
+    let prompt = if !custom_prompt.is_empty() {
+        format!(
+            "{}, {}, high quality, detailed",
+            content,
+            custom_prompt
+        )
+    } else {
+        format!(
+            "Create a {} style illustration: {}. High quality, detailed, professional artwork.",
+            style,
+            content
+        )
+    };
+
+    let result = IllustrationResult {
+        id: Uuid::new_v4().to_string(),
+        title: "AI 插画".to_string(),
+        description: content,
+        style,
+        prompt,
+        negative_prompt,
+        aspect_ratio,
+        image_data: None,
+        metadata: IllustrationMetadata {
+            generated_at: Utc::now().to_rfc3339(),
+        },
+    };
+
+    log_command_success(&logger, "multimedia_generate_illustration", &result.id);
+    Ok(result)
+}

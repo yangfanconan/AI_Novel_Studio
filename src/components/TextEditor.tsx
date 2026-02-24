@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, FileText, Loader2, Bot } from 'lucide-react';
 import { AIToolbar } from './AIToolbar';
 import WritingAssistant from './WritingAssistant';
-import type { Chapter } from '../types';
+import type { Chapter, Character } from '../types';
 
 interface TextEditorProps {
   content: string;
@@ -13,6 +13,7 @@ interface TextEditorProps {
   projectId?: string;
   chapters?: Chapter[];
   currentChapterId?: string;
+  characters?: Character[];
   onCreateCharacter?: (name: string) => void;
   onCreateWorldView?: (title: string) => void;
 }
@@ -26,6 +27,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
   projectId,
   chapters = [],
   currentChapterId,
+  characters = [],
   onCreateCharacter,
   onCreateWorldView,
 }) => {
@@ -120,6 +122,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
             projectId={projectId}
             chapters={chapters}
             currentChapterId={currentChapterId}
+            characters={characters}
           />
 
           {/* Editor */}
