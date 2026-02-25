@@ -28,6 +28,7 @@ import BatchGenerator from "./components/BatchGenerator";
 import ReverseAnalysisDialog from "./components/ReverseAnalysisDialog";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { uiLogger } from "./utils/uiLogger";
+import { debugLogger } from "./utils/debugLogger";
 import { PlotPointList } from "./components/PlotPointList";
 import { PlotPointEditor } from "./components/PlotPointEditor";
 import { WorldViewList } from "./components/WorldViewList";
@@ -52,7 +53,6 @@ import {
   worldViewService,
   plotPointService,
 } from "./services/api";
-import { debugLogger } from "./utils/debugLogger";
 import type {
   CreateProjectRequest,
   SaveChapterRequest,
@@ -116,7 +116,6 @@ function App() {
 
   useEffect(() => {
     uiLogger.mount("App");
-    console.log("isModelSettingsDialogOpen changed to:", isModelSettingsDialogOpen);
     return () => uiLogger.unmount("App");
   }, [isModelSettingsDialogOpen]);
   const [editingCharacter, setEditingCharacter] = useState<Character | undefined>();
@@ -234,11 +233,13 @@ function App() {
   };
 
   const handleDeleteProject = async (projectId: string) => {
-    console.log("[App] handleDeleteProject called with:", projectId);
+    if (!currentProject) return;
+
+    const confirmDelete = window.confirm("确定要删除这个项目吗？此操作不可撤销。");
+    if (!confirmDelete) return;
+
     try {
-      console.log("[App] Calling projectService.deleteProject...");
       await projectService.deleteProject(projectId);
-      console.log("[App] deleteProject API call succeeded");
       if (currentProject?.id === projectId) {
         setCurrentProject(null);
       }
@@ -315,10 +316,8 @@ function App() {
   };
 
   const handleDeleteChapter = async (chapterId: string) => {
-    console.log("handleDeleteChapter called with:", chapterId);
     try {
       await chapterService.deleteChapter(chapterId);
-      console.log("Chapter deleted from backend:", chapterId);
       if (currentChapter?.id === chapterId) {
         setCurrentChapter(null);
         setEditorContent("");
@@ -333,16 +332,13 @@ function App() {
   };
 
   const handleRenameChapter = async (newTitle: string) => {
-    console.log("handleRenameChapter called with:", newTitle, "currentChapter:", currentChapter);
     if (!currentChapter) {
       console.warn("No current chapter selected");
       return;
     }
 
     try {
-      console.log("Updating chapter:", currentChapter.id, "to:", newTitle);
       const updatedChapter = await chapterService.updateChapter(currentChapter.id, newTitle);
-      console.log("Chapter updated:", updatedChapter);
       await loadChapters(currentProject!.id);
       setCurrentChapter(updatedChapter);
       setIsChapterRenameDialogOpen(false);
@@ -573,7 +569,6 @@ function App() {
             currentProject={currentProject}
             onSelectProject={handleSelectProject}
             onCreateProject={() => {
-              console.log("handleCreateProject called from App");
               setIsCreateProjectDialogOpen(true);
             }}
             onDeleteProject={handleDeleteProject}
@@ -600,11 +595,9 @@ function App() {
               setIsReverseAnalysisOpen(true);
             }}
             onOpenSettings={() => {
-              console.log("onOpenSettings called from App");
               setIsModelSettingsDialogOpen(true);
             }}
             onRefresh={() => {
-              console.log("handleRefresh called from App");
               window.location.reload();
             }}
             onExportProject={handleExportProject}
@@ -839,7 +832,6 @@ function App() {
                   <div className="flex-1 overflow-hidden">
                     <CharacterBiblePanel
                       projectId={currentProject.id}
-                      onSelectCharacter={(char) => console.log("Selected character:", char)}
                     />
                   </div>
                 </div>
@@ -961,7 +953,6 @@ function App() {
         isOpen={isReverseAnalysisOpen}
         onClose={() => setIsReverseAnalysisOpen(false)}
         onImportResults={(result) => {
-          console.log("Reverse analysis results:", result);
           showToast("逆向分析结果已导入", "success");
         }}
       />
@@ -1001,8 +992,7 @@ function App() {
                 setIsSceneEditorOpen(false);
                 setEditingScene(null);
               }}
-              onSaved={(scene) => {
-                console.log("Scene saved:", scene);
+              onSaved={() => {
                 showToast("场景保存成功", "success");
               }}
             />

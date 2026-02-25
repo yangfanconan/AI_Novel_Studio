@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import type { Project, Chapter, Character } from '../types';
+import { create } from "zustand";
+import type { Project, Chapter, Character } from "../types";
 
 interface ProjectStore {
   // State

@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from "@tauri-apps/api/core";
 
 export interface SensitiveWordMatch {
   word: string;
@@ -59,23 +59,23 @@ export interface FullWritingToolsAnalysis {
 
 class WritingToolsService {
   async detectSensitiveWords(text: string): Promise<SensitiveWordDetection> {
-    return await invoke<SensitiveWordDetection>('detect_sensitive_words', { text });
+    return await invoke<SensitiveWordDetection>("detect_sensitive_words", { text });
   }
 
   async detectTypos(text: string): Promise<TypoDetection> {
-    return await invoke<TypoDetection>('detect_typos', { text });
+    return await invoke<TypoDetection>("detect_typos", { text });
   }
 
   async checkGrammar(text: string): Promise<GrammarCheck> {
-    return await invoke<GrammarCheck>('check_grammar', { text });
+    return await invoke<GrammarCheck>("check_grammar", { text });
   }
 
   async normalizeFormat(text: string): Promise<FormatNormalization> {
-    return await invoke<FormatNormalization>('normalize_format', { text });
+    return await invoke<FormatNormalization>("normalize_format", { text });
   }
 
   async runFullWritingTools(text: string): Promise<FullWritingToolsAnalysis> {
-    return await invoke<FullWritingToolsAnalysis>('run_full_writing_tools', { text });
+    return await invoke<FullWritingToolsAnalysis>("run_full_writing_tools", { text });
   }
 }
 

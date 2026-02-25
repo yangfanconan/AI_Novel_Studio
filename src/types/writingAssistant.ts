@@ -38,7 +38,7 @@ export interface ConsistencyWarning {
   character_name: string | null;
   expected: string;
   actual: string;
-  severity: 'low' | 'medium' | 'high';
+  severity: "low" | "medium" | "high";
 }
 
 export interface WritingSuggestion {

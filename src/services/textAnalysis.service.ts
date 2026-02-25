@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from "@tauri-apps/api/core";
 
 export interface WritingStyleAnalysis {
   avg_sentence_length: number;
@@ -99,41 +99,41 @@ export interface FullAnalysis {
 
 class TextAnalysisService {
   async analyzeWritingStyle(text: string): Promise<WritingStyleAnalysis> {
-    return await invoke<WritingStyleAnalysis>('analyze_writing_style', { text });
+    return await invoke<WritingStyleAnalysis>("analyze_writing_style", { text });
   }
 
   async analyzeRhythm(text: string): Promise<RhythmAnalysis> {
-    return await invoke<RhythmAnalysis>('analyze_rhythm', { text });
+    return await invoke<RhythmAnalysis>("analyze_rhythm", { text });
   }
 
   async analyzeEmotion(text: string): Promise<EmotionAnalysis> {
-    return await invoke<EmotionAnalysis>('analyze_emotion', { text });
+    return await invoke<EmotionAnalysis>("analyze_emotion", { text });
   }
 
   async analyzeReadability(text: string): Promise<ReadabilityAnalysis> {
-    return await invoke<ReadabilityAnalysis>('analyze_readability', { text });
+    return await invoke<ReadabilityAnalysis>("analyze_readability", { text });
   }
 
   async detectRepetitions(text: string, minRepetitions = 3): Promise<RepetitionDetection> {
-    return await invoke<RepetitionDetection>('detect_repetitions', { 
-      text, 
-      minRepetitions 
+    return await invoke<RepetitionDetection>("detect_repetitions", {
+      text,
+      minRepetitions,
     });
   }
 
   async checkLogic(text: string, characters: any[]): Promise<LogicCheck> {
     const charactersJson = JSON.stringify(characters);
-    return await invoke<LogicCheck>('check_logic', { 
-      text, 
-      charactersJson 
+    return await invoke<LogicCheck>("check_logic", {
+      text,
+      charactersJson,
     });
   }
 
   async runFullAnalysis(text: string, characters?: any[]): Promise<FullAnalysis> {
     const charactersJson = characters ? JSON.stringify(characters) : undefined;
-    return await invoke<FullAnalysis>('run_full_analysis', { 
-      text, 
-      charactersJson 
+    return await invoke<FullAnalysis>("run_full_analysis", {
+      text,
+      charactersJson,
     });
   }
 }

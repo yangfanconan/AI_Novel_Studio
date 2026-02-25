@@ -1,16 +1,16 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from "@tauri-apps/api/core";
 
 export enum LogLevel {
-  DEBUG = 'DEBUG',
-  INFO = 'INFO',
-  WARN = 'WARN',
-  ERROR = 'ERROR',
+  DEBUG = "DEBUG",
+  INFO = "INFO",
+  WARN = "WARN",
+  ERROR = "ERROR",
 }
 
 interface DebugLogEntry {
   timestamp: number;
   level: LogLevel;
-  source: 'frontend' | 'backend' | 'system';
+  source: "frontend" | "backend" | "system";
   feature?: string;
   action?: string;
   component?: string;
@@ -50,21 +50,21 @@ class DebugLogger {
 
     for (let i = 0; i < maxRetries; i++) {
       try {
-        if (typeof window !== 'undefined' && '__TAURI__' in window) {
-          if (typeof invoke === 'function') {
+        if (typeof window !== "undefined" && "__TAURI__" in window) {
+          if (typeof invoke === "function") {
             this.tauriAvailable = true;
-            this.debug('DebugLogger initialized', { tauriAvailable: true, attempt: i + 1 });
+            this.debug("DebugLogger initialized", { tauriAvailable: true, attempt: i + 1 });
             return;
           }
         }
       } catch (e) {
         console.warn(`Check attempt ${i + 1} failed:`, e);
       }
-      
-      await new Promise(resolve => setTimeout(resolve, retryDelay));
+
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }
 
-    console.warn('Tauri invoke not available after retries, logging to console only');
+    console.warn("Tauri invoke not available after retries, logging to console only");
     this.tauriAvailable = false;
   }
 
@@ -75,7 +75,7 @@ class DebugLogger {
   private createLog(
     level: LogLevel,
     message: string,
-    source: DebugLogEntry['source'] = 'frontend',
+    source: DebugLogEntry["source"] = "frontend",
     extra: Partial<DebugLogEntry> = {}
   ): void {
     const entry: DebugLogEntry = {
@@ -99,9 +99,9 @@ class DebugLogger {
   private output(entry: DebugLogEntry): void {
     const timestamp = new Date(entry.timestamp).toISOString();
     const prefix = `[${timestamp}] [${entry.level}] [${entry.source}]`;
-    const component = entry.component ? ` [${entry.component}]` : '';
-    const feature = entry.feature ? ` [${entry.feature}]` : '';
-    const action = entry.action ? ` [${entry.action}]` : '';
+    const component = entry.component ? ` [${entry.component}]` : "";
+    const feature = entry.feature ? ` [${entry.feature}]` : "";
+    const action = entry.action ? ` [${entry.action}]` : "";
 
     let message = `${prefix}${component}${feature}${action} ${entry.message}`;
 
@@ -135,32 +135,32 @@ class DebugLogger {
 
   private async persist(entry: DebugLogEntry): Promise<void> {
     await this.waitUntilReady();
-    
+
     if (!this.tauriAvailable) {
       return;
     }
 
     try {
-      await invoke('save_debug_log', { entry });
+      await invoke("save_debug_log", { entry });
     } catch (e) {
-      console.warn('Failed to persist debug log:', e);
+      console.warn("Failed to persist debug log:", e);
     }
   }
 
   debug(message: string, extra: Partial<DebugLogEntry> = {}): void {
-    this.createLog(LogLevel.DEBUG, message, 'frontend', extra);
+    this.createLog(LogLevel.DEBUG, message, "frontend", extra);
   }
 
   info(message: string, extra: Partial<DebugLogEntry> = {}): void {
-    this.createLog(LogLevel.INFO, message, 'frontend', extra);
+    this.createLog(LogLevel.INFO, message, "frontend", extra);
   }
 
   warn(message: string, extra: Partial<DebugLogEntry> = {}): void {
-    this.createLog(LogLevel.WARN, message, 'frontend', extra);
+    this.createLog(LogLevel.WARN, message, "frontend", extra);
   }
 
   error(message: string, error?: Error, extra: Partial<DebugLogEntry> = {}): void {
-    this.createLog(LogLevel.ERROR, message, 'frontend', {
+    this.createLog(LogLevel.ERROR, message, "frontend", {
       ...extra,
       error: error?.message,
       stack: error?.stack,
@@ -173,7 +173,11 @@ class DebugLogger {
 
     return () => {
       const duration = performance.now() - startTime;
-      this.info(`Action completed: ${action}`, { action, duration: Math.round(duration * 100) / 100, ...extra });
+      this.info(`Action completed: ${action}`, {
+        action,
+        duration: Math.round(duration * 100) / 100,
+        ...extra,
+      });
     };
   }
 
@@ -183,51 +187,51 @@ class DebugLogger {
 
   clearLogs(): void {
     this.logs = [];
-    this.debug('Debug logs cleared');
+    this.debug("Debug logs cleared");
   }
 
   exportLogs(): string {
     return this.logs
-      .map(log => {
+      .map((log) => {
         const timestamp = new Date(log.timestamp).toISOString();
-        const data = log.data ? ` | Data: ${JSON.stringify(log.data)}` : '';
-        const error = log.error ? ` | Error: ${log.error}` : '';
-        return `[${timestamp}] [${log.level}] [${log.source}] [${log.feature || 'N/A'}] ${log.message}${data}${error}`;
+        const data = log.data ? ` | Data: ${JSON.stringify(log.data)}` : "";
+        const error = log.error ? ` | Error: ${log.error}` : "";
+        return `[${timestamp}] [${log.level}] [${log.source}] [${log.feature || "N/A"}] ${log.message}${data}${error}`;
       })
-      .join('\n');
+      .join("\n");
   }
 
   async exportToFile(): Promise<void> {
     await this.waitUntilReady();
-    
+
     if (!this.tauriAvailable) {
-      this.warn('Tauri not available, cannot export to file');
+      this.warn("Tauri not available, cannot export to file");
       return;
     }
 
     try {
       const content = this.exportLogs();
-      await invoke('save_debug_log_file', { content });
-      this.info('Debug logs exported to file');
+      await invoke("save_debug_log_file", { content });
+      this.info("Debug logs exported to file");
     } catch (error) {
-      this.error('Failed to export debug logs', error);
+      this.error("Failed to export debug logs", error);
     }
   }
 }
 
 export const debugLogger = new DebugLogger();
 
-window.addEventListener('error', (event) => {
-  debugLogger.error('Uncaught error', event.error, {
-    component: 'window',
-    feature: 'error-handler',
+window.addEventListener("error", (event) => {
+  debugLogger.error("Uncaught error", event.error, {
+    component: "window",
+    feature: "error-handler",
   });
 });
 
-window.addEventListener('unhandledrejection', (event) => {
-  debugLogger.error('Unhandled promise rejection', event.reason as Error, {
-    component: 'window',
-    feature: 'promise-handler',
+window.addEventListener("unhandledrejection", (event) => {
+  debugLogger.error("Unhandled promise rejection", event.reason as Error, {
+    component: "window",
+    feature: "promise-handler",
   });
 });
 

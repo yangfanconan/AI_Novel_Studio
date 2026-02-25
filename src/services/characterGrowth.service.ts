@@ -1,7 +1,15 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from "@tauri-apps/api/core";
 
-export type GrowthChangeType = 'personality' | 'status' | 'skill' | 'relationship' | 'knowledge' | 'belief' | 'goal' | 'emotion';
-export type GrowthSignificance = 'minor' | 'moderate' | 'major' | 'critical';
+export type GrowthChangeType =
+  | "personality"
+  | "status"
+  | "skill"
+  | "relationship"
+  | "knowledge"
+  | "belief"
+  | "goal"
+  | "emotion";
+export type GrowthSignificance = "minor" | "moderate" | "major" | "critical";
 
 export interface GrowthChange {
   change_type: GrowthChangeType;
@@ -69,9 +77,16 @@ export interface GrowthComparison {
   analysis: ComparisonAnalysis;
 }
 
-export type TagType = 'personality' | 'role' | 'skill' | 'relationship' | 'trait' | 'archetype' | 'custom';
-export type TagWeight = 'low' | 'medium' | 'high' | 'critical';
-export type TagSource = 'manual' | 'ai_suggested' | 'template';
+export type TagType =
+  | "personality"
+  | "role"
+  | "skill"
+  | "relationship"
+  | "trait"
+  | "archetype"
+  | "custom";
+export type TagWeight = "low" | "medium" | "high" | "critical";
+export type TagSource = "manual" | "ai_suggested" | "template";
 
 export interface TagMetadata {
   created_at: number;
@@ -157,7 +172,7 @@ class CharacterGrowthService {
     changes: GrowthChange[],
     notes: string
   ): Promise<CharacterGrowth> {
-    return await invoke<CharacterGrowth>('create_growth_record', {
+    return await invoke<CharacterGrowth>("create_growth_record", {
       characterId,
       chapterId,
       position,
@@ -167,7 +182,7 @@ class CharacterGrowthService {
   }
 
   async getGrowthTimeline(characterId: string): Promise<CharacterGrowthTimeline> {
-    return await invoke<CharacterGrowthTimeline>('get_growth_timeline', { characterId });
+    return await invoke<CharacterGrowthTimeline>("get_growth_timeline", { characterId });
   }
 
   async compareGrowthPositions(
@@ -175,7 +190,7 @@ class CharacterGrowthService {
     fromPosition: number,
     toPosition: number
   ): Promise<GrowthComparison> {
-    return await invoke<GrowthComparison>('compare_growth_positions', {
+    return await invoke<GrowthComparison>("compare_growth_positions", {
       characterId,
       fromPosition,
       toPosition,
@@ -191,9 +206,9 @@ class CharacterGrowthService {
     value?: string,
     description?: string,
     autoAssigned = false,
-    source: TagSource = 'manual'
+    source: TagSource = "manual"
   ): Promise<CharacterTag> {
-    return await invoke<CharacterTag>('create_character_tag', {
+    return await invoke<CharacterTag>("create_character_tag", {
       characterId,
       tagTypeJson: JSON.stringify(tagType),
       name,
@@ -207,11 +222,11 @@ class CharacterGrowthService {
   }
 
   async getCharacterTags(characterId: string): Promise<CharacterTagCollection> {
-    return await invoke<CharacterTagCollection>('get_character_tags', { characterId });
+    return await invoke<CharacterTagCollection>("get_character_tags", { characterId });
   }
 
   async deleteCharacterTag(tagId: string): Promise<{ status: string }> {
-    return await invoke<{ status: string }>('delete_character_tag', { tagId });
+    return await invoke<{ status: string }>("delete_character_tag", { tagId });
   }
 
   async searchTags(
@@ -220,7 +235,7 @@ class CharacterGrowthService {
     tagTypes?: TagType[],
     minWeight?: TagWeight
   ): Promise<TagSearchResult> {
-    return await invoke<TagSearchResult>('search_tags', {
+    return await invoke<TagSearchResult>("search_tags", {
       projectId,
       query,
       tagTypesJson: tagTypes ? JSON.stringify(tagTypes) : undefined,
@@ -229,11 +244,11 @@ class CharacterGrowthService {
   }
 
   async getTagLibrary(): Promise<TagLibrary> {
-    return await invoke<TagLibrary>('get_tag_library');
+    return await invoke<TagLibrary>("get_tag_library");
   }
 
   async getTagStatistics(projectId: string): Promise<TagStatistics> {
-    return await invoke<TagStatistics>('get_tag_statistics', { projectId });
+    return await invoke<TagStatistics>("get_tag_statistics", { projectId });
   }
 }
 

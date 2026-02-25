@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from "@tauri-apps/api/core";
 
 export interface User {
   id: string;
@@ -38,45 +38,45 @@ class CollaborationService {
   private currentUserColor: string | null = null;
 
   async createSession(projectId: string): Promise<string> {
-    const sessionId = await invoke<string>('collab_create_session', { projectId });
+    const sessionId = await invoke<string>("collab_create_session", { projectId });
     this.currentSessionId = sessionId;
     return sessionId;
   }
 
   async joinSession(sessionId: string, user: User): Promise<void> {
-    await invoke('collab_join_session', { sessionId, user });
+    await invoke("collab_join_session", { sessionId, user });
     this.currentSessionId = sessionId;
   }
 
   async leaveSession(sessionId: string): Promise<void> {
-    await invoke('collab_leave_session', { sessionId, userId: this.currentUserId });
+    await invoke("collab_leave_session", { sessionId, userId: this.currentUserId });
     this.currentSessionId = null;
   }
 
   async broadcastOperation(sessionId: string, operation: Operation): Promise<void> {
-    await invoke('collab_broadcast_operation', { sessionId, operation });
+    await invoke("collab_broadcast_operation", { sessionId, operation });
   }
 
   async updateCursor(sessionId: string, cursor: CursorPosition): Promise<void> {
-    await invoke('collab_update_cursor', { sessionId, cursor });
+    await invoke("collab_update_cursor", { sessionId, cursor });
   }
 
   async getSession(sessionId: string): Promise<CollaborationSession | null> {
-    return await invoke<CollaborationSession | null>('collab_get_session', { sessionId });
+    return await invoke<CollaborationSession | null>("collab_get_session", { sessionId });
   }
 
   async getUserCursors(sessionId: string): Promise<Record<string, CursorPosition>> {
-    return await invoke<Record<string, CursorPosition>>('collab_get_user_cursors', { sessionId });
+    return await invoke<Record<string, CursorPosition>>("collab_get_user_cursors", { sessionId });
   }
 
   async generateUserId(): Promise<string> {
-    const userId = await invoke<string>('collab_generate_user_id');
+    const userId = await invoke<string>("collab_generate_user_id");
     this.currentUserId = userId;
     return userId;
   }
 
   async generateColor(): Promise<string> {
-    const color = await invoke<string>('collab_generate_color');
+    const color = await invoke<string>("collab_generate_color");
     this.currentUserColor = color;
     return color;
   }
@@ -93,28 +93,20 @@ class CollaborationService {
     return this.currentUserColor;
   }
 
-  createInsertOperation(
-    chapterId: string,
-    position: number,
-    text: string
-  ): Operation {
+  createInsertOperation(chapterId: string, position: number, text: string): Operation {
     return {
       id: `op_${Date.now()}_${Math.random()}`,
-      user_id: this.currentUserId || '',
+      user_id: this.currentUserId || "",
       chapter_id: chapterId,
       op_type: { Insert: { position, text } },
       timestamp: Date.now(),
     };
   }
 
-  createDeleteOperation(
-    chapterId: string,
-    position: number,
-    length: number
-  ): Operation {
+  createDeleteOperation(chapterId: string, position: number, length: number): Operation {
     return {
       id: `op_${Date.now()}_${Math.random()}`,
-      user_id: this.currentUserId || '',
+      user_id: this.currentUserId || "",
       chapter_id: chapterId,
       op_type: { Delete: { position, length } },
       timestamp: Date.now(),
@@ -129,7 +121,7 @@ class CollaborationService {
   ): Operation {
     return {
       id: `op_${Date.now()}_${Math.random()}`,
-      user_id: this.currentUserId || '',
+      user_id: this.currentUserId || "",
       chapter_id: chapterId,
       op_type: { Replace: { position, length, text } },
       timestamp: Date.now(),

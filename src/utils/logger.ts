@@ -1,8 +1,8 @@
 export enum LogLevel {
-  DEBUG = 'DEBUG',
-  INFO = 'INFO',
-  WARN = 'WARN',
-  ERROR = 'ERROR',
+  DEBUG = "DEBUG",
+  INFO = "INFO",
+  WARN = "WARN",
+  ERROR = "ERROR",
 }
 
 export interface LogContext {
@@ -30,7 +30,7 @@ class Logger {
   constructor(context: LogContext = {}) {
     this.context = context;
     this.requestId = this.generateRequestId();
-    this.info('Logger initialized', { feature: 'logger' });
+    this.info("Logger initialized", { feature: "logger" });
   }
 
   private generateRequestId(): string {
@@ -39,10 +39,9 @@ class Logger {
 
   private formatMessage(level: LogLevel, message: string, error?: Error): string {
     const timestamp = new Date().toISOString();
-    const contextStr = Object.keys(this.context).length > 0 
-      ? ` | Context: ${JSON.stringify(this.context)}` 
-      : '';
-    const errorStr = error ? ` | Error: ${error.message}` : '';
+    const contextStr =
+      Object.keys(this.context).length > 0 ? ` | Context: ${JSON.stringify(this.context)}` : "";
+    const errorStr = error ? ` | Error: ${error.message}` : "";
     return `[${timestamp}] [${level}] [${this.requestId}] ${message}${contextStr}${errorStr}`;
   }
 
@@ -71,12 +70,12 @@ class Logger {
       case LogLevel.ERROR:
         console.error(formatted);
         if (error?.stack) {
-          console.error('Stack trace:', error.stack);
+          console.error("Stack trace:", error.stack);
         }
         break;
     }
 
-    if (typeof window !== 'undefined' && (window as any).logEntries) {
+    if (typeof window !== "undefined" && (window as any).logEntries) {
       (window as any).logEntries.push(entry);
     }
   }
@@ -132,5 +131,5 @@ class Logger {
   }
 }
 
-export const logger = new Logger({ feature: 'app' });
+export const logger = new Logger({ feature: "app" });
 export const createLogger = (context: LogContext) => new Logger(context);

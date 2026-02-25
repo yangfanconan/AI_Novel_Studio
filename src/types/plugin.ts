@@ -1,10 +1,25 @@
-export type PluginType = 'editor_extension' | 'feature_module' | 'theme' | 'language_pack' | 'ai_adapter' | 'import_export' | 'utility' | 'integration';
+export type PluginType =
+  | "editor_extension"
+  | "feature_module"
+  | "theme"
+  | "language_pack"
+  | "ai_adapter"
+  | "import_export"
+  | "utility"
+  | "integration";
 
-export type PluginCapability = 'editor' | 'project' | 'ai' | 'filesystem' | 'network' | 'ui' | 'storage';
+export type PluginCapability =
+  | "editor"
+  | "project"
+  | "ai"
+  | "filesystem"
+  | "network"
+  | "ui"
+  | "storage";
 
-export type PermissionRisk = 'low' | 'medium' | 'high';
+export type PermissionRisk = "low" | "medium" | "high";
 
-export type PluginState = 'loaded' | 'activated' | 'deactivated' | 'error' | 'unloaded';
+export type PluginState = "loaded" | "activated" | "deactivated" | "error" | "unloaded";
 
 export interface PluginPermission {
   name: string;

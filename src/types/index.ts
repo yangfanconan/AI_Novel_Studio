@@ -325,7 +325,7 @@ export interface GeneratedPlotPoint {
   description?: string;
   note?: string;
   suggested_chapter?: string;
-  priority?: 'high' | 'medium' | 'low';
+  priority?: "high" | "medium" | "low";
 }
 
 export interface StoryboardScene {
@@ -341,9 +341,9 @@ export interface StoryboardScene {
 }
 
 export interface FormatOptions {
-  style?: 'standard' | 'novel' | 'script' | 'poetry';
+  style?: "standard" | "novel" | "script" | "poetry";
   indent_size?: number;
-  line_spacing?: 'single' | 'double' | '1.5';
+  line_spacing?: "single" | "double" | "1.5";
   paragraph_spacing?: number;
   preserve_dialogue_format?: boolean;
   auto_punctuate?: boolean;

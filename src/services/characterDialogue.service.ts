@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from "@tauri-apps/api/core";
 
 export interface CharacterInfo {
   id: string;
@@ -11,7 +11,7 @@ export interface CharacterInfo {
 export interface DialogueMessage {
   id: string;
   session_id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
   message_type: string;
   character_state?: Record<string, string>;
@@ -107,38 +107,38 @@ export class CharacterDialogueService {
   }
 
   async createSession(request: CreateSessionRequest): Promise<DialogueSession> {
-    return invoke<DialogueSession>('create_dialogue_session', { request });
+    return invoke<DialogueSession>("create_dialogue_session", { request });
   }
 
   async getSessions(characterId?: string, chapterId?: string): Promise<DialogueSession[]> {
-    return invoke<DialogueSession[]>('get_dialogue_sessions', {
+    return invoke<DialogueSession[]>("get_dialogue_sessions", {
       characterId,
       chapterId,
     });
   }
 
   async getSession(sessionId: string): Promise<DialogueSession> {
-    return invoke<DialogueSession>('get_dialogue_session', { sessionId });
+    return invoke<DialogueSession>("get_dialogue_session", { sessionId });
   }
 
   async sendMessage(request: SendMessageRequest): Promise<CharacterDialogue> {
-    return invoke<CharacterDialogue>('send_dialogue_message', { request });
+    return invoke<CharacterDialogue>("send_dialogue_message", { request });
   }
 
   async updateSession(request: UpdateSessionRequest): Promise<DialogueSession> {
-    return invoke<DialogueSession>('update_dialogue_session', { request });
+    return invoke<DialogueSession>("update_dialogue_session", { request });
   }
 
   async deleteSession(sessionId: string): Promise<boolean> {
-    return invoke<boolean>('delete_dialogue_session', { sessionId });
+    return invoke<boolean>("delete_dialogue_session", { sessionId });
   }
 
   async deleteMessage(messageId: string): Promise<boolean> {
-    return invoke<boolean>('delete_dialogue_message', { messageId });
+    return invoke<boolean>("delete_dialogue_message", { messageId });
   }
 
   async regenerateResponse(messageId: string): Promise<string> {
-    return invoke<string>('regenerate_ai_response', { messageId });
+    return invoke<string>("regenerate_ai_response", { messageId });
   }
 
   async createQuickSession(characterId: string, characterName: string): Promise<DialogueSession> {

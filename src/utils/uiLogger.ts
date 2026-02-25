@@ -1,8 +1,8 @@
-import { invoke } from '@tauri-apps/api/core';
+import { invoke } from "@tauri-apps/api/core";
 
 export interface UILogEntry {
   component: string;
-  action: 'open' | 'close' | 'mount' | 'unmount' | 'click' | 'change' | 'error';
+  action: "open" | "close" | "mount" | "unmount" | "click" | "change" | "error";
   timestamp: number;
   data?: Record<string, any>;
 }
@@ -25,7 +25,7 @@ class UILogger {
   log(entry: UILogEntry) {
     if (!this.enabled) return;
 
-    console.log('[UI]', entry.component, entry.action, entry.data || '');
+    console.log("[UI]", entry.component, entry.action, entry.data || "");
     this.logs.push(entry);
 
     if (this.logs.length >= 10) {
@@ -36,7 +36,7 @@ class UILogger {
   open(component: string, data?: Record<string, any>) {
     return this.log({
       component,
-      action: 'open',
+      action: "open",
       timestamp: Date.now(),
       data,
     });
@@ -45,7 +45,7 @@ class UILogger {
   close(component: string, data?: Record<string, any>) {
     return this.log({
       component,
-      action: 'close',
+      action: "close",
       timestamp: Date.now(),
       data,
     });
@@ -54,7 +54,7 @@ class UILogger {
   mount(component: string, data?: Record<string, any>) {
     return this.log({
       component,
-      action: 'mount',
+      action: "mount",
       timestamp: Date.now(),
       data,
     });
@@ -63,7 +63,7 @@ class UILogger {
   unmount(component: string, data?: Record<string, any>) {
     return this.log({
       component,
-      action: 'unmount',
+      action: "unmount",
       timestamp: Date.now(),
       data,
     });
@@ -72,7 +72,7 @@ class UILogger {
   click(component: string, target: string, data?: Record<string, any>) {
     return this.log({
       component,
-      action: 'click',
+      action: "click",
       timestamp: Date.now(),
       data: { target, ...data },
     });
@@ -81,7 +81,7 @@ class UILogger {
   error(component: string, error: any, data?: Record<string, any>) {
     return this.log({
       component,
-      action: 'error',
+      action: "error",
       timestamp: Date.now(),
       data: { error: error.message || String(error), ...data },
     });
@@ -93,18 +93,18 @@ class UILogger {
     const logsToSend = [...this.logs];
     this.logs = [];
 
-    if (typeof invoke === 'undefined') {
-      console.warn('[UI] Tauri invoke not available, skipping log flush');
+    if (typeof invoke === "undefined") {
+      console.warn("[UI] Tauri invoke not available, skipping log flush");
       this.logs.unshift(...logsToSend);
       return;
     }
 
-    invoke('save_ui_logs', { logs: logsToSend })
+    invoke("save_ui_logs", { logs: logsToSend })
       .then(() => {
-        console.log('[UI] Logs flushed:', logsToSend.length);
+        console.log("[UI] Logs flushed:", logsToSend.length);
       })
       .catch((error) => {
-        console.error('[UI] Failed to flush logs:', error);
+        console.error("[UI] Failed to flush logs:", error);
         this.logs.unshift(...logsToSend);
       });
   }
