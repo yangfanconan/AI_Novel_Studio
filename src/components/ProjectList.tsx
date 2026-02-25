@@ -143,15 +143,15 @@ export const ProjectList: React.FC<ProjectListProps> = ({
 
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <div className="flex items-center gap-2">
-          <Folder className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold">项目列表</h2>
+      <div className="flex items-center justify-between px-2 py-3 border-b border-border gap-2">
+        <div className="flex items-center gap-2 min-w-0 shrink-0">
+          <Folder className="w-5 h-5 text-primary shrink-0" />
+          <h2 className="text-lg font-semibold truncate">项目列表</h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 overflow-x-auto shrink-0">
           <button
             onClick={onRefresh}
-            className="p-2 hover:bg-accent rounded-md transition-colors"
+            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
             title="刷新项目列表"
           >
             <RotateCcw className="w-4 h-4" />
@@ -163,7 +163,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 uiLogger.click("ProjectList", "open_plugin_manager");
               }
             }}
-            className="p-2 hover:bg-accent rounded-md transition-colors"
+            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
             title="插件管理"
           >
             <Puzzle className="w-4 h-4" />
@@ -175,7 +175,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 uiLogger.click("ProjectList", "open_import_dialog");
               }
             }}
-            className="p-2 hover:bg-accent rounded-md transition-colors"
+            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
             title="导入文件"
           >
             <Upload className="w-4 h-4" />
@@ -187,7 +187,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 uiLogger.click("ProjectList", "open_prompt_templates");
               }
             }}
-            className="p-2 hover:bg-accent rounded-md transition-colors"
+            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
             title="提示词管理"
           >
             <FileText className="w-4 h-4" />
@@ -199,7 +199,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 uiLogger.click("ProjectList", "open_multimedia_settings");
               }
             }}
-            className="p-2 hover:bg-accent rounded-md transition-colors"
+            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
             title="多媒体设置"
           >
             <Image className="w-4 h-4" />
@@ -211,7 +211,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 uiLogger.click("ProjectList", "open_outline");
               }
             }}
-            className="p-2 hover:bg-accent rounded-md transition-colors"
+            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
             title="大纲管理"
           >
             <List className="w-4 h-4" />
@@ -223,7 +223,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 uiLogger.click("ProjectList", "open_batch_generator");
               }
             }}
-            className="p-2 hover:bg-accent rounded-md transition-colors"
+            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
             title="批量生成"
           >
             <Layers className="w-4 h-4" />
@@ -235,7 +235,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 uiLogger.click("ProjectList", "open_reverse_analysis");
               }
             }}
-            className="p-2 hover:bg-accent rounded-md transition-colors"
+            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
             title="逆向分析"
           >
             <SearchCode className="w-4 h-4" />
@@ -247,7 +247,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 uiLogger.click("ProjectList", "open_settings");
               }
             }}
-            className="p-2 hover:bg-accent rounded-md transition-colors"
+            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
             title="设置"
           >
             <Settings className="w-4 h-4" />
@@ -257,15 +257,14 @@ export const ProjectList: React.FC<ProjectListProps> = ({
               onCreateProject();
               uiLogger.click("ProjectList", "create_project");
             }}
-            className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            className="flex items-center gap-1 px-2 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors shrink-0 whitespace-nowrap"
           >
-            <Plus className="w-4 h-4" />
-            新建项目
+            <Plus className="w-4 h-4 shrink-0" />
+            <span className="text-sm">新建项目</span>
           </button>
         </div>
       </div>
-
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 overflow-auto p-2">
         {projects.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <Folder className="w-16 h-16 mb-4 text-muted-foreground opacity-50" />

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ResizableLayoutProps {
   leftPanel: React.ReactNode;
@@ -9,6 +10,8 @@ interface ResizableLayoutProps {
   initialRightWidth?: number;
   minLeftWidth?: number;
   minRightWidth?: number;
+  maxLeftWidth?: number;
+  maxRightWidth?: number;
 }
 
 export const ResizableLayout: React.FC<ResizableLayoutProps> = ({
@@ -20,9 +23,13 @@ export const ResizableLayout: React.FC<ResizableLayoutProps> = ({
   initialRightWidth = 288,
   minLeftWidth = 200,
   minRightWidth = 250,
+  maxLeftWidth = 600,
+  maxRightWidth = 600,
 }) => {
   const [leftWidth, setLeftWidth] = useState(initialLeftWidth);
   const [rightWidth, setRightWidth] = useState(initialRightWidth);
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
   const [isResizingLeft, setIsResizingLeft] = useState(false);
   const [isResizingRight, setIsResizingRight] = useState(false);
 
@@ -61,17 +68,43 @@ export const ResizableLayout: React.FC<ResizableLayoutProps> = ({
       const deltaX = e.clientX - startX.current;
 
       if (isResizingLeft) {
-        const newLeftWidth = Math.max(minLeftWidth, startLeftWidth.current + deltaX);
+        const newLeftWidth = Math.min(
+          maxLeftWidth,
+          Math.max(minLeftWidth, startLeftWidth.current + deltaX)
+        );
         setLeftWidth(newLeftWidth);
       }
 
       if (isResizingRight) {
-        const newRightWidth = Math.max(minRightWidth, startRightWidth.current - deltaX);
+        const newRightWidth = Math.min(
+          maxRightWidth,
+          Math.max(minRightWidth, startRightWidth.current - deltaX)
+        );
         setRightWidth(newRightWidth);
       }
     },
-    [isResizingLeft, isResizingRight, minLeftWidth, minRightWidth]
+    [isResizingLeft, isResizingRight, minLeftWidth, minRightWidth, maxLeftWidth, maxRightWidth]
   );
+
+  const toggleLeftCollapse = useCallback(() => {
+    if (leftCollapsed) {
+      setLeftWidth(initialLeftWidth);
+      setLeftCollapsed(false);
+    } else {
+      setLeftWidth(0);
+      setLeftCollapsed(true);
+    }
+  }, [leftCollapsed, initialLeftWidth]);
+
+  const toggleRightCollapse = useCallback(() => {
+    if (rightCollapsed) {
+      setRightWidth(initialRightWidth);
+      setRightCollapsed(false);
+    } else {
+      setRightWidth(0);
+      setRightCollapsed(true);
+    }
+  }, [rightCollapsed, initialRightWidth]);
 
   const handleMouseUp = useCallback(() => {
     setIsResizingLeft(false);
@@ -151,18 +184,27 @@ export const ResizableLayout: React.FC<ResizableLayoutProps> = ({
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <div
-        style={{ width: leftWidth, minWidth: minLeftWidth }}
-        className="flex-shrink-0 border-r border-border flex flex-col"
+        style={{ width: leftWidth, minWidth: leftCollapsed ? 0 : minLeftWidth }}
+        className="flex-shrink-0 border-r border-border flex flex-col overflow-hidden"
       >
         {leftPanel}
       </div>
 
-      <div
-        onMouseDown={handleLeftMouseDown}
-        className={`flex-shrink-0 w-1 cursor-col-resize transition-colors ${
-          isResizingLeft ? "bg-primary" : "hover:bg-border"
-        }`}
-      />
+      <div className="flex items-center">
+        <div
+          onMouseDown={handleLeftMouseDown}
+          className={`flex-shrink-0 w-1 cursor-col-resize transition-colors ${
+            isResizingLeft ? "bg-primary" : "hover:bg-border"
+          }`}
+        />
+        <button
+          onClick={toggleLeftCollapse}
+          className="flex-shrink-0 p-1 hover:bg-border transition-colors text-muted-foreground"
+          title={leftCollapsed ? "展开" : "折叠"}
+        >
+          {leftCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+        </button>
+      </div>
 
       <div
         style={{ width: centerWidth, minWidth: 0 }}
@@ -171,16 +213,25 @@ export const ResizableLayout: React.FC<ResizableLayoutProps> = ({
         {centerPanel}
       </div>
 
-      <div
-        onMouseDown={handleRightMouseDown}
-        className={`flex-shrink-0 w-1 cursor-col-resize transition-colors ${
-          isResizingRight ? "bg-primary" : "hover:bg-border"
-        }`}
-      />
+      <div className="flex items-center">
+        <button
+          onClick={toggleRightCollapse}
+          className="flex-shrink-0 p-1 hover:bg-border transition-colors text-muted-foreground"
+          title={rightCollapsed ? "展开" : "折叠"}
+        >
+          {rightCollapsed ? <ChevronLeft className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+        </button>
+        <div
+          onMouseDown={handleRightMouseDown}
+          className={`flex-shrink-0 w-1 cursor-col-resize transition-colors ${
+            isResizingRight ? "bg-primary" : "hover:bg-border"
+          }`}
+        />
+      </div>
 
       <div
-        style={{ width: rightWidth, minWidth: minRightWidth }}
-        className="flex-shrink-0 border-l border-border flex flex-col"
+        style={{ width: rightWidth, minWidth: rightCollapsed ? 0 : minRightWidth }}
+        className="flex-shrink-0 border-l border-border flex flex-col overflow-hidden"
       >
         {rightPanel}
       </div>
