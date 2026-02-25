@@ -1,0 +1,36 @@
+{
+  "info": {
+    "id": "inspiration-plugin",
+    "version": "1.0.0",
+    "name": "灵感生成器",
+    "description": "随机生成写作灵感和创意点子",
+    "author": {
+      "name": "AI Novel Studio"
+    },
+    "pluginType": "feature_module",
+    "minAppVersion": "1.0.0"
+  },
+  "permissions": [],
+  "capabilities": ["editor"],
+  "contributes": [
+    {
+      "type": "command",
+      "id": "inspiration.generate",
+      "label": "生成灵感",
+      "description": "随机生成一个写作灵感"
+    },
+    {
+      "type": "command",
+      "id": "inspiration.generate_character",
+      "label": "生成角色灵感",
+      "description": "随机生成一个角色灵感"
+    },
+    {
+      "type": "command",
+      "id": "inspiration.generate_plot",
+      "label": "生成情节灵感",
+      "description": "随机生成一个情节灵感"
+    }
+  ],
+  "dependencies": {}
+}

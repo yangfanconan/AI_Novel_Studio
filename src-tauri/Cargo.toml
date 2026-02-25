@@ -25,6 +25,14 @@ reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls"] }
 async-stream = "0.3"
 futures = "0.3"
 async-trait = "0.1"
+genpdf = "0.2"
+epub-builder = "0.7"
+semver = "1.0"
+log = "0.4"
+rquickjs = "0.5"
+pyo3 = { version = "0.28", features = ["auto-initialize"] }
+rlua = "0.19"
+urlencoding = "2.1"
 
 [dev-dependencies]
 tauri-cli = { version = "2.0", features = [] }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Settings, Layers, Globe, Network, Database } from 'lucide-react';
+import { Settings, Layers, Globe, Network, Database, Download, Puzzle } from 'lucide-react';
 import { TextEditor } from './components/TextEditor';
 import { ProjectList } from './components/ProjectList';
 import { ChapterList } from './components/ChapterList';
@@ -8,6 +8,9 @@ import { CreateProjectDialog } from './components/CreateProjectDialog';
 import { InputDialog } from './components/InputDialog';
 import { CharacterDialog } from './components/CharacterDialog';
 import { ModelSettingsDialog } from './components/ModelSettingsDialog';
+import { ExportDialog } from './components/ExportDialog';
+import PluginManager from './components/PluginManager';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { uiLogger } from './utils/uiLogger';
 import { PlotPointList } from './components/PlotPointList';
 import { PlotPointEditor } from './components/PlotPointEditor';
@@ -54,6 +57,10 @@ function App() {
   const [isChapterRenameDialogOpen, setIsChapterRenameDialogOpen] = useState(false);
   const [isCharacterDialogOpen, setIsCharacterDialogOpen] = useState(false);
   const [isModelSettingsDialogOpen, setIsModelSettingsDialogOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [isPluginManagerOpen, setIsPluginManagerOpen] = useState(false);
+  const [exportProjectId, setExportProjectId] = useState<string | null>(null);
+  const [exportChapterId, setExportChapterId] = useState<string | null>(null);
 
   useEffect(() => {
     uiLogger.mount('App');
@@ -286,13 +293,11 @@ function App() {
     if (!currentChapter || !currentProject) return;
 
     try {
-      const request: SaveChapterRequest = {
-        project_id: currentProject.id,
-        title: currentChapter.title,
-        content: editorContent,
-        sort_order: currentChapter.sort_order,
-      };
-      const updatedChapter = await chapterService.saveChapter(request);
+      const updatedChapter = await chapterService.updateChapter(
+        currentChapter.id,
+        currentChapter.title,
+        editorContent
+      );
       setCurrentChapter(updatedChapter);
       showToast('保存成功', 'success');
     } catch (error) {
@@ -456,6 +461,24 @@ function App() {
     }
   };
 
+  const handleExportProject = (projectId: string) => {
+    setExportProjectId(projectId);
+    setExportChapterId(null);
+    setIsExportDialogOpen(true);
+  };
+
+  const handleExportChapter = (chapterId: string) => {
+    setExportChapterId(chapterId);
+    setExportProjectId(null);
+    setIsExportDialogOpen(true);
+  };
+
+  const handleCloseExportDialog = () => {
+    setIsExportDialogOpen(false);
+    setExportProjectId(null);
+    setExportChapterId(null);
+  };
+
   return (
     <ResizableLayout
       leftPanel={
@@ -470,6 +493,9 @@ function App() {
             }}
             onDeleteProject={handleDeleteProject}
             onRenameProject={() => setIsProjectRenameDialogOpen(true)}
+            onOpenPluginManager={() => {
+              setIsPluginManagerOpen(true);
+            }}
             onOpenSettings={() => {
               console.log('onOpenSettings called from App');
               setIsModelSettingsDialogOpen(true);
@@ -478,6 +504,7 @@ function App() {
               console.log('handleRefresh called from App');
               window.location.reload();
             }}
+            onExportProject={handleExportProject}
           />
         </>
       }
@@ -585,6 +612,7 @@ function App() {
                 onCreateChapter={handleCreateChapter}
                 onDeleteChapter={handleDeleteChapter}
                 onRenameChapter={() => setIsChapterRenameDialogOpen(true)}
+                onExportChapter={handleExportChapter}
               />
             </div>
             <div className="h-64 border-t border-border">
@@ -710,6 +738,22 @@ function App() {
         open={isModelSettingsDialogOpen}
         onClose={() => setIsModelSettingsDialogOpen(false)}
       />
+
+      <ExportDialog
+        isOpen={isExportDialogOpen}
+        onClose={handleCloseExportDialog}
+        projectId={exportProjectId}
+        chapterId={exportChapterId}
+        projectName={currentProject?.name}
+      />
+
+      {isPluginManagerOpen && (
+        <div className="fixed inset-0 bg-background z-50">
+          <ErrorBoundary>
+            <PluginManager onClose={() => setIsPluginManagerOpen(false)} />
+          </ErrorBoundary>
+        </div>
+      )}
 
       {isPlotPointEditorOpen && (
         <PlotPointEditor

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Folder, Trash2, Edit2, MoreHorizontal, RotateCcw, Settings } from 'lucide-react';
+import { Plus, Folder, Trash2, Edit2, MoreHorizontal, RotateCcw, Settings, Download, Puzzle } from 'lucide-react';
 import { projectService } from '../services/api';
 import { uiLogger } from '../utils/uiLogger';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -12,8 +12,10 @@ interface ProjectListProps {
   onCreateProject: () => void;
   onRefresh?: () => void;
   onOpenSettings?: () => void;
+  onOpenPluginManager?: () => void;
   onDeleteProject?: (projectId: string) => void;
   onRenameProject?: () => void;
+  onExportProject?: (projectId: string) => void;
 }
 
 export const ProjectList: React.FC<ProjectListProps> = ({
@@ -23,8 +25,10 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   onCreateProject,
   onRefresh,
   onOpenSettings,
+  onOpenPluginManager,
   onDeleteProject,
   onRenameProject,
+  onExportProject,
 }) => {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -126,6 +130,18 @@ export const ProjectList: React.FC<ProjectListProps> = ({
           </button>
           <button
             onClick={() => {
+              if (onOpenPluginManager) {
+                onOpenPluginManager();
+                uiLogger.click('ProjectList', 'open_plugin_manager');
+              }
+            }}
+            className="p-2 hover:bg-accent rounded-md transition-colors"
+            title="插件管理"
+          >
+            <Puzzle className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
               if (onOpenSettings) {
                 onOpenSettings();
                 uiLogger.click('ProjectList', 'open_settings');
@@ -204,6 +220,20 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                     >
                       <Edit2 className="w-4 h-4" />
                       重命名
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onExportProject) {
+                          onExportProject(project.id);
+                          uiLogger.click('ProjectList', 'export_project');
+                        }
+                        setActiveMenuId(null);
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      导出
                     </button>
                     <button
                       onClick={(e) => handleDeleteClick(e, project.id, project.name)}

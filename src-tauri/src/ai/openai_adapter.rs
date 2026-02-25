@@ -60,6 +60,7 @@ struct OpenAIStreamDelta {
     content: Option<String>,
 }
 
+#[derive(Debug, Clone)]
 pub struct OpenAIAdapter {
     api_key: String,
     base_url: String,

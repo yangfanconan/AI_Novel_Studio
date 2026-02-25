@@ -1,0 +1,24 @@
+{
+  "info": {
+    "id": "wordcount-plugin",
+    "version": "1.0.0",
+    "name": "字数统计工具",
+    "description": "统计编辑器中的字数、字符数、段落数",
+    "author": {
+      "name": "AI Novel Studio"
+    },
+    "pluginType": "utility",
+    "minAppVersion": "1.0.0"
+  },
+  "permissions": [],
+  "capabilities": ["editor"],
+  "contributes": [
+    {
+      "type": "command",
+      "id": "wordcount.count",
+      "label": "统计字数",
+      "description": "统计当前编辑器的字数"
+    }
+  ],
+  "dependencies": {}
+}

@@ -14,6 +14,7 @@ use crate::ai::{
     GeneratedCharacter, GeneratedCharacterRelation,
     GeneratedWorldView, GeneratedPlotPoint, GeneratedStoryboard,
 };
+use crate::export::{ExportFormat, ExportMetadata, ExportContent};
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Serialize, Deserialize};
@@ -4629,4 +4630,236 @@ pub async fn multimedia_generate_illustration(
 
     log_command_success(&logger, "multimedia_generate_illustration", &result.id);
     Ok(result)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExportProjectRequest {
+    pub project_id: String,
+    pub format: String,
+    pub output_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExportChapterRequest {
+    pub chapter_id: String,
+    pub format: String,
+    pub output_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExportResult {
+    pub success: bool,
+    pub output_path: String,
+    pub file_size: u64,
+    pub format: String,
+}
+
+pub fn format_from_str(format_str: &str) -> Result<ExportFormat, String> {
+    match format_str.to_lowercase().as_str() {
+        "docx" | "word" | "md" | "markdown" => Ok(ExportFormat::Docx),
+        "pdf" => Ok(ExportFormat::Pdf),
+        "epub" => Ok(ExportFormat::Epub),
+        "txt" | "text" => Ok(ExportFormat::Txt),
+        _ => Err(format!("不支持的导出格式: {}", format_str)),
+    }
+}
+
+#[tauri::command]
+pub async fn export_project(
+    app: AppHandle,
+    request: ExportProjectRequest,
+) -> Result<ExportResult, String> {
+    let logger = Logger::new().with_feature("export");
+    log_command_start(&logger, "export_project", &format!("project: {}, format: {}", request.project_id, request.format));
+
+    let export_format = format_from_str(&request.format)?;
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+
+    let project: (String, String, String, String) = conn
+        .query_row(
+            "SELECT id, title, description, author FROM projects WHERE id = ?",
+            [&request.project_id],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let chapters: Vec<(String, String, i32, String)> = conn
+        .prepare("SELECT id, title, chapter_number, content FROM chapters WHERE project_id = ? ORDER BY chapter_number")
+        .map_err(|e| e.to_string())?
+        .query_map([&request.project_id], |row| {
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
+
+    let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let export_dir = app_data_dir.join("exports");
+
+    if !export_dir.exists() {
+        std::fs::create_dir_all(&export_dir).map_err(|e| e.to_string())?;
+    }
+
+    let filename = format!("{}_{}.{}", sanitize_filename(&project.1), Utc::now().format("%Y%m%d_%H%M%S"), export_format.extension());
+    let output_path = if let Some(path) = request.output_path {
+        PathBuf::from(path)
+    } else {
+        export_dir.join(&filename)
+    };
+
+    let metadata = ExportMetadata {
+        title: project.1.clone(),
+        author: project.3.clone(),
+        description: Some(project.2.clone()),
+        created_at: Utc::now().to_rfc3339(),
+        word_count: chapters.iter().map(|c| c.3.chars().count()).sum(),
+        chapter_count: chapters.len(),
+    };
+
+    let content = ExportContent {
+        metadata,
+        chapters: chapters.iter().map(|c| crate::export::ChapterContent {
+            id: c.0.clone(),
+            title: c.1.clone(),
+            number: c.2 as usize,
+            content: c.3.clone(),
+        }).collect(),
+    };
+
+    match export_format {
+        ExportFormat::Docx => {
+            crate::export::export_as_docx(&content, &output_path).map_err(|e| e.to_string())?;
+        }
+        ExportFormat::Pdf => {
+            crate::export::export_as_pdf(&content, &output_path).map_err(|e| e.to_string())?;
+        }
+        ExportFormat::Epub => {
+            crate::export::export_as_epub(&content, &output_path).map_err(|e| e.to_string())?;
+        }
+        ExportFormat::Txt => {
+            crate::export::export_as_txt(&content, &output_path).map_err(|e| e.to_string())?;
+        }
+        ExportFormat::Md => {
+            crate::export::export_as_md(&content, &output_path).map_err(|e| e.to_string())?;
+        }
+    }
+
+    let file_size = std::fs::metadata(&output_path).map_err(|e| e.to_string())?.len();
+
+    let result = ExportResult {
+        success: true,
+        output_path: output_path.to_string_lossy().to_string(),
+        file_size,
+        format: export_format.extension().to_string(),
+    };
+
+    log_command_success(&logger, "export_project", &result.output_path);
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn export_chapter(
+    app: AppHandle,
+    request: ExportChapterRequest,
+) -> Result<ExportResult, String> {
+    let logger = Logger::new().with_feature("export");
+    log_command_start(&logger, "export_chapter", &format!("chapter: {}, format: {}", request.chapter_id, request.format));
+
+    let export_format = format_from_str(&request.format)?;
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+
+    let chapter: (String, String, String, i32, String, String) = conn
+        .query_row(
+            "SELECT c.id, c.title, c.content, c.chapter_number, p.title, p.author FROM chapters c JOIN projects p ON c.project_id = p.id WHERE c.id = ?",
+            [&request.chapter_id],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?)),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let app_data_dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let export_dir = app_data_dir.join("exports");
+
+    if !export_dir.exists() {
+        std::fs::create_dir_all(&export_dir).map_err(|e| e.to_string())?;
+    }
+
+    let filename = format!("{}_{}.{}", sanitize_filename(&chapter.1), chapter.3, export_format.extension());
+    let output_path = if let Some(path) = request.output_path {
+        PathBuf::from(path)
+    } else {
+        export_dir.join(&filename)
+    };
+
+    let metadata = ExportMetadata {
+        title: chapter.1.clone(),
+        author: chapter.5.clone(),
+        description: None,
+        created_at: Utc::now().to_rfc3339(),
+        word_count: chapter.2.chars().count(),
+        chapter_count: 1,
+    };
+
+    let content = ExportContent {
+        metadata,
+        chapters: vec![crate::export::ChapterContent {
+            id: chapter.0.clone(),
+            title: chapter.1.clone(),
+            number: chapter.3 as usize,
+            content: chapter.2.clone(),
+        }],
+    };
+
+    match export_format {
+        ExportFormat::Docx => {
+            crate::export::export_as_docx(&content, &output_path).map_err(|e| e.to_string())?;
+        }
+        ExportFormat::Pdf => {
+            crate::export::export_as_pdf(&content, &output_path).map_err(|e| e.to_string())?;
+        }
+        ExportFormat::Epub => {
+            crate::export::export_as_epub(&content, &output_path).map_err(|e| e.to_string())?;
+        }
+        ExportFormat::Txt => {
+            crate::export::export_as_txt(&content, &output_path).map_err(|e| e.to_string())?;
+        }
+        ExportFormat::Md => {
+            crate::export::export_as_md(&content, &output_path).map_err(|e| e.to_string())?;
+        }
+    }
+
+    let file_size = std::fs::metadata(&output_path).map_err(|e| e.to_string())?.len();
+
+    let result = ExportResult {
+        success: true,
+        output_path: output_path.to_string_lossy().to_string(),
+        file_size,
+        format: export_format.extension().to_string(),
+    };
+
+    log_command_success(&logger, "export_chapter", &result.output_path);
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn get_export_formats() -> Result<Vec<String>, String> {
+    Ok(vec![
+        "docx".to_string(),
+        "pdf".to_string(),
+        "epub".to_string(),
+        "txt".to_string(),
+    ])
+}
+
+fn sanitize_filename(filename: &str) -> String {
+    filename
+        .chars()
+        .map(|c| match c {
+            '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
+            _ => c,
+        })
+        .collect()
 }

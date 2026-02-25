@@ -50,7 +50,18 @@ AI_Novel_Studio/
 │   │   ├── database.rs         # 数据库操作
 │   │   ├── models.rs           # 数据模型
 │   │   ├── commands.rs         # Tauri命令
-│   │   └── build.rs           # 构建脚本
+│   │   ├── build.rs           # 构建脚本
+│   │   ├── plugin_system/      # 插件系统模块
+│   │   │   ├── script.rs       # 脚本引擎接口
+│   │   │   ├── javascript_engine.rs # JavaScript引擎
+│   │   │   ├── python_engine.rs     # Python引擎
+│   │   │   ├── lua_engine.rs         # Lua引擎
+│   │   │   └── plugin.rs            # 插件管理
+│   │   ├── cloud_sync/         # 云同步模块
+│   │   │   └── mod.rs          # 云同步类型定义
+│   │   ├── plugin_commands.rs         # 插件管理命令
+│   │   ├── plugin_marketplace_commands.rs # 插件市场命令
+│   │   └── cloud_sync_commands.rs       # 云同步命令
 │   ├── tests/                    # Rust测试
 │   │   └── common/            # 测试工具
 │   ├── Cargo.toml             # Rust依赖配置
@@ -164,6 +175,31 @@ AI_Novel_Studio/
 - ✅ 自动化测试运行脚本
 - ✅ 测试覆盖率报告
 
+### Phase 4: 扩展系统 ✅
+
+#### 12. 插件系统
+- ✅ 插件架构设计（ScriptEngine trait）
+- ✅ 多语言脚本引擎支持（JavaScript/Python/Lua）
+- ✅ 插件生命周期管理
+- ✅ 插件上下文管理
+- ✅ 插件API接口定义
+
+#### 13. 插件市场
+- ✅ 插件市场客户端
+- ✅ 插件搜索功能
+- ✅ 插件下载和安装
+- ✅ 插件评价系统
+- ✅ 插件分类浏览
+- ✅ 插件详情查看
+
+#### 14. 云同步系统
+- ✅ 多云提供商支持
+- ✅ 同步配置管理
+- ✅ 冲突解决策略
+- ✅ 同步状态追踪
+- ✅ 自动同步功能
+- ✅ 同步历史记录
+
 ## 开发指南
 
 ### 环境要求
@@ -270,6 +306,219 @@ await invoke('create_character', {
 const characters = await invoke('get_characters', { projectId: 'project-id' })
 ```
 
+### 插件系统
+
+#### 获取所有插件
+```typescript
+const plugins = await invoke('plugin_get_all')
+```
+
+#### 安装插件
+```typescript
+await invoke('plugin_install', {
+  manifestUrl: 'https://example.com/plugin-manifest.json'
+})
+```
+
+#### 启用插件
+```typescript
+await invoke('plugin_enable', { pluginId: 'plugin-id' })
+```
+
+### 插件市场
+
+#### 搜索插件
+```typescript
+const results = await invoke('marketplace_search_plugins', {
+  query: 'AI助手',
+  category: '写作辅助',
+  tags: ['AI', '续写'],
+  sortBy: 'downloads'
+})
+```
+
+#### 下载插件
+```typescript
+await invoke('marketplace_download_plugin', { pluginId: 'plugin-id' })
+```
+
+#### 获取插件详情
+```typescript
+const plugin = await invoke('marketplace_get_plugin', { pluginId: 'plugin-id' })
+```
+
+### 云同步
+
+#### 配置云同步
+```typescript
+await invoke('cloud_sync_configure', {
+  config: {
+    provider_type: 'GoogleDrive',
+    credentials: { access_token: 'xxx' },
+    sync_interval_seconds: 300,
+    auto_sync: true,
+    conflict_resolution: 'TimestampBased'
+  }
+})
+```
+
+#### 启动同步
+```typescript
+const syncId = await invoke('cloud_sync_start')
+```
+
+#### 获取同步状态
+```typescript
+const status = await invoke('cloud_sync_get_status')
+// 返回: { status: 'Syncing', last_sync: '2024-01-01T00:00:00Z', progress: 0.5 }
+```
+
+### 多媒体生成
+
+#### 场景提取
+```typescript
+const scenes = await invoke('mmg_extract_scenes', {
+  text: '小说文本内容'
+})
+```
+
+#### 生成分镜脚本
+```typescript
+const storyboard = await invoke('mmg_generate_storyboard', {
+  text: '小说文本内容',
+  title: '分镜标题',
+  format: 'film',
+  style: 'cinematic'
+})
+```
+
+#### 转换为剧本
+```typescript
+const script = await invoke('mmg_convert_to_script', {
+  text: '小说文本内容',
+  format: 'hollywood'
+})
+```
+
+#### 优化剧本
+```typescript
+const optimized = await invoke('mmg_optimize_script', {
+  scriptJson: JSON.stringify(script)
+})
+```
+
+#### 生成漫画
+```typescript
+const comic = await invoke('mmg_generate_comic', {
+  text: '小说文本内容',
+  title: '漫画标题',
+  style: 'manga'
+})
+```
+
+#### 生成场景插画
+```typescript
+const illustration = await invoke('mmg_generate_scene_illustration', {
+  sceneJson: JSON.stringify(scene),
+  style: 'anime',
+  aspectRatio: '16:9',
+  quality: 'high',
+  variations: 3
+})
+```
+
+#### 生成角色肖像
+```typescript
+const portrait = await invoke('mmg_generate_character_portrait', {
+  characterId: 'char_001',
+  characterName: '角色名',
+  appearance: '外貌描述',
+  style: 'anime'
+})
+```
+
+#### 生成封面
+```typescript
+const cover = await invoke('mmg_generate_cover', {
+  projectName: '项目名称',
+  projectDescription: '项目描述',
+  genre: '玄幻',
+  style: 'fantasy'
+})
+```
+
+### 协作编辑
+
+#### 创建协作会话
+```typescript
+const sessionId = await invoke('collab_create_session', {
+  projectId: 'project-id'
+})
+```
+
+#### 加入协作会话
+```typescript
+await invoke('collab_join_session', {
+  sessionId: 'session-id',
+  user: {
+    id: 'user-id',
+    name: '用户名',
+    color: '#FF6B6B'
+  }
+})
+```
+
+#### 离开协作会话
+```typescript
+await invoke('collab_leave_session', {
+  sessionId: 'session-id',
+  userId: 'user-id'
+})
+```
+
+#### 广播编辑操作
+```typescript
+await invoke('collab_broadcast_operation', {
+  sessionId: 'session-id',
+  operation: {
+    id: 'op-id',
+    user_id: 'user-id',
+    chapter_id: 'chapter-id',
+    op_type: {
+      Insert: { position: 100, text: '新增文本' }
+    },
+    timestamp: Date.now()
+  }
+})
+```
+
+#### 更新光标位置
+```typescript
+await invoke('collab_update_cursor', {
+  sessionId: 'session-id',
+  cursor: {
+    user_id: 'user-id',
+    chapter_id: 'chapter-id',
+    line: 10,
+    column: 5
+  }
+})
+```
+
+#### 获取会话信息
+```typescript
+const session = await invoke('collab_get_session', {
+  sessionId: 'session-id'
+})
+```
+
+#### 获取在线用户光标
+```typescript
+const cursors = await invoke('collab_get_user_cursors', {
+  sessionId: 'session-id'
+})
+```
+
 ## 数据库表结构
 
 ### projects（项目表）
@@ -317,19 +566,26 @@ const characters = await invoke('get_characters', { projectId: 'project-id' })
 - ✅ 企业级日志系统
 - ✅ 完整测试框架
 
-### Phase 3: 多媒体生成
-- [ ] 分镜脚本生成
-- [ ] 剧本格式转换
-- [ ] 漫画分镜生成
-- [ ] 插画生成
+### Phase 3: 多媒体生成 ✅
+- ✅ 分镜脚本生成
+- ✅ 剧本格式转换
+- ✅ 漫画分镜生成
+- ✅ 插画生成
+- ✅ 场景提取功能
+- ✅ 动画生成功能
 
-### Phase 4: 扩展系统
-- [ ] 插件系统
-- [ ] 脚本系统
-- [ ] 多模型集成
-- [ ] 云同步功能
+### Phase 5: 高级功能 ✅
+- ✅ 协作编辑功能
+- ✅ 可视化分镜编辑器
+- ✅ 动画生成框架
+
+### Phase 4: 扩展系统 ✅ 已完成
+- ✅ 插件系统（JavaScript/Python/Lua脚本支持）
+- ✅ 脚本系统（ScriptEngine架构）
+- ✅ 插件市场集成
+- ✅ 云同步功能（Dropbox/GoogleDrive/OneDrive/iCloud/WebDAV）
 - [ ] 协作编辑功能
-- [ ] 导出功能（PDF、EPUB、Word等）
+- ✅ 导出功能（PDF、EPUB、Word等）
 
 ## 注意事项
 

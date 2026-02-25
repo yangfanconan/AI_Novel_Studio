@@ -361,6 +361,198 @@ pub fn init_database(db_path: &Path) -> SqlResult<()> {
         [],
     )?;
 
+    // 创建项目快照表
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS project_snapshots (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL,
+            version TEXT NOT NULL,
+            timestamp INTEGER NOT NULL,
+            description TEXT,
+            chapters_json TEXT NOT NULL,
+            characters_json TEXT NOT NULL,
+            world_views_json TEXT NOT NULL,
+            plot_points_json TEXT NOT NULL,
+            metadata_json TEXT NOT NULL,
+            auto_generated INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_project_snapshots_project ON project_snapshots(project_id)",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_project_snapshots_timestamp ON project_snapshots(timestamp)",
+        [],
+    )?;
+
+    // 创建版本差异表
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS version_diffs (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL,
+            from_version TEXT NOT NULL,
+            to_version TEXT NOT NULL,
+            timestamp INTEGER NOT NULL,
+            chapter_changes_json TEXT NOT NULL,
+            character_changes_json TEXT NOT NULL,
+            world_view_changes_json TEXT NOT NULL,
+            plot_point_changes_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_version_diffs_project ON version_diffs(project_id)",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_version_diffs_timestamp ON version_diffs(timestamp)",
+        [],
+    )?;
+
+    // 创建角色成长轨迹表
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS character_growth_records (
+            id TEXT PRIMARY KEY,
+            character_id TEXT NOT NULL,
+            chapter_id TEXT NOT NULL,
+            position INTEGER NOT NULL,
+            changes_json TEXT NOT NULL,
+            auto_detected INTEGER DEFAULT 0,
+            notes TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+            FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_character_growth_character ON character_growth_records(character_id)",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_character_growth_chapter ON character_growth_records(chapter_id)",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_character_growth_position ON character_growth_records(position)",
+        [],
+    )?;
+
+    // 创建角色标签表
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS character_tags (
+            id TEXT PRIMARY KEY,
+            character_id TEXT NOT NULL,
+            tag_type TEXT NOT NULL,
+            name TEXT NOT NULL,
+            value TEXT,
+            description TEXT,
+            color TEXT NOT NULL,
+            weight TEXT NOT NULL,
+            auto_assigned INTEGER DEFAULT 0,
+            source TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_character_tags_character ON character_tags(character_id)",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_character_tags_type ON character_tags(tag_type)",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_character_tags_name ON character_tags(name)",
+        [],
+    )?;
+
+    // 创建版本控制配置表
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS version_control_config (
+            id TEXT PRIMARY KEY DEFAULT 'config',
+            auto_save_enabled INTEGER DEFAULT 1,
+            auto_save_interval_minutes INTEGER DEFAULT 30,
+            max_snapshots_per_project INTEGER DEFAULT 50,
+            compression_enabled INTEGER DEFAULT 1,
+            updated_at TEXT NOT NULL
+        )",
+        [],
+    )?;
+
+    // 创建角色对话会话表
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS character_dialogue_sessions (
+            id TEXT PRIMARY KEY,
+            character_id TEXT NOT NULL,
+            chapter_id TEXT,
+            session_name TEXT NOT NULL,
+            system_prompt TEXT,
+            context_summary TEXT,
+            ai_model TEXT DEFAULT 'default',
+            temperature REAL DEFAULT 0.7,
+            max_tokens INTEGER DEFAULT 1000,
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE,
+            FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE SET NULL
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_character_dialogue_sessions_character ON character_dialogue_sessions(character_id)",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_character_dialogue_sessions_chapter ON character_dialogue_sessions(chapter_id)",
+        [],
+    )?;
+
+    // 创建角色对话消息表
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS character_dialogue_messages (
+            id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            message_type TEXT NOT NULL,
+            character_state_json TEXT,
+            emotional_context TEXT,
+            scene_context TEXT,
+            tokens_used INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (session_id) REFERENCES character_dialogue_sessions(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_character_dialogue_messages_session ON character_dialogue_messages(session_id)",
+        [],
+    )?;
+
     // 数据库迁移：为 characters 表添加新列（如果不存在）
     let migrations = vec![
         "ALTER TABLE characters ADD COLUMN role_type TEXT",

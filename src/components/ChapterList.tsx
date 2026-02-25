@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, Plus, MoreHorizontal, Trash2, Edit2 } from 'lucide-react';
+import { BookOpen, Plus, MoreHorizontal, Trash2, Edit2, Download } from 'lucide-react';
 import { ConfirmDialog } from './ConfirmDialog';
 import type { Chapter } from '../types';
 
@@ -10,6 +10,7 @@ interface ChapterListProps {
   onCreateChapter: () => void;
   onDeleteChapter: (chapterId: string) => void;
   onRenameChapter: () => void;
+  onExportChapter?: (chapterId: string) => void;
 }
 
 export const ChapterList: React.FC<ChapterListProps> = ({
@@ -19,6 +20,7 @@ export const ChapterList: React.FC<ChapterListProps> = ({
   onCreateChapter,
   onDeleteChapter,
   onRenameChapter,
+  onExportChapter,
 }) => {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -126,6 +128,19 @@ export const ChapterList: React.FC<ChapterListProps> = ({
                     >
                       <Edit2 className="w-4 h-4" />
                       重命名
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onExportChapter) {
+                          onExportChapter(chapter.id);
+                        }
+                        setActiveMenuId(null);
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      导出
                     </button>
                     <button
                       onClick={(e) => handleDeleteClick(e, chapter.id, chapter.title)}
