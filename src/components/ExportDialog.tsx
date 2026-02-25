@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { FileText, Download, X } from 'lucide-react';
-import { invoke } from '@tauri-apps/api/core';
+import React, { useState } from "react";
+import { FileText, Download, X } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
 
 interface ExportDialogProps {
   isOpen: boolean;
@@ -10,7 +10,7 @@ interface ExportDialogProps {
   projectName?: string;
 }
 
-type ExportFormat = 'pdf' | 'epub' | 'txt' | 'md' | 'docx';
+type ExportFormat = "pdf" | "epub" | "txt" | "md" | "docx";
 
 interface ExportFormatInfo {
   id: ExportFormat;
@@ -22,40 +22,40 @@ interface ExportFormatInfo {
 
 const exportFormats: ExportFormatInfo[] = [
   {
-    id: 'docx',
-    name: 'Word文档',
-    extension: '.docx',
-    icon: '📘',
-    description: 'Microsoft Word格式'
+    id: "docx",
+    name: "Word文档",
+    extension: ".docx",
+    icon: "📘",
+    description: "Microsoft Word格式",
   },
   {
-    id: 'pdf',
-    name: 'PDF文档',
-    extension: '.pdf',
-    icon: '📄',
-    description: '适合打印和阅读的PDF格式'
+    id: "pdf",
+    name: "PDF文档",
+    extension: ".pdf",
+    icon: "📄",
+    description: "适合打印和阅读的PDF格式",
   },
   {
-    id: 'epub',
-    name: 'EPUB电子书',
-    extension: '.epub',
-    icon: '📚',
-    description: '适用于电子书阅读器'
+    id: "epub",
+    name: "EPUB电子书",
+    extension: ".epub",
+    icon: "📚",
+    description: "适用于电子书阅读器",
   },
   {
-    id: 'txt',
-    name: '纯文本',
-    extension: '.txt',
-    icon: '📝',
-    description: '简单纯文本格式'
+    id: "txt",
+    name: "纯文本",
+    extension: ".txt",
+    icon: "📝",
+    description: "简单纯文本格式",
   },
   {
-    id: 'md',
-    name: 'Markdown',
-    extension: '.md',
-    icon: '✍️',
-    description: 'Markdown格式，便于编辑'
-  }
+    id: "md",
+    name: "Markdown",
+    extension: ".md",
+    icon: "✍️",
+    description: "Markdown格式，便于编辑",
+  },
 ];
 
 export const ExportDialog: React.FC<ExportDialogProps> = ({
@@ -65,7 +65,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
   chapterId,
   projectName,
 }) => {
-  const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('pdf');
+  const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("pdf");
   const [isExporting, setIsExporting] = useState(false);
   const [exportResult, setExportResult] = useState<{
     success: boolean;
@@ -78,7 +78,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
     if (!projectId && !chapterId) {
       setExportResult({
         success: false,
-        message: '请选择要导出的项目或章节'
+        message: "请选择要导出的项目或章节",
       });
       return;
     }
@@ -90,32 +90,32 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       let result: { success: boolean; output_path: string; file_size: number; format: string };
 
       if (projectId) {
-        result = await invoke('export_project', {
+        result = (await invoke("export_project", {
           projectId,
-          format: selectedFormat
-        }) as any;
+          format: selectedFormat,
+        })) as any;
       } else if (chapterId) {
-        result = await invoke('export_chapter', {
+        result = (await invoke("export_chapter", {
           chapterId,
-          format: selectedFormat
-        }) as any;
+          format: selectedFormat,
+        })) as any;
       } else {
-        throw new Error('无效的导出参数');
+        throw new Error("无效的导出参数");
       }
 
       const fileSizeMB = (result.file_size / (1024 * 1024)).toFixed(2);
-      
+
       setExportResult({
         success: result.success,
         filePath: result.output_path,
         fileSize: `${fileSizeMB} MB`,
-        message: '导出成功！'
+        message: "导出成功！",
       });
     } catch (error) {
-      console.error('Export failed:', error);
+      console.error("Export failed:", error);
       setExportResult({
         success: false,
-        message: `导出失败: ${(error as Error).message}`
+        message: `导出失败: ${(error as Error).message}`,
       });
     } finally {
       setIsExporting(false);
@@ -158,9 +158,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
           )}
 
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-2 text-foreground">
-              选择导出格式
-            </label>
+            <label className="block text-sm font-medium mb-2 text-foreground">选择导出格式</label>
             <div className="grid grid-cols-2 gap-3">
               {exportFormats.map((format) => (
                 <button
@@ -169,25 +167,27 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                   disabled={isExporting}
                   className={`p-4 border-2 rounded-lg transition-all ${
                     selectedFormat === format.id
-                      ? 'border-primary bg-primary/10 ring-2 ring-primary'
-                      : 'border-border hover:border-primary/50 hover:bg-accent'
-                  } ${isExporting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      ? "border-primary bg-primary/10 ring-2 ring-primary"
+                      : "border-border hover:border-primary/50 hover:bg-accent"
+                  } ${isExporting ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                 >
                   <div className="text-3xl mb-2">{format.icon}</div>
                   <div className="font-medium text-foreground mb-1">{format.name}</div>
                   <div className="text-xs text-muted-foreground">{format.extension}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {format.description}
-                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">{format.description}</div>
                 </button>
               ))}
             </div>
           </div>
 
           {exportResult && (
-            <div className={`mb-4 p-4 rounded-lg ${
-              exportResult.success ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'
-            }`}>
+            <div
+              className={`mb-4 p-4 rounded-lg ${
+                exportResult.success
+                  ? "bg-green-500/10 border border-green-500/20"
+                  : "bg-red-500/10 border border-red-500/20"
+              }`}
+            >
               <div className="flex items-start gap-2">
                 {exportResult.success ? (
                   <Download className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
@@ -195,7 +195,9 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
                   <X className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                 )}
                 <div className="flex-1">
-                  <p className={`font-medium ${exportResult.success ? 'text-green-700' : 'text-red-700'}`}>
+                  <p
+                    className={`font-medium ${exportResult.success ? "text-green-700" : "text-red-700"}`}
+                  >
                     {exportResult.message}
                   </p>
                   {exportResult.filePath && (

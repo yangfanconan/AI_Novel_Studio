@@ -1,5 +1,5 @@
-import React from 'react';
-import { AlertTriangle } from 'lucide-react';
+import React from "react";
+import { AlertTriangle } from "lucide-react";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -7,7 +7,7 @@ interface ConfirmDialogProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
-  variant?: 'danger' | 'warning' | 'info';
+  variant?: "danger" | "warning" | "info";
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -16,24 +16,24 @@ export function ConfirmDialog({
   isOpen,
   title,
   message,
-  confirmText = '确定',
-  cancelText = '取消',
-  variant = 'danger',
+  confirmText = "确定",
+  cancelText = "取消",
+  variant = "danger",
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
   if (!isOpen) return null;
 
   const variantStyles = {
-    danger: 'bg-red-500 hover:bg-red-600',
-    warning: 'bg-yellow-500 hover:bg-yellow-600',
-    info: 'bg-blue-500 hover:bg-blue-600',
+    danger: "bg-red-500 hover:bg-red-600",
+    warning: "bg-yellow-500 hover:bg-yellow-600",
+    info: "bg-blue-500 hover:bg-blue-600",
   };
 
   const iconColors = {
-    danger: 'text-red-500',
-    warning: 'text-yellow-500',
-    info: 'text-blue-500',
+    danger: "text-red-500",
+    warning: "text-yellow-500",
+    info: "text-blue-500",
   };
 
   return (

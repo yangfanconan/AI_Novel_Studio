@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Sparkles } from 'lucide-react';
-import type { Character } from '../types';
-import { AIGenerateDialog } from './AIGenerateDialog';
+import React, { useState } from "react";
+import { Sparkles } from "lucide-react";
+import type { Character } from "../types";
+import { AIGenerateDialog } from "./AIGenerateDialog";
 
 interface CharacterListProps {
   characters: Character[];
@@ -74,14 +74,10 @@ export function CharacterList({
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm font-medium truncate">{character.name}</h3>
                       {character.age && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {character.age}岁
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">{character.age}岁</p>
                       )}
                       {character.gender && (
-                        <p className="text-xs text-muted-foreground">
-                          {character.gender}
-                        </p>
+                        <p className="text-xs text-muted-foreground">{character.gender}</p>
                       )}
                     </div>
                     <button

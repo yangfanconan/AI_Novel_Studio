@@ -1,15 +1,34 @@
 use crate::multimedia_generation::types::*;
+use crate::multimedia_generation::image_client::{ImageClient, ImageProviderConfig, ImageGenerationRequest};
 use crate::ai::traits::AIModel;
-use crate::ai::models::{AIRequest, AIResponse, AIMessage};
+use crate::ai::models::{AIRequest, AIMessage};
 use std::sync::Arc;
 
 pub struct IllustrationGenerator {
     ai_model: Arc<dyn AIModel>,
+    image_client: ImageClient,
+    provider_config: Option<ImageProviderConfig>,
 }
 
 impl IllustrationGenerator {
     pub fn new(ai_model: Arc<dyn AIModel>) -> Self {
-        Self { ai_model }
+        Self {
+            ai_model,
+            image_client: ImageClient::new(),
+            provider_config: None,
+        }
+    }
+
+    pub fn with_provider(ai_model: Arc<dyn AIModel>, provider: ImageProviderConfig) -> Self {
+        Self {
+            ai_model,
+            image_client: ImageClient::new(),
+            provider_config: Some(provider),
+        }
+    }
+
+    pub fn set_provider(&mut self, provider: ImageProviderConfig) {
+        self.provider_config = Some(provider);
     }
 
     pub async fn generate_scene_illustration(
@@ -19,13 +38,21 @@ impl IllustrationGenerator {
     ) -> Result<Illustration, String> {
         let enhanced_prompt = self.enhance_prompt(scene, &options).await?;
 
-        let images = self
-            .generate_images(&enhanced_prompt, &options)
-            .await?;
+        let images = if let Some(ref config) = self.provider_config {
+            if config.is_enabled && !config.api_key.is_empty() {
+                self.generate_real_images(config, &enhanced_prompt, &options).await?
+            } else {
+                self.generate_placeholder_images(&enhanced_prompt, &options).await?
+            }
+        } else {
+            self.generate_placeholder_images(&enhanced_prompt, &options).await?
+        };
 
         let metadata = IllustrationMetadata {
             generated_at: chrono::Utc::now().to_rfc3339(),
-            model: "placeholder-model".to_string(),
+            model: self.provider_config.as_ref()
+                .map(|c| format!("{}:{}", c.id, c.model))
+                .unwrap_or_else(|| "placeholder".to_string()),
         };
 
         Ok(Illustration {
@@ -46,9 +73,15 @@ impl IllustrationGenerator {
     ) -> Result<CharacterPortrait, String> {
         let prompt = self.build_character_prompt(&character_name, &appearance, &style);
 
-        let views = self
-            .generate_character_views(&prompt, &style)
-            .await?;
+        let views = if let Some(ref config) = self.provider_config {
+            if config.is_enabled && !config.api_key.is_empty() {
+                self.generate_real_character_views(config, &prompt, &style).await?
+            } else {
+                self.generate_placeholder_character_views(&prompt, &style).await?
+            }
+        } else {
+            self.generate_placeholder_character_views(&prompt, &style).await?
+        };
 
         let expressions = self
             .generate_character_expressions(&prompt, &style)
@@ -103,6 +136,38 @@ impl IllustrationGenerator {
             .complete(request)
             .await
             .map_err(|e| e.to_string())?;
+
+        if let Some(ref config) = self.provider_config {
+            if config.is_enabled && !config.api_key.is_empty() {
+                let (width, height) = ImageClient::parse_aspect_ratio("2:3");
+                let gen_request = ImageGenerationRequest {
+                    prompt: format!("Book cover design: {}", description.content),
+                    negative_prompt: Some("low quality, blurry, distorted".to_string()),
+                    width,
+                    height,
+                    steps: Some(30),
+                    cfg_scale: Some(7.0),
+                    seed: None,
+                    num_images: Some(1),
+                };
+
+                match self.image_client.generate_image(config, gen_request).await {
+                    Ok(response) => {
+                        if let Some(img) = response.images.first() {
+                            if let Some(ref url) = img.url {
+                                return Ok(url.clone());
+                            }
+                            if let Some(ref b64) = img.b64_json {
+                                return Ok(format!("data:image/png;base64,{}", b64));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("封面生成失败: {}", e);
+                    }
+                }
+            }
+        }
 
         Ok(format!(
             "cover_placeholder_800x1200.png?text={}",
@@ -178,22 +243,65 @@ impl IllustrationGenerator {
     }
 
     fn parse_enhanced_prompt(&self, json_text: &str) -> Result<EnhancedPrompt, String> {
+        let json_text = json_text.trim();
+        let json_text = if json_text.starts_with("```json") {
+            json_text.trim_start_matches("```json").trim_end_matches("```").trim()
+        } else if json_text.starts_with("```") {
+            json_text.trim_start_matches("```").trim_end_matches("```").trim()
+        } else {
+            json_text
+        };
         serde_json::from_str(json_text).map_err(|e| format!("解析提示词失败: {}", e))
     }
 
-    async fn generate_images(
+    async fn generate_real_images(
+        &self,
+        config: &ImageProviderConfig,
+        enhanced_prompt: &EnhancedPrompt,
+        options: &IllustrationOptions,
+    ) -> Result<Vec<String>, String> {
+        let (width, height) = ImageClient::parse_aspect_ratio(&options.aspect_ratio);
+        
+        let gen_request = ImageGenerationRequest {
+            prompt: enhanced_prompt.positive.clone(),
+            negative_prompt: Some(enhanced_prompt.negative.clone()),
+            width,
+            height,
+            steps: Some(enhanced_prompt.parameters.steps),
+            cfg_scale: Some(enhanced_prompt.parameters.cfg_scale as f32),
+            seed: None,
+            num_images: Some(options.variations as i32),
+        };
+
+        let response = self.image_client.generate_image(config, gen_request).await?;
+
+        let images: Vec<String> = response.images.iter().filter_map(|img| {
+            if let Some(ref url) = img.url {
+                Some(url.clone())
+            } else if let Some(ref b64) = img.b64_json {
+                Some(format!("data:image/png;base64,{}", b64))
+            } else {
+                None
+            }
+        }).collect();
+
+        Ok(images)
+    }
+
+    async fn generate_placeholder_images(
         &self,
         enhanced_prompt: &EnhancedPrompt,
         options: &IllustrationOptions,
     ) -> Result<Vec<String>, String> {
         let mut images = Vec::new();
+        let (width, height) = ImageClient::parse_aspect_ratio(&options.aspect_ratio);
 
         for i in 0..options.variations {
             let seed = chrono::Utc::now().timestamp_millis() + i as i64;
             let image_url = format!(
                 "generated_{}x{}.png?seed={}&prompt={}",
-                self.parse_width(&options.aspect_ratio),
-                self.parse_height(&options.aspect_ratio),
+                width,
+                height,
                 seed,
                 urlencoding::encode(&enhanced_prompt.positive)
             );
@@ -215,7 +323,60 @@ impl IllustrationGenerator {
         )
     }
 
-    async fn generate_character_views(
+    async fn generate_real_character_views(
+        &self,
+        config: &ImageProviderConfig,
+        prompt: &str,
+        style: &ArtStyle,
+    ) -> Result<Vec<CharacterView>, String> {
+        let angles = vec!["front view", "three-quarter view", "side view"];
+        let mut views = Vec::new();
+
+        for (i, angle) in angles.iter().enumerate() {
+            let gen_request = ImageGenerationRequest {
+                prompt: format!("{}, {}", prompt, angle),
+                negative_prompt: Some("low quality, blurry, distorted, multiple characters".to_string()),
+                width: 512,
+                height: 512,
+                steps: Some(25),
+                cfg_scale: Some(7.0),
+                seed: None,
+                num_images: Some(1),
+            };
+
+            match self.image_client.generate_image(config, gen_request).await {
+                Ok(response) => {
+                    if let Some(img) = response.images.first() {
+                        let image = if let Some(ref url) = img.url {
+                            url.clone()
+                        } else if let Some(ref b64) = img.b64_json {
+                            format!("data:image/png;base64,{}", b64)
+                        } else {
+                            format!("character_view_{}.png", i)
+                        };
+
+                        views.push(CharacterView {
+                            angle: angle.replace(" view", "").replace("-", "_"),
+                            image,
+                            embedding: None,
+                        });
+                    }
+                }
+                Err(e) => {
+                    eprintln!("生成角色视图失败: {}", e);
+                    views.push(CharacterView {
+                        angle: angle.replace(" view", "").replace("-", "_"),
+                        image: format!("character_view_{}_error.png", i),
+                        embedding: None,
+                    });
+                }
+            }
+        }
+
+        Ok(views)
+    }
+
+    async fn generate_placeholder_character_views(
         &self,
         prompt: &str,
         style: &ArtStyle,
@@ -275,31 +436,5 @@ impl IllustrationGenerator {
             urlencoding::encode(prompt),
             style
         )
-    }
-
-    fn parse_width(&self, aspect_ratio: &str) -> i32 {
-        match aspect_ratio {
-            "1:1" => 512,
-            "16:9" => 640,
-            "9:16" => 360,
-            "4:3" => 640,
-            "3:4" => 480,
-            "2:3" => 360,
-            "3:2" => 480,
-            _ => 512,
-        }
-    }
-
-    fn parse_height(&self, aspect_ratio: &str) -> i32 {
-        match aspect_ratio {
-            "1:1" => 512,
-            "16:9" => 360,
-            "9:16" => 640,
-            "4:3" => 480,
-            "3:4" => 640,
-            "2:3" => 540,
-            "3:2" => 320,
-            _ => 512,
-        }
     }
 }

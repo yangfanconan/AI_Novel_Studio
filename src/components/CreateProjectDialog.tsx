@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { X } from 'lucide-react';
-import { uiLogger } from '../utils/uiLogger';
+import React, { useState } from "react";
+import { X } from "lucide-react";
+import { uiLogger } from "../utils/uiLogger";
 
 interface CreateProjectDialogProps {
   isOpen: boolean;
@@ -13,13 +13,13 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
   onClose,
   onSubmit,
 }) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [genre, setGenre] = useState('');
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [genre, setGenre] = useState("");
 
   if (!isOpen) return null;
 
-    uiLogger.open('CreateProjectDialog');
+  uiLogger.open("CreateProjectDialog");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,9 +29,9 @@ export const CreateProjectDialog: React.FC<CreateProjectDialogProps> = ({
         description: description.trim() || undefined,
         genre: genre.trim() || undefined,
       });
-      setName('');
-      setDescription('');
-      setGenre('');
+      setName("");
+      setDescription("");
+      setGenre("");
     }
   };
 

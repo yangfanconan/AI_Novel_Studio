@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   X,
   Sparkles,
@@ -11,9 +11,9 @@ import {
   ChevronRight,
   Grid3X3,
   Image,
-  MessageSquare
-} from 'lucide-react';
-import { multimediaService } from '../services/multimedia.service';
+  MessageSquare,
+} from "lucide-react";
+import { multimediaService } from "../services/multimedia.service";
 import type {
   Comic,
   ComicPage,
@@ -21,15 +21,15 @@ import type {
   ComicDialogue,
   ComicGenerationOptions,
   VisualStyle,
-  ComicPanelLayout
-} from '../types/multimedia';
+  ComicPanelLayout,
+} from "../types/multimedia";
 import {
   VisualStyle as VS,
   ComicPanelLayout as CPL,
   VISUAL_STYLE_LABELS,
-  COMIC_PANEL_LAYOUT_LABELS
-} from '../types/multimedia';
-import type { Chapter } from '../types';
+  COMIC_PANEL_LAYOUT_LABELS,
+} from "../types/multimedia";
+import type { Chapter } from "../types";
 
 interface ComicGeneratorDialogProps {
   isOpen: boolean;
@@ -48,7 +48,7 @@ export function ComicGeneratorDialog({
 }: ComicGeneratorDialogProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedChapterId, setSelectedChapterId] = useState<string>('');
+  const [selectedChapterId, setSelectedChapterId] = useState<string>("");
   const [comic, setComic] = useState<Comic | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -59,7 +59,7 @@ export function ComicGeneratorDialog({
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedChapterId(currentChapterId || '');
+      setSelectedChapterId(currentChapterId || "");
       setComic(null);
       setError(null);
       setCurrentPage(0);
@@ -68,7 +68,7 @@ export function ComicGeneratorDialog({
 
   const handleGenerate = async () => {
     if (!selectedChapterId) {
-      setError('请选择一个章节');
+      setError("请选择一个章节");
       return;
     }
 
@@ -79,7 +79,7 @@ export function ComicGeneratorDialog({
     try {
       const result = await multimediaService.generateComic({
         chapterId: selectedChapterId,
-        options
+        options,
       });
       setComic(result);
       setCurrentPage(0);
@@ -98,16 +98,16 @@ export function ComicGeneratorDialog({
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
   const handleExport = () => {
     if (!comic) return;
     const text = formatComicText(comic);
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `漫画脚本_${comic.title}_${new Date().toISOString().slice(0, 10)}.txt`;
     document.body.appendChild(a);
@@ -118,7 +118,7 @@ export function ComicGeneratorDialog({
 
   const formatDialogueText = (dialogue: ComicDialogue): string => {
     let text = `${dialogue.character}: "${dialogue.text}"`;
-    if (dialogue.balloonType !== 'speech') {
+    if (dialogue.balloonType !== "speech") {
       text += ` [${dialogue.balloonType}]`;
     }
     return text;
@@ -133,20 +133,20 @@ export function ComicGeneratorDialog({
     }
     if (panel.caption) text += `旁白: ${panel.caption}\n`;
     if (panel.dialogue?.length > 0) {
-      text += `对白:\n${panel.dialogue.map((d) => `  ${formatDialogueText(d)}`).join('\n')}\n`;
+      text += `对白:\n${panel.dialogue.map((d) => `  ${formatDialogueText(d)}`).join("\n")}\n`;
     }
-    if (panel.soundEffects?.length) text += `音效: ${panel.soundEffects.join(', ')}\n`;
+    if (panel.soundEffects?.length) text += `音效: ${panel.soundEffects.join(", ")}\n`;
     if (panel.visualPrompt) text += `视觉提示词: ${panel.visualPrompt}\n`;
     return text;
   };
 
   const formatPageText = (page: ComicPage): string => {
-    let text = `\n${'═'.repeat(50)}\n`;
+    let text = `\n${"═".repeat(50)}\n`;
     text += `第 ${page.pageNumber} 页\n`;
     text += `布局: ${COMIC_PANEL_LAYOUT_LABELS[page.layout] || page.layout}\n`;
-    text += `${'═'.repeat(50)}\n`;
+    text += `${"═".repeat(50)}\n`;
     page.panels.forEach((panel) => {
-      text += formatPanelText(panel) + '\n';
+      text += formatPanelText(panel) + "\n";
     });
     return text;
   };
@@ -162,9 +162,9 @@ export function ComicGeneratorDialog({
       c.characters.forEach((char) => {
         text += `  - ${char.name}`;
         if (char.appearance) text += ` (${char.appearance})`;
-        text += '\n';
+        text += "\n";
       });
-      text += '\n';
+      text += "\n";
     }
 
     c.pages.forEach((page) => {
@@ -176,18 +176,18 @@ export function ComicGeneratorDialog({
 
   const getBalloonTypeColor = (type: string) => {
     switch (type) {
-      case 'speech':
-        return 'bg-white dark:bg-slate-100';
-      case 'thought':
-        return 'bg-blue-50 dark:bg-blue-900/30';
-      case 'whisper':
-        return 'bg-gray-50 dark:bg-gray-800';
-      case 'shout':
-        return 'bg-red-50 dark:bg-red-900/30';
-      case 'electronic':
-        return 'bg-green-50 dark:bg-green-900/30';
+      case "speech":
+        return "bg-white dark:bg-slate-100";
+      case "thought":
+        return "bg-blue-50 dark:bg-blue-900/30";
+      case "whisper":
+        return "bg-gray-50 dark:bg-gray-800";
+      case "shout":
+        return "bg-red-50 dark:bg-red-900/30";
+      case "electronic":
+        return "bg-green-50 dark:bg-green-900/30";
       default:
-        return 'bg-white dark:bg-slate-100';
+        return "bg-white dark:bg-slate-100";
     }
   };
 
@@ -251,7 +251,7 @@ export function ComicGeneratorDialog({
             onClick={() => setShowOptions(!showOptions)}
             className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
           >
-            {showOptions ? '▼' : '▶'} 高级选项
+            {showOptions ? "▼" : "▶"} 高级选项
           </button>
 
           {showOptions && (
@@ -266,7 +266,9 @@ export function ComicGeneratorDialog({
                   className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                 >
                   {Object.entries(VISUAL_STYLE_LABELS).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -276,11 +278,15 @@ export function ComicGeneratorDialog({
                 </label>
                 <select
                   value={options.pageLayout}
-                  onChange={(e) => setOptions({ ...options, pageLayout: e.target.value as ComicPanelLayout })}
+                  onChange={(e) =>
+                    setOptions({ ...options, pageLayout: e.target.value as ComicPanelLayout })
+                  }
                   className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                 >
                   {Object.entries(COMIC_PANEL_LAYOUT_LABELS).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -293,7 +299,9 @@ export function ComicGeneratorDialog({
                   min={1}
                   max={8}
                   value={options.panelsPerPage}
-                  onChange={(e) => setOptions({ ...options, panelsPerPage: parseInt(e.target.value) || 4 })}
+                  onChange={(e) =>
+                    setOptions({ ...options, panelsPerPage: parseInt(e.target.value) || 4 })
+                  }
                   className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                 />
               </div>
@@ -311,7 +319,9 @@ export function ComicGeneratorDialog({
                   <input
                     type="checkbox"
                     checked={options.includeSoundEffects}
-                    onChange={(e) => setOptions({ ...options, includeSoundEffects: e.target.checked })}
+                    onChange={(e) =>
+                      setOptions({ ...options, includeSoundEffects: e.target.checked })
+                    }
                     className="rounded border-slate-300"
                   />
                   包含音效
@@ -391,7 +401,9 @@ export function ComicGeneratorDialog({
               {comic.characters && comic.characters.length > 0 && (
                 <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">角色</span>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      角色
+                    </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {comic.characters.map((char, index) => (
@@ -414,19 +426,34 @@ export function ComicGeneratorDialog({
                       第 {comic.pages[currentPage].pageNumber} 页
                     </span>
                     <span className="text-xs text-slate-500 dark:text-slate-400">
-                      ({COMIC_PANEL_LAYOUT_LABELS[comic.pages[currentPage].layout as ComicPanelLayout]})
+                      (
+                      {
+                        COMIC_PANEL_LAYOUT_LABELS[
+                          comic.pages[currentPage].layout as ComicPanelLayout
+                        ]
+                      }
+                      )
                     </span>
                   </div>
                 </div>
 
-                <div className="grid gap-4" style={{
-                  gridTemplateColumns: comic.pages[currentPage].layout === CPL.SINGLE ? '1fr' :
-                                       comic.pages[currentPage].layout === CPL.TWO_HORIZONTAL ? 'repeat(2, 1fr)' :
-                                       comic.pages[currentPage].layout === CPL.THREE_HORIZONTAL ? 'repeat(3, 1fr)' :
-                                       comic.pages[currentPage].layout === CPL.FOUR_GRID ? 'repeat(2, 1fr)' :
-                                       comic.pages[currentPage].layout === CPL.SIX_GRID ? 'repeat(3, 1fr)' :
-                                       '1fr'
-                }}>
+                <div
+                  className="grid gap-4"
+                  style={{
+                    gridTemplateColumns:
+                      comic.pages[currentPage].layout === CPL.SINGLE
+                        ? "1fr"
+                        : comic.pages[currentPage].layout === CPL.TWO_HORIZONTAL
+                          ? "repeat(2, 1fr)"
+                          : comic.pages[currentPage].layout === CPL.THREE_HORIZONTAL
+                            ? "repeat(3, 1fr)"
+                            : comic.pages[currentPage].layout === CPL.FOUR_GRID
+                              ? "repeat(2, 1fr)"
+                              : comic.pages[currentPage].layout === CPL.SIX_GRID
+                                ? "repeat(3, 1fr)"
+                                : "1fr",
+                  }}
+                >
                   {comic.pages[currentPage].panels.map((panel, panelIndex) => (
                     <div
                       key={panelIndex}
@@ -492,13 +519,13 @@ export function ComicGeneratorDialog({
                                   <span className="font-medium text-slate-700 dark:text-slate-300">
                                     {d.character}
                                   </span>
-                                  {d.balloonType !== 'speech' && (
-                                    <span className="text-xs text-slate-400">[{d.balloonType}]</span>
+                                  {d.balloonType !== "speech" && (
+                                    <span className="text-xs text-slate-400">
+                                      [{d.balloonType}]
+                                    </span>
                                   )}
                                 </div>
-                                <p className="text-slate-600 dark:text-slate-400">
-                                  "{d.text}"
-                                </p>
+                                <p className="text-slate-600 dark:text-slate-400">"{d.text}"</p>
                               </div>
                             ))}
                           </div>

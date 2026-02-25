@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { X, Save } from 'lucide-react';
-import { invoke } from '@tauri-apps/api/core';
+import React, { useState, useEffect } from "react";
+import { X, Save } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
 import {
   WorldView,
   CreateWorldViewRequest,
   UpdateWorldViewRequest,
   WorldViewTimelineEvent,
   CreateWorldViewTimelineEventRequest,
-} from '../types';
+} from "../types";
 
 interface WorldViewEditorProps {
   worldView: WorldView | null;
@@ -18,27 +18,27 @@ interface WorldViewEditorProps {
 }
 
 const CATEGORIES = [
-  { id: 'geography', name: '地理环境', icon: '🌍' },
-  { id: 'history', name: '历史背景', icon: '📜' },
-  { id: 'culture', name: '文化风俗', icon: '🎭' },
-  { id: 'politics', name: '政治制度', icon: '🏛️' },
-  { id: 'economy', name: '经济体系', icon: '💰' },
-  { id: 'magic', name: '魔法/科技', icon: '✨' },
-  { id: 'religion', name: '宗教信仰', icon: '🕍' },
-  { id: 'races', name: '种族生物', icon: '👥' },
-  { id: 'other', name: '其他', icon: '📝' },
+  { id: "geography", name: "地理环境", icon: "🌍" },
+  { id: "history", name: "历史背景", icon: "📜" },
+  { id: "culture", name: "文化风俗", icon: "🎭" },
+  { id: "politics", name: "政治制度", icon: "🏛️" },
+  { id: "economy", name: "经济体系", icon: "💰" },
+  { id: "magic", name: "魔法/科技", icon: "✨" },
+  { id: "religion", name: "宗教信仰", icon: "🕍" },
+  { id: "races", name: "种族生物", icon: "👥" },
+  { id: "other", name: "其他", icon: "📝" },
 ];
 
 const EVENT_TYPES = [
-  { value: 'discovery', label: '发现/诞生', icon: '💡' },
-  { value: 'war', label: '战争冲突', icon: '⚔️' },
-  { value: 'treaty', label: '条约签订', icon: '📜' },
-  { value: 'disaster', label: '灾难事件', icon: '🌋' },
-  { value: 'revolution', label: '革命变革', icon: '🔥' },
-  { value: 'migration', label: '人口迁移', icon: '🚶' },
-  { value: 'development', label: '发展进步', icon: '📈' },
-  { value: 'decline', label: '衰落消亡', icon: '📉' },
-  { value: 'other', label: '其他', icon: '📝' },
+  { value: "discovery", label: "发现/诞生", icon: "💡" },
+  { value: "war", label: "战争冲突", icon: "⚔️" },
+  { value: "treaty", label: "条约签订", icon: "📜" },
+  { value: "disaster", label: "灾难事件", icon: "🌋" },
+  { value: "revolution", label: "革命变革", icon: "🔥" },
+  { value: "migration", label: "人口迁移", icon: "🚶" },
+  { value: "development", label: "发展进步", icon: "📈" },
+  { value: "decline", label: "衰落消亡", icon: "📉" },
+  { value: "other", label: "其他", icon: "📝" },
 ];
 
 export function WorldViewEditor({
@@ -48,12 +48,12 @@ export function WorldViewEditor({
   onSave,
   initialTitle,
 }: WorldViewEditorProps) {
-  const [activeTab, setActiveTab] = useState<'basic' | 'timeline'>('basic');
-  const [category, setCategory] = useState('geography');
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [tags, setTags] = useState('');
-  const [status, setStatus] = useState('draft');
+  const [activeTab, setActiveTab] = useState<"basic" | "timeline">("basic");
+  const [category, setCategory] = useState("geography");
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [tags, setTags] = useState("");
+  const [status, setStatus] = useState("draft");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,31 +62,31 @@ export function WorldViewEditor({
   const [showEventForm, setShowEventForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<WorldViewTimelineEvent | null>(null);
   const [eventForm, setEventForm] = useState({
-    event_type: 'discovery',
-    event_title: '',
-    event_description: '',
-    story_time: '',
-    impact_scope: '',
-    related_characters: '',
+    event_type: "discovery",
+    event_title: "",
+    event_description: "",
+    story_time: "",
+    impact_scope: "",
+    related_characters: "",
   });
 
   useEffect(() => {
     if (worldView) {
-      setCategory(worldView.category || 'geography');
+      setCategory(worldView.category || "geography");
       setTitle(worldView.title);
       setContent(worldView.content);
-      setTags(worldView.tags || '');
+      setTags(worldView.tags || "");
       setStatus(worldView.status);
       loadTimelineEvents(worldView.id);
     } else {
-      setCategory('other');
-      setTitle(initialTitle || '');
-      setContent('');
-      setTags('');
-      setStatus('draft');
+      setCategory("other");
+      setTitle(initialTitle || "");
+      setContent("");
+      setTags("");
+      setStatus("draft");
       setTimelineEvents([]);
     }
-    setActiveTab('basic');
+    setActiveTab("basic");
     setShowEventForm(false);
     setEditingEvent(null);
   }, [worldView, initialTitle]);
@@ -94,12 +94,12 @@ export function WorldViewEditor({
   const loadTimelineEvents = async (worldviewId: string) => {
     setIsLoadingTimeline(true);
     try {
-      const events = await invoke<WorldViewTimelineEvent[]>('get_worldview_timeline', {
+      const events = await invoke<WorldViewTimelineEvent[]>("get_worldview_timeline", {
         worldviewId,
       });
       setTimelineEvents(events);
     } catch (error) {
-      console.error('Failed to load timeline events:', error);
+      console.error("Failed to load timeline events:", error);
       setTimelineEvents([]);
     } finally {
       setIsLoadingTimeline(false);
@@ -121,13 +121,13 @@ export function WorldViewEditor({
         sort_order: timelineEvents.length,
       };
 
-      const newEvent = await invoke<WorldViewTimelineEvent>('create_worldview_timeline_event', {
+      const newEvent = await invoke<WorldViewTimelineEvent>("create_worldview_timeline_event", {
         request,
       });
       setTimelineEvents([...timelineEvents, newEvent]);
       resetEventForm();
     } catch (error) {
-      console.error('Failed to create event:', error);
+      console.error("Failed to create event:", error);
     }
   };
 
@@ -135,37 +135,32 @@ export function WorldViewEditor({
     if (!editingEvent) return;
 
     try {
-      const updatedEvent = await invoke<WorldViewTimelineEvent>(
-        'update_worldview_timeline_event',
-        {
-          eventId: editingEvent.id,
-          request: {
-            event_type: eventForm.event_type,
-            event_title: eventForm.event_title,
-            event_description: eventForm.event_description,
-            story_time: eventForm.story_time || null,
-            impact_scope: eventForm.impact_scope || null,
-            related_characters: eventForm.related_characters || null,
-          },
-        }
-      );
-      setTimelineEvents(
-        timelineEvents.map((e) => (e.id === updatedEvent.id ? updatedEvent : e))
-      );
+      const updatedEvent = await invoke<WorldViewTimelineEvent>("update_worldview_timeline_event", {
+        eventId: editingEvent.id,
+        request: {
+          event_type: eventForm.event_type,
+          event_title: eventForm.event_title,
+          event_description: eventForm.event_description,
+          story_time: eventForm.story_time || null,
+          impact_scope: eventForm.impact_scope || null,
+          related_characters: eventForm.related_characters || null,
+        },
+      });
+      setTimelineEvents(timelineEvents.map((e) => (e.id === updatedEvent.id ? updatedEvent : e)));
       resetEventForm();
     } catch (error) {
-      console.error('Failed to update event:', error);
+      console.error("Failed to update event:", error);
     }
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (!confirm('确定要删除这个事件吗？')) return;
+    if (!confirm("确定要删除这个事件吗？")) return;
 
     try {
-      await invoke('delete_worldview_timeline_event', { eventId });
+      await invoke("delete_worldview_timeline_event", { eventId });
       setTimelineEvents(timelineEvents.filter((e) => e.id !== eventId));
     } catch (error) {
-      console.error('Failed to delete event:', error);
+      console.error("Failed to delete event:", error);
     }
   };
 
@@ -173,12 +168,12 @@ export function WorldViewEditor({
     setShowEventForm(false);
     setEditingEvent(null);
     setEventForm({
-      event_type: 'discovery',
-      event_title: '',
-      event_description: '',
-      story_time: '',
-      impact_scope: '',
-      related_characters: '',
+      event_type: "discovery",
+      event_title: "",
+      event_description: "",
+      story_time: "",
+      impact_scope: "",
+      related_characters: "",
     });
   };
 
@@ -188,9 +183,9 @@ export function WorldViewEditor({
       event_type: event.event_type,
       event_title: event.event_title,
       event_description: event.event_description,
-      story_time: event.story_time || '',
-      impact_scope: event.impact_scope || '',
-      related_characters: event.related_characters || '',
+      story_time: event.story_time || "",
+      impact_scope: event.impact_scope || "",
+      related_characters: event.related_characters || "",
     });
     setShowEventForm(true);
   };
@@ -210,7 +205,7 @@ export function WorldViewEditor({
           tags: tags || undefined,
           status,
         };
-        await invoke('update_world_view', { request: updateData });
+        await invoke("update_world_view", { request: updateData });
       } else {
         const createData: CreateWorldViewRequest = {
           project_id: projectId,
@@ -219,7 +214,7 @@ export function WorldViewEditor({
           content,
           tags: tags || undefined,
         };
-        await invoke('create_world_view', { request: createData });
+        await invoke("create_world_view", { request: createData });
       }
       onSave();
     } catch (err) {
@@ -238,7 +233,7 @@ export function WorldViewEditor({
       <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-            {worldView?.id ? '编辑世界观' : '新建世界观'}
+            {worldView?.id ? "编辑世界观" : "新建世界观"}
           </h2>
           <button
             onClick={onClose}
@@ -250,8 +245,8 @@ export function WorldViewEditor({
 
         <div className="flex border-b border-gray-200">
           {[
-            { id: 'basic', label: '基本信息', icon: '🌍' },
-            { id: 'timeline', label: '事件时间线', icon: '📅' },
+            { id: "basic", label: "基本信息", icon: "🌍" },
+            { id: "timeline", label: "事件时间线", icon: "📅" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -259,8 +254,8 @@ export function WorldViewEditor({
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
               {tab.icon} {tab.label}
@@ -275,7 +270,7 @@ export function WorldViewEditor({
             </div>
           )}
 
-          {activeTab === 'basic' && (
+          {activeTab === "basic" && (
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
@@ -289,8 +284,8 @@ export function WorldViewEditor({
                       onClick={() => setCategory(cat.id)}
                       className={`p-3 rounded-lg text-left transition-colors ${
                         category === cat.id
-                          ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500'
-                          : 'bg-slate-50 dark:bg-slate-800 border-2 border-transparent hover:bg-slate-100 dark:hover:bg-slate-700'
+                          ? "bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500"
+                          : "bg-slate-50 dark:bg-slate-800 border-2 border-transparent hover:bg-slate-100 dark:hover:bg-slate-700"
                       }`}
                     >
                       <div className="flex items-center gap-2">
@@ -364,7 +359,7 @@ export function WorldViewEditor({
             </div>
           )}
 
-          {activeTab === 'timeline' && (
+          {activeTab === "timeline" && (
             <div className="space-y-4">
               {!worldView ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -486,7 +481,7 @@ export function WorldViewEditor({
                           disabled={!eventForm.event_title.trim()}
                           className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
                         >
-                          {editingEvent ? '更新' : '添加'}
+                          {editingEvent ? "更新" : "添加"}
                         </button>
                       </div>
                     </div>
@@ -588,7 +583,7 @@ export function WorldViewEditor({
               className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" />
-              {loading ? '保存中...' : '保存'}
+              {loading ? "保存中..." : "保存"}
             </button>
           </div>
         </form>

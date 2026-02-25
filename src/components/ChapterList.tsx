@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { BookOpen, Plus, MoreHorizontal, Trash2, Edit2, Download } from 'lucide-react';
-import { ConfirmDialog } from './ConfirmDialog';
-import type { Chapter } from '../types';
+import React, { useState } from "react";
+import { BookOpen, Plus, MoreHorizontal, Trash2, Edit2, Download } from "lucide-react";
+import { ConfirmDialog } from "./ConfirmDialog";
+import type { Chapter } from "../types";
 
 interface ChapterListProps {
   chapters: Chapter[];
@@ -30,7 +30,7 @@ export const ChapterList: React.FC<ChapterListProps> = ({
   }>({
     isOpen: false,
     chapterId: null,
-    chapterTitle: '',
+    chapterTitle: "",
   });
 
   const handleMenuClick = (e: React.MouseEvent, chapterId: string) => {
@@ -53,11 +53,11 @@ export const ChapterList: React.FC<ChapterListProps> = ({
     if (deleteConfirm.chapterId) {
       onDeleteChapter(deleteConfirm.chapterId);
     }
-    setDeleteConfirm({ isOpen: false, chapterId: null, chapterTitle: '' });
+    setDeleteConfirm({ isOpen: false, chapterId: null, chapterTitle: "" });
   };
 
   const handleDeleteCancel = () => {
-    setDeleteConfirm({ isOpen: false, chapterId: null, chapterTitle: '' });
+    setDeleteConfirm({ isOpen: false, chapterId: null, chapterTitle: "" });
   };
 
   const handleRename = (e: React.MouseEvent) => {
@@ -95,8 +95,8 @@ export const ChapterList: React.FC<ChapterListProps> = ({
                   onClick={() => onSelectChapter(chapter)}
                   className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
                     currentChapter?.id === chapter.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-accent hover:text-accent-foreground'
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-accent hover:text-accent-foreground"
                   }`}
                 >
                   <div className="flex items-start justify-between">
@@ -104,9 +104,7 @@ export const ChapterList: React.FC<ChapterListProps> = ({
                       <p className="font-medium truncate">
                         第{index + 1}章 {chapter.title}
                       </p>
-                      <p className="text-xs mt-1 opacity-60">
-                        {chapter.word_count} 字
-                      </p>
+                      <p className="text-xs mt-1 opacity-60">{chapter.word_count} 字</p>
                     </div>
                     <button
                       onClick={(e) => handleMenuClick(e, chapter.id)}

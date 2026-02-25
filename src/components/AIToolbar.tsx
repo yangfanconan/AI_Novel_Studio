@@ -1,15 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { Sparkles, RefreshCw, Loader2, ChevronDown, AlignLeft, Film, FileText, BookOpen, Palette } from 'lucide-react';
-import { aiService } from '../services/ai.service';
-import { aiGeneratorService } from '../services/api';
-import { logger } from '../utils/logger';
-import { debugLogger } from '../utils/debugLogger';
-import { StoryboardDialog } from './StoryboardDialog';
-import { StoryboardGeneratorDialog } from './StoryboardGeneratorDialog';
-import { ScriptConverterDialog } from './ScriptConverterDialog';
-import { ComicGeneratorDialog } from './ComicGeneratorDialog';
-import { IllustrationGeneratorDialog } from './IllustrationGeneratorDialog';
-import type { Chapter, FormatOptions, FormattedContent, Character } from '../types';
+import React, { useState, useEffect } from "react";
+import {
+  Sparkles,
+  RefreshCw,
+  Loader2,
+  ChevronDown,
+  AlignLeft,
+  Film,
+  FileText,
+  BookOpen,
+  Palette,
+} from "lucide-react";
+import { aiService } from "../services/ai.service";
+import { aiGeneratorService } from "../services/api";
+import { logger } from "../utils/logger";
+import { debugLogger } from "../utils/debugLogger";
+import { StoryboardDialog } from "./StoryboardDialog";
+import { StoryboardGeneratorDialog } from "./StoryboardGeneratorDialog";
+import { ScriptConverterDialog } from "./ScriptConverterDialog";
+import { ComicGeneratorDialog } from "./ComicGeneratorDialog";
+import { IllustrationGeneratorDialog } from "./IllustrationGeneratorDialog";
+import type { Chapter, FormatOptions, FormattedContent, Character } from "../types";
 
 interface AIToolbarProps {
   content: string;
@@ -35,7 +45,7 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
   selectedText,
 }) => {
   const [models, setModels] = useState<string[]>([]);
-  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [selectedModel, setSelectedModel] = useState<string>("");
   const [isContinuing, setIsContinuing] = useState(false);
   const [isRewriting, setIsRewriting] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -54,22 +64,26 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
   }, []);
 
   const loadModels = async () => {
-    debugLogger.info('Loading AI models', { component: 'AIToolbar', feature: 'ai-toolbar', action: 'load_models' });
+    debugLogger.info("Loading AI models", {
+      component: "AIToolbar",
+      feature: "ai-toolbar",
+      action: "load_models",
+    });
     try {
       const [availableModels, defaultModel] = await Promise.all([
         aiService.getModels(),
-        aiService.getDefaultModel()
+        aiService.getDefaultModel(),
       ]);
       setModels(availableModels);
-      debugLogger.info('AI models loaded', { 
-        count: availableModels.length, 
+      debugLogger.info("AI models loaded", {
+        count: availableModels.length,
         models: availableModels,
         defaultModel,
-        component: 'AIToolbar',
-        feature: 'ai-toolbar',
-        action: 'load_models_success'
+        component: "AIToolbar",
+        feature: "ai-toolbar",
+        action: "load_models_success",
       });
-      
+
       if (availableModels.length > 0 && !selectedModel) {
         if (defaultModel && availableModels.includes(defaultModel)) {
           setSelectedModel(defaultModel);
@@ -78,100 +92,110 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
         }
       }
     } catch (error) {
-      logger.error('Failed to load AI models', error, { feature: 'ai-toolbar' });
-      debugLogger.error('Failed to load AI models', error as Error, { component: 'AIToolbar', feature: 'ai-toolbar' });
+      logger.error("Failed to load AI models", error, { feature: "ai-toolbar" });
+      debugLogger.error("Failed to load AI models", error as Error, {
+        component: "AIToolbar",
+        feature: "ai-toolbar",
+      });
     }
   };
 
   const handleContinue = async () => {
-    debugLogger.info('AI Continue button clicked', { 
-      selectedModel, 
-      contentLength: content.length, 
+    debugLogger.info("AI Continue button clicked", {
+      selectedModel,
+      contentLength: content.length,
       isContinuing,
-      component: 'AIToolbar',
-      feature: 'ai-toolbar',
-      action: 'continue_button_clicked'
+      component: "AIToolbar",
+      feature: "ai-toolbar",
+      action: "continue_button_clicked",
     });
-    
+
     if (!selectedModel) {
-      debugLogger.warn('No model selected', { component: 'AIToolbar', feature: 'ai-toolbar' });
+      debugLogger.warn("No model selected", { component: "AIToolbar", feature: "ai-toolbar" });
       return;
     }
-    
+
     if (!content.trim()) {
-      debugLogger.warn('Content is empty', { component: 'AIToolbar', feature: 'ai-toolbar' });
+      debugLogger.warn("Content is empty", { component: "AIToolbar", feature: "ai-toolbar" });
       return;
     }
-    
+
     if (isContinuing) {
-      debugLogger.warn('Already continuing', { component: 'AIToolbar', feature: 'ai-toolbar' });
+      debugLogger.warn("Already continuing", { component: "AIToolbar", feature: "ai-toolbar" });
       return;
     }
 
     setIsContinuing(true);
     setError(null);
-    logger.info('Starting AI continuation', { 
-      feature: 'ai-toolbar',
-      data: { model: selectedModel, contentLength: content.length }
+    logger.info("Starting AI continuation", {
+      feature: "ai-toolbar",
+      data: { model: selectedModel, contentLength: content.length },
     });
-    debugLogger.info('Starting AI continuation', { 
-      model: selectedModel, 
+    debugLogger.info("Starting AI continuation", {
+      model: selectedModel,
       contentLength: content.length,
-      component: 'AIToolbar',
-      feature: 'ai-toolbar',
-      action: 'continue_start'
+      component: "AIToolbar",
+      feature: "ai-toolbar",
+      action: "continue_start",
     });
 
     try {
       const generated = await aiService.continueNovel({
         model_id: selectedModel,
         context: content,
-        instruction: '请续写下一段内容，保持文风和故事连贯性。',
+        instruction: "请续写下一段内容，保持文风和故事连贯性。",
         project_id: projectId,
       });
 
-      debugLogger.info('AI continuation result received', { 
+      debugLogger.info("AI continuation result received", {
         resultLength: generated.length,
         resultPreview: generated.substring(0, 100),
-        component: 'AIToolbar',
-        feature: 'ai-toolbar',
-        action: 'continue_result_received'
+        component: "AIToolbar",
+        feature: "ai-toolbar",
+        action: "continue_result_received",
       });
-      console.log('AI continuation result:', generated);
+      console.log("AI continuation result:", generated);
       onInsert(generated);
-      logger.info('AI continuation completed', { 
-        feature: 'ai-toolbar',
-        resultLength: generated.length
-      });
-      debugLogger.info('AI continuation completed', { 
+      logger.info("AI continuation completed", {
+        feature: "ai-toolbar",
         resultLength: generated.length,
-        component: 'AIToolbar',
-        feature: 'ai-toolbar',
-        action: 'continue_completed'
+      });
+      debugLogger.info("AI continuation completed", {
+        resultLength: generated.length,
+        component: "AIToolbar",
+        feature: "ai-toolbar",
+        action: "continue_completed",
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const isAuthError = errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('令牌已过期');
-      
+      const isAuthError =
+        errorMessage.includes("401") ||
+        errorMessage.includes("Unauthorized") ||
+        errorMessage.includes("令牌已过期");
+
       if (isAuthError) {
-        console.warn('API密钥已过期或无效，请在设置中更新');
-        setError('API密钥已过期或无效，请检查设置');
-        debugLogger.warn('API密钥验证失败', { 
+        console.warn("API密钥已过期或无效，请在设置中更新");
+        setError("API密钥已过期或无效，请检查设置");
+        debugLogger.warn("API密钥验证失败", {
           errorMessage,
-          component: 'AIToolbar',
-          feature: 'ai-toolbar',
-          action: 'continue_failed'
+          component: "AIToolbar",
+          feature: "ai-toolbar",
+          action: "continue_failed",
         });
       } else {
-        console.error('AI continuation error:', errorMessage);
+        console.error("AI continuation error:", errorMessage);
         setError(`生成失败: ${errorMessage}`);
-        logger.error('AI continuation failed', error, { feature: 'ai-toolbar' });
-        debugLogger.error(`AI continuation failed: ${errorMessage}`, error instanceof Error ? error : new Error(errorMessage), { 
-          errorMessage,
-          component: 'AIToolbar',
-          feature: 'ai-toolbar',
-          action: 'continue_failed'
-        });
+        logger.error("AI continuation failed", error, { feature: "ai-toolbar" });
+        debugLogger.error(
+          `AI continuation failed: ${errorMessage}`,
+          error instanceof Error ? error : new Error(errorMessage),
+          {
+            errorMessage,
+            component: "AIToolbar",
+            feature: "ai-toolbar",
+            action: "continue_failed",
+          }
+        );
       }
     } finally {
       setIsContinuing(false);
@@ -179,69 +203,73 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
   };
 
   const handleRewrite = async () => {
-    console.log('AI Rewrite button clicked', { selectedModel, contentLength: content.length, isRewriting });
-    
+    console.log("AI Rewrite button clicked", {
+      selectedModel,
+      contentLength: content.length,
+      isRewriting,
+    });
+
     if (!selectedModel) {
-      console.warn('No model selected');
+      console.warn("No model selected");
       return;
     }
-    
+
     if (!content.trim()) {
-      console.warn('Content is empty');
+      console.warn("Content is empty");
       return;
     }
-    
+
     if (isRewriting) {
-      console.warn('Already rewriting');
+      console.warn("Already rewriting");
       return;
     }
 
     setIsRewriting(true);
-    logger.info('Starting AI rewrite', { 
-      feature: 'ai-toolbar',
-      data: { model: selectedModel, contentLength: content.length }
+    logger.info("Starting AI rewrite", {
+      feature: "ai-toolbar",
+      data: { model: selectedModel, contentLength: content.length },
     });
 
     try {
       const rewritten = await aiService.rewriteContent({
         model_id: selectedModel,
         content,
-        instruction: '请优化这段文字，提升文采和表达。',
+        instruction: "请优化这段文字，提升文采和表达。",
       });
 
-      console.log('AI rewrite result:', rewritten);
+      console.log("AI rewrite result:", rewritten);
       onRewrite(rewritten);
-      logger.info('AI rewrite completed', { 
-        feature: 'ai-toolbar',
-        resultLength: rewritten.length
+      logger.info("AI rewrite completed", {
+        feature: "ai-toolbar",
+        resultLength: rewritten.length,
       });
     } catch (error) {
-      console.error('AI rewrite error:', error);
-      logger.error('AI rewrite failed', error, { feature: 'ai-toolbar' });
+      console.error("AI rewrite error:", error);
+      logger.error("AI rewrite failed", error, { feature: "ai-toolbar" });
     } finally {
       setIsRewriting(false);
     }
   };
 
-  const handleFormat = async (style: FormatOptions['style']) => {
+  const handleFormat = async (style: FormatOptions["style"]) => {
     if (!content.trim()) return;
-    
+
     setIsFormatting(true);
     try {
       const options: FormatOptions = {
         style,
         indent_size: 2,
-        line_spacing: '1.5',
+        line_spacing: "1.5",
         paragraph_spacing: 1,
         preserve_dialogue_format: true,
         auto_punctuate: true,
       };
-      
+
       const result: FormattedContent = await aiGeneratorService.formatContent(content, options);
       onRewrite(result.formatted_content);
-      console.log('Format changes applied:', result.changes_applied);
+      console.log("Format changes applied:", result.changes_applied);
     } catch (error) {
-      console.error('Format error:', error);
+      console.error("Format error:", error);
     } finally {
       setIsFormatting(false);
       setShowFormatMenu(false);
@@ -253,10 +281,7 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
       {error && (
         <div className="px-4 py-2 bg-red-50 border-b border-red-200 flex items-center justify-between">
           <span className="text-sm text-red-600">{error}</span>
-          <button
-            onClick={() => setError(null)}
-            className="text-red-400 hover:text-red-600"
-          >
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
             ✕
           </button>
         </div>
@@ -275,16 +300,13 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
             disabled={disabled || models.length === 0}
             className="flex items-center gap-1 px-2 py-1 text-sm bg-muted rounded-md hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {selectedModel || '选择模型'}
+            {selectedModel || "选择模型"}
             <ChevronDown className="w-3 h-3" />
           </button>
 
           {showMenu && models.length > 0 && (
             <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowMenu(false)}
-              />
+              <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
               <div className="absolute top-full left-0 mt-1 w-48 bg-popover border border-border rounded-md shadow-lg z-20 max-h-48 overflow-y-auto">
                 {models.map((model) => (
                   <button
@@ -294,7 +316,7 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
                       setShowMenu(false);
                     }}
                     className={`w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors ${
-                      selectedModel === model ? 'bg-accent' : ''
+                      selectedModel === model ? "bg-accent" : ""
                     }`}
                   >
                     {model}
@@ -368,31 +390,28 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
 
           {showFormatMenu && (
             <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowFormatMenu(false)}
-              />
+              <div className="fixed inset-0 z-10" onClick={() => setShowFormatMenu(false)} />
               <div className="absolute top-full left-0 mt-1 w-36 bg-popover border border-border rounded-md shadow-lg z-20">
                 <button
-                  onClick={() => handleFormat('standard')}
+                  onClick={() => handleFormat("standard")}
                   className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
                 >
                   标准格式
                 </button>
                 <button
-                  onClick={() => handleFormat('novel')}
+                  onClick={() => handleFormat("novel")}
                   className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
                 >
                   小说格式
                 </button>
                 <button
-                  onClick={() => handleFormat('script')}
+                  onClick={() => handleFormat("script")}
                   className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
                 >
                   剧本格式
                 </button>
                 <button
-                  onClick={() => handleFormat('poetry')}
+                  onClick={() => handleFormat("poetry")}
                   className="w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
                 >
                   诗歌格式
@@ -426,10 +445,7 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
 
           {showMultimediaMenu && (
             <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowMultimediaMenu(false)}
-              />
+              <div className="fixed inset-0 z-10" onClick={() => setShowMultimediaMenu(false)} />
               <div className="absolute top-full left-0 mt-1 w-44 bg-popover border border-border rounded-md shadow-lg z-20">
                 <button
                   onClick={() => {

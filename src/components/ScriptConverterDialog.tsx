@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   X,
   Sparkles,
@@ -10,21 +10,18 @@ import {
   ChevronDown,
   ChevronRight,
   Users,
-  MapPin
-} from 'lucide-react';
-import { multimediaService } from '../services/multimedia.service';
+  MapPin,
+} from "lucide-react";
+import { multimediaService } from "../services/multimedia.service";
 import type {
   Script,
   ScriptScene,
   ScriptDialogue,
   ScriptConversionOptions,
-  ScriptFormat
-} from '../types/multimedia';
-import {
-  ScriptFormat as SF,
-  SCRIPT_FORMAT_LABELS
-} from '../types/multimedia';
-import type { Chapter } from '../types';
+  ScriptFormat,
+} from "../types/multimedia";
+import { ScriptFormat as SF, SCRIPT_FORMAT_LABELS } from "../types/multimedia";
+import type { Chapter } from "../types";
 
 interface ScriptConverterDialogProps {
   isOpen: boolean;
@@ -43,7 +40,7 @@ export function ScriptConverterDialog({
 }: ScriptConverterDialogProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedChapterId, setSelectedChapterId] = useState<string>('');
+  const [selectedChapterId, setSelectedChapterId] = useState<string>("");
   const [script, setScript] = useState<Script | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [expandedScenes, setExpandedScenes] = useState<Set<number>>(new Set([0]));
@@ -54,7 +51,7 @@ export function ScriptConverterDialog({
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedChapterId(currentChapterId || '');
+      setSelectedChapterId(currentChapterId || "");
       setScript(null);
       setError(null);
       setExpandedScenes(new Set([0]));
@@ -63,7 +60,7 @@ export function ScriptConverterDialog({
 
   const handleGenerate = async () => {
     if (!selectedChapterId) {
-      setError('请选择一个章节');
+      setError("请选择一个章节");
       return;
     }
 
@@ -74,7 +71,7 @@ export function ScriptConverterDialog({
     try {
       const result = await multimediaService.generateScript({
         chapterId: selectedChapterId,
-        options
+        options,
       });
       setScript(result);
       setExpandedScenes(new Set([0]));
@@ -103,7 +100,7 @@ export function ScriptConverterDialog({
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
@@ -115,16 +112,16 @@ export function ScriptConverterDialog({
       setCopiedIndex(-1);
       setTimeout(() => setCopiedIndex(null), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
   const handleExport = () => {
     if (!script) return;
     const text = formatScriptText(script);
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `剧本_${script.title}_${new Date().toISOString().slice(0, 10)}.txt`;
     document.body.appendChild(a);
@@ -143,50 +140,50 @@ export function ScriptConverterDialog({
   };
 
   const formatSceneText = (scene: ScriptScene): string => {
-    let text = `\n${'='.repeat(60)}\n`;
+    let text = `\n${"=".repeat(60)}\n`;
     text += `场景 ${scene.sceneNumber}\n`;
-    text += `${'='.repeat(60)}\n\n`;
+    text += `${"=".repeat(60)}\n\n`;
     text += `${scene.heading}\n\n`;
     text += `${scene.action}\n\n`;
-    
+
     if (scene.dialogue?.length > 0) {
-      text += `${'─'.repeat(40)}\n`;
+      text += `${"─".repeat(40)}\n`;
       scene.dialogue.forEach((d) => {
-        text += formatDialogue(d) + '\n';
+        text += formatDialogue(d) + "\n";
       });
     }
-    
+
     if (scene.notes) {
       text += `\n[备注: ${scene.notes}]\n`;
     }
-    
+
     return text;
   };
 
   const formatScriptText = (s: Script): string => {
     let text = `${s.title}\n`;
-    text += `${'='.repeat(60)}\n\n`;
+    text += `${"=".repeat(60)}\n\n`;
     text += `格式: ${SCRIPT_FORMAT_LABELS[s.format as ScriptFormat] || s.format}\n`;
     text += `生成时间: ${s.metadata.generatedAt}\n\n`;
-    
+
     if (s.characters?.length > 0) {
       text += `角色列表:\n`;
       s.characters.forEach((char) => {
         text += `  - ${char.name}`;
         if (char.description) text += `: ${char.description}`;
-        text += '\n';
+        text += "\n";
       });
-      text += '\n';
+      text += "\n";
     }
-    
-    text += `${'═'.repeat(60)}\n`;
+
+    text += `${"═".repeat(60)}\n`;
     text += `剧本正文\n`;
-    text += `${'═'.repeat(60)}\n`;
-    
+    text += `${"═".repeat(60)}\n`;
+
     s.scenes.forEach((scene) => {
       text += formatSceneText(scene);
     });
-    
+
     return text;
   };
 
@@ -250,7 +247,11 @@ export function ScriptConverterDialog({
             onClick={() => setShowOptions(!showOptions)}
             className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
           >
-            {showOptions ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            {showOptions ? (
+              <ChevronDown className="w-4 h-4" />
+            ) : (
+              <ChevronRight className="w-4 h-4" />
+            )}
             转换选项
           </button>
 
@@ -262,11 +263,15 @@ export function ScriptConverterDialog({
                 </label>
                 <select
                   value={options.targetFormat}
-                  onChange={(e) => setOptions({ ...options, targetFormat: e.target.value as ScriptFormat })}
+                  onChange={(e) =>
+                    setOptions({ ...options, targetFormat: e.target.value as ScriptFormat })
+                  }
                   className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                 >
                   {Object.entries(SCRIPT_FORMAT_LABELS).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -276,7 +281,12 @@ export function ScriptConverterDialog({
                 </label>
                 <select
                   value={options.dialogueStyle}
-                  onChange={(e) => setOptions({ ...options, dialogueStyle: e.target.value as 'standard' | 'naturalistic' | 'stylized' })}
+                  onChange={(e) =>
+                    setOptions({
+                      ...options,
+                      dialogueStyle: e.target.value as "standard" | "naturalistic" | "stylized",
+                    })
+                  }
                   className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                 >
                   <option value="standard">标准</option>
@@ -289,7 +299,9 @@ export function ScriptConverterDialog({
                   <input
                     type="checkbox"
                     checked={options.includeSceneNumbers}
-                    onChange={(e) => setOptions({ ...options, includeSceneNumbers: e.target.checked })}
+                    onChange={(e) =>
+                      setOptions({ ...options, includeSceneNumbers: e.target.checked })
+                    }
                     className="rounded border-slate-300"
                   />
                   场景编号
@@ -298,7 +310,9 @@ export function ScriptConverterDialog({
                   <input
                     type="checkbox"
                     checked={options.includeCharacterDescriptions}
-                    onChange={(e) => setOptions({ ...options, includeCharacterDescriptions: e.target.checked })}
+                    onChange={(e) =>
+                      setOptions({ ...options, includeCharacterDescriptions: e.target.checked })
+                    }
                     className="rounded border-slate-300"
                   />
                   角色描述
@@ -307,7 +321,9 @@ export function ScriptConverterDialog({
                   <input
                     type="checkbox"
                     checked={options.includeCameraDirections}
-                    onChange={(e) => setOptions({ ...options, includeCameraDirections: e.target.checked })}
+                    onChange={(e) =>
+                      setOptions({ ...options, includeCameraDirections: e.target.checked })
+                    }
                     className="rounded border-slate-300"
                   />
                   镜头指示
@@ -383,7 +399,9 @@ export function ScriptConverterDialog({
                 <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <Users className="w-4 h-4 text-slate-500" />
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">角色列表</span>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      角色列表
+                    </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {script.characters.map((char, index) => (
@@ -468,9 +486,7 @@ export function ScriptConverterDialog({
                                   ({d.parenthetical})
                                 </div>
                               )}
-                              <div className="text-slate-700 dark:text-slate-300">
-                                {d.text}
-                              </div>
+                              <div className="text-slate-700 dark:text-slate-300">{d.text}</div>
                             </div>
                           ))}
                         </div>

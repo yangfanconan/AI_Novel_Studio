@@ -1,607 +1,467 @@
-# AI Novel Studio
+<div align="center">
 
-AI小说创作工作室 - 一个专业的AI辅助小说创作工具
+# 🚀 AI Novel Studio
 
-## 项目简介
+[![Tauri](https://img.shields.io/badge/Tauri-2.0.0-blue?logo=tauri&logoColor=white)](https://tauri.app)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/Status-Active-success)](https://github.com/yangfan-ai/ai-novel-studio)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-informational)](https://github.com/tauri-apps/tauri)
 
-AI Novel Studio 是一个基于 Tauri + React + TypeScript 开发的桌面应用，旨在为专业小说创作者提供全流程的创作支持。应用集成了 AI 辅助创作、项目管理、素材管理、多媒体生成等功能。
+**[English](#english) | [中文](#中文)**
 
-## 技术栈
+</div>
 
-### 前端
-- **框架**: React 18 + TypeScript 5
-- **UI库**: TailwindCSS + Lucide Icons
-- **状态管理**: Zustand
-- **构建工具**: Vite
+---
 
-### 后端
-- **核心框架**: Tauri 2.0 (Rust)
-- **数据库**: SQLite (rusqlite)
-- **异步运行时**: Tokio
-- **序列化**: Serde
+## 中文
 
-## 项目结构
+<div align="center">
 
+### ⚡ 下一代 AI 辅助小说创作工作台
+
+一个专业级、全功能的 AI 小说创作工作室，融合了智能写作辅助、多媒体生成、协作编辑、插件系统和云同步等企业级特性。
+
+</div>
+
+---
+
+## ✨ 核心特性
+
+### 🎯 全流程创作支持
+- **项目管理** - 创建、组织、导出小说项目，支持多类型（玄幻、都市、科幻等）
+- **章节管理** - 章节编辑、字数统计、排序管理
+- **角色系统** - 完整的角色档案、关系图谱、成长追踪
+- **世界观构建** - 地理、历史、魔法体系等世界观管理
+- **情节大纲** - 树状情节结构、情节点管理、与章节关联
+
+### 🤖 AI 智能辅助
+- **智能续写** - 基于上下文的 AI 流式续写
+- **文本改写** - 风格调整、语言优化、内容精炼
+- **多模型支持** - OpenAI、Ollama 本地模型适配
+- **提示词管理** - 自定义 AI 提示词模板
+
+### 🎬 影视化创作工具 (moyin-creator 集成)
+- **Seedance 2.0** - 多模态参考（图片/视频/音频）构建 AI 提示词
+- **分镜系统** - 专业分镜编辑器，支持 12 种镜头类型、6 种拍摄角度、16 种运镜方式
+- **ComfyUI 集成** - AI 图像生成工作流支持
+- **剧本转换** - 小说转剧本格式（好莱坞/中国/日本标准）
+- **场景提取** - 智能提取小说场景用于可视化
+
+### 🔌 插件系统
+- **多脚本引擎** - 支持 JavaScript、Python、Lua 脚本
+- **插件生命周期** - 安装、启用、禁用、卸载
+- **插件市场** - 浏览、搜索、下载社区插件
+- **API 扩展** - 插件可访问核心创作 API
+
+### ☁️ 云同步与协作
+- **多云支持** - Google Drive、Dropbox、OneDrive、iCloud、WebDAV
+- **实时协作** - 多用户同时编辑，光标同步、操作广播
+- **冲突解决** - 基于时间戳的自动冲突处理
+- **同步历史** - 完整的同步日志和版本回溯
+
+### 🛠️ 开发者工具
+- **插件开发向导** - 内置插件开发文档和示例
+- **日志系统** - 企业级日志记录，支持 DEBUG/INFO/WARN/ERROR 级别
+- **测试框架** - Vitest + Playwright E2E 测试
+- **代码质量** - ESLint + Prettier + TypeScript 严格模式
+
+---
+
+## 🏗️ 技术架构
+
+### 前端技术栈
 ```
-AI_Novel_Studio/
-├── src/                          # 前端源代码
-│   ├── components/                 # React组件
-│   │   ├── TextEditor.tsx        # 文本编辑器
-│   │   ├── ProjectList.tsx        # 项目列表
-│   │   ├── ChapterList.tsx        # 章节列表
-│   │   └── CreateProjectDialog.tsx # 创建项目对话框
-│   ├── pages/                    # 页面组件
-│   ├── stores/                   # 状态管理
-│   │   └── projectStore.ts       # 项目状态store
-│   ├── services/                 # API服务
-│   │   └── api.ts              # Tauri API调用
-│   ├── types/                    # TypeScript类型定义
-│   │   └── index.ts            # 共享类型
-│   ├── test/                      # 测试工具和设置
-│   │   └── setup.ts            # 测试环境配置
-│   ├── hooks/                    # 自定义Hooks
-│   ├── utils/                    # 工具函数
-│   ├── App.tsx                  # 主应用组件
-│   ├── main.tsx                 # 应用入口
-│   └── index.css                # 全局样式
-├── src-tauri/                   # Rust后端代码
-│   ├── src/
-│   │   ├── main.rs             # 应用入口
-│   │   ├── database.rs         # 数据库操作
-│   │   ├── models.rs           # 数据模型
-│   │   ├── commands.rs         # Tauri命令
-│   │   ├── build.rs           # 构建脚本
-│   │   ├── plugin_system/      # 插件系统模块
-│   │   │   ├── script.rs       # 脚本引擎接口
-│   │   │   ├── javascript_engine.rs # JavaScript引擎
-│   │   │   ├── python_engine.rs     # Python引擎
-│   │   │   ├── lua_engine.rs         # Lua引擎
-│   │   │   └── plugin.rs            # 插件管理
-│   │   ├── cloud_sync/         # 云同步模块
-│   │   │   └── mod.rs          # 云同步类型定义
-│   │   ├── plugin_commands.rs         # 插件管理命令
-│   │   ├── plugin_marketplace_commands.rs # 插件市场命令
-│   │   └── cloud_sync_commands.rs       # 云同步命令
-│   ├── tests/                    # Rust测试
-│   │   └── common/            # 测试工具
-│   ├── Cargo.toml             # Rust依赖配置
-│   └── tauri.conf.json       # Tauri配置
-├── e2e/                         # 端到端测试
-│   └── project-management.spec.ts
-├── public/                      # 静态资源
-├── scripts/                     # 自动化脚本
-│   └── run-tests.sh         # 测试运行脚本
-├── docs/                        # 文档
-│   ├── technical_architecture.md
-│   ├── product_requirements.md
-│   ├── multi_model_architecture.md
-│   ├── multimedia_generation_architecture.md
-│   ├── plugin_system_design.md
-│   └── TESTING.md            # 测试文档
-├── package.json                # Node.js依赖
-├── tsconfig.json              # TypeScript配置
-├── vite.config.ts            # Vite配置
-├── vitest.config.ts          # 测试配置
-├── playwright.config.ts       # E2E测试配置
-├── tailwind.config.js        # TailwindCSS配置
-└── postcss.config.js        # PostCSS配置
+React 18          ──────────>  UI 框架
+TypeScript 5.5     ──────────>  类型安全
+TailwindCSS        ──────────>  样式系统
+Zustand           ──────────>  状态管理
+Lucide Icons       ──────────>  图标库
+Vite              ──────────>  构建工具
 ```
 
-## 已实现功能
+### 后端技术栈
+```
+Tauri 2.0         ──────────>  桌面应用框架
+Rust               ──────────>  核心语言
+Tokio              ──────────>  异步运行时
+SQLite             ──────────>  数据持久化
+Serde              ──────────>  序列化框架
+```
 
-### MVP核心功能
+---
 
-#### 1. 项目管理
-- 创建新项目
-- 项目列表展示
-- 项目详情查看
-- 项目类型选择（玄幻、都市、科幻等）
-- 项目更新和删除
+## 📦 安装
 
-#### 2. 章节管理
-- 创建新章节
-- 章节列表展示
-- 章节内容编辑
-- 字数统计
-- 章节更新（标题和内容）
-- 章节删除
+### 从源码构建
 
-#### 3. 角色管理
-- 创建角色档案
-- 角色列表展示
-- 角色信息编辑
-- 角色更新
-- 角色删除
-
-#### 4. 数据库
-- SQLite数据库初始化
-- 数据持久化存储
-- 外键关联管理
-- 完整的索引优化
-
-#### 5. UI框架
-- 三栏布局（项目列表、编辑器、章节列表）
-- 响应式设计
-- TailwindCSS样式
-- 深色/浅色主题支持
-
-### Phase 2: 核心功能增强 ✅
-
-#### 6. AI辅助写作
-- ✅ AI续写功能 - 支持流式输出
-- ✅ AI改写功能 - 文本优化和风格调整
-- ✅ 多模型支持 - OpenAI和Ollama适配器
-- ✅ 提示词模板管理
-
-#### 7. 世界观管理
-- ✅ 创建世界观条目
-- ✅ 世界观分类管理（地理、历史、魔法等）
-- ✅ 世界观内容编辑
-- ✅ 世界观列表展示
-- ✅ 世界观更新和删除
-
-#### 8. 情节大纲系统
-- ✅ 创建情节点
-- ✅ 情节点层级管理
-- ✅ 情节点与章节关联
-- ✅ 情节列表展示
-- ✅ 情节更新和删除
-
-#### 9. 角色关系图谱
-- ✅ 创建角色关系
-- ✅ 关系类型定义
-- ✅ 角色关系可视化
-- ✅ 关系图展示
-- ✅ 关系更新和删除
-
-### 企业级功能
-
-#### 10. 日志系统
-- ✅ 企业级日志记录
-- ✅ 请求ID追踪
-- ✅ 调用链追踪
-- ✅ 性能指标记录
-- ✅ 错误堆栈追踪
-- ✅ 日志级别管理（DEBUG, INFO, WARN, ERROR）
-
-#### 11. 测试框架
-- ✅ 后端单元测试框架
-- ✅ 自定义断言库
-- ✅ 测试数据库工具
-- ✅ 测试日志捕获
-- ✅ 集成测试套件
-- ✅ 前端测试（Vitest + React Testing Library）
-- ✅ E2E测试（Playwright）
-- ✅ 自动化测试运行脚本
-- ✅ 测试覆盖率报告
-
-### Phase 4: 扩展系统 ✅
-
-#### 12. 插件系统
-- ✅ 插件架构设计（ScriptEngine trait）
-- ✅ 多语言脚本引擎支持（JavaScript/Python/Lua）
-- ✅ 插件生命周期管理
-- ✅ 插件上下文管理
-- ✅ 插件API接口定义
-
-#### 13. 插件市场
-- ✅ 插件市场客户端
-- ✅ 插件搜索功能
-- ✅ 插件下载和安装
-- ✅ 插件评价系统
-- ✅ 插件分类浏览
-- ✅ 插件详情查看
-
-#### 14. 云同步系统
-- ✅ 多云提供商支持
-- ✅ 同步配置管理
-- ✅ 冲突解决策略
-- ✅ 同步状态追踪
-- ✅ 自动同步功能
-- ✅ 同步历史记录
-
-## 开发指南
-
-### 环境要求
-
+#### 环境要求
 - Node.js 18+
 - Rust 1.70+
 - npm 9+
 
-### 安装依赖
+#### 克隆仓库
+```bash
+git clone https://github.com/yangfan-ai/ai-novel-studio.git
+cd ai-novel-studio
+```
 
+#### 安装依赖
 ```bash
 npm install
 ```
 
-### 开发模式
-
-#### 启动前端开发服务器
-```bash
-npm run dev
-```
-前端将在 http://localhost:1420 运行
-
-#### 启动Tauri开发模式（完整应用）
+#### 开发模式
 ```bash
 npm run tauri dev
 ```
-这将启动前端和后端，并打开桌面应用窗口
 
-### 构建生产版本
-
+#### 生产构建
 ```bash
 npm run tauri build
 ```
 
-### 代码检查
+构建产物位于 `src-tauri/target/release/bundle/`
+
+---
+
+## 🎮 使用指南
+
+### 快速开始
+
+1. **创建项目** - 点击"新建项目"，选择类型和模板
+2. **编辑章节** - 在文本编辑器中开始写作
+3. **AI 辅助** - 使用 AI 工具栏进行续写或改写
+4. **管理素材** - 在右侧面板添加角色、世界观、情节
+5. **导出作品** - 支持多种格式导出
+
+### 插件开发
+
+1. 打开 **插件管理器** → **开发向导**
+2. 查看插件 API 文档和示例代码
+3. 创建插件目录并实现 ScriptEngine trait
+4. 安装测试插件
+
+---
+
+## 📸 功能展示
+
+| 模块 | 功能 | 状态 |
+|--------|------|--------|
+| 项目管理 | 创建/编辑/删除/导出 | ✅ |
+| 章节编辑 | 富文本/字数统计/历史记录 | ✅ |
+| 角色系统 | 档案/关系/成长追踪 | ✅ |
+| 世界观 | 分类管理/内容编辑 | ✅ |
+| 情节大纲 | 树状结构/情节点 | ✅ |
+| AI 续写 | 流式输出/多模型 | ✅ |
+| AI 改写 | 风格调整/内容优化 | ✅ |
+| 多媒体生成 | 分镜/剧本/插画 | ✅ |
+| ComfyUI | 工作流管理 | ✅ |
+| Seedance | 多模态提示词 | ✅ |
+| 插件系统 | JS/Python/Lua | ✅ |
+| 插件市场 | 浏览/下载/评价 | ✅ |
+| 云同步 | 多云/冲突解决 | ✅ |
+| 实时协作 | 多用户/光标同步 | ✅ |
+| 日志系统 | 企业级追踪 | ✅ |
+| 测试框架 | 单元/E2E/覆盖率 | ✅ |
+
+---
+
+## 🗂 项目结构
+
+```
+ai-novel-studio/
+├── src/                          # 前端源代码
+│   ├── components/                 # React 组件 (45+)
+│   ├── services/                   # API 服务层
+│   ├── stores/                    # Zustand 状态管理
+│   ├── types/                     # TypeScript 类型定义
+│   ├── utils/                     # 工具函数
+│   └── App.tsx                   # 主应用入口
+├── src-tauri/                   # Rust 后端
+│   ├── src/
+│   │   ├── ai/                   # AI 模块 (12)
+│   │   ├── database/              # 数据库操作
+│   │   ├── plugin_system/         # 插件系统
+│   │   ├── cloud_sync/            # 云同步模块
+│   │   └── commands/             # Tauri 命令 (69+)
+│   └── Cargo.toml                # Rust 依赖配置
+├── e2e/                         # E2E 测试
+├── tests/                        # 单元测试
+├── docs/                         # 技术文档
+└── scripts/                      # 自动化脚本
+```
+
+---
+
+## 🤝 贡献指南
+
+欢迎贡献！请遵循以下步骤：
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
+
+### 代码规范
 
 ```bash
-# TypeScript检查
-npm run build
+# 运行代码检查
+npm run lint
 
-# Rust检查
-cd src-tauri
-cargo check
+# 自动修复 lint 问题
+npm run lint:fix
+
+# 格式化代码
+npm run format
+
+# 运行测试
+npm run test:all
 ```
 
-## 核心API
+---
 
-### 项目管理
+## 📄 许可证
 
-#### 创建项目
-```typescript
-await invoke('create_project', {
-  request: {
-    name: '项目名称',
-    description: '项目描述',
-    genre: '玄幻'
-  }
-})
+本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
+
+---
+
+## 🙏 致谢
+
+- [Tauri](https://tauri.app) - 强大的桌面应用框架
+- [React](https://react.dev) - 声明式 UI 库
+- [TailwindCSS](https://tailwindcss.com) - 实用优先的 CSS 框架
+- [Lucide](https://lucide.dev) - 精美的图标库
+
+---
+
+## 📮 联系我们
+
+- **Issues**: [GitHub Issues](https://github.com/yangfan-ai/ai-novel-studio/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yangfan-ai/ai-novel-studio/discussions)
+
+---
+
+<div align="center">
+
+**⭐ 如果这个项目对你有帮助，请给我们一个 Star！**
+
+Made with ❤️ by AI Novel Studio Team
+
+</div>
+
+---
+
+## English
+
+<div align="center">
+
+### ⚡ Next-Gen AI-Powered Novel Creation Workspace
+
+A professional, full-featured AI novel creation studio integrating intelligent writing assistance, multimedia generation, collaborative editing, plugin system, and cloud synchronization with enterprise-grade features.
+
+</div>
+
+---
+
+## ✨ Key Features
+
+### 🎯 Full-Stack Creative Support
+- **Project Management** - Create, organize, and export novel projects with multiple genres (Fantasy, Urban, Sci-Fi, etc.)
+- **Chapter Management** - Chapter editing, word count, and sorting
+- **Character System** - Complete character profiles, relationship graphs, and growth tracking
+- **World Building** - Manage geography, history, magic systems, and more
+- **Plot Outlining** - Tree-based plot structure, plot points, and chapter associations
+
+### 🤖 AI Intelligent Assistance
+- **Smart Continuation** - Context-aware AI streaming continuation
+- **Text Rewriting** - Style adjustment, language optimization, and content refinement
+- **Multi-Model Support** - OpenAI, Ollama local model adapters
+- **Prompt Management** - Custom AI prompt templates
+
+### 🎬 Cinematic Creation Tools (moyin-creator Integration)
+- **Seedance 2.0** - Multi-modal reference (image/video/audio) for AI prompt building
+- **Storyboard System** - Professional storyboard editor with 12 shot types, 6 camera angles, 16 movements
+- **ComfyUI Integration** - AI image generation workflow support
+- **Script Conversion** - Novel to script formats (Hollywood/Chinese/Japanese standards)
+- **Scene Extraction** - Intelligent scene extraction for visualization
+
+### 🔌 Plugin System
+- **Multi-Script Engines** - Support for JavaScript, Python, Lua scripts
+- **Plugin Lifecycle** - Install, enable, disable, uninstall
+- **Plugin Marketplace** - Browse, search, and download community plugins
+- **API Extensions** - Plugins can access core creative APIs
+
+### ☁️ Cloud Sync & Collaboration
+- **Multi-Cloud Support** - Google Drive, Dropbox, OneDrive, iCloud, WebDAV
+- **Real-time Collaboration** - Multi-user editing with cursor sync and operation broadcasting
+- **Conflict Resolution** - Timestamp-based automatic conflict handling
+- **Sync History** - Complete sync logs and version rollback
+
+### 🛠️ Developer Tools
+- **Plugin Development Wizard** - Built-in plugin docs and examples
+- **Logging System** - Enterprise-grade logging with DEBUG/INFO/WARN/ERROR levels
+- **Testing Framework** - Vitest + Playwright E2E testing
+- **Code Quality** - ESLint + Prettier + TypeScript strict mode
+
+---
+
+## 🏗️ Tech Stack
+
+### Frontend
+```
+React 18          ──────────>  UI Framework
+TypeScript 5.5     ──────────>  Type Safety
+TailwindCSS        ──────────>  Styling System
+Zustand           ──────────>  State Management
+Lucide Icons       ──────────>  Icon Library
+Vite              ──────────>  Build Tool
 ```
 
-#### 获取项目列表
-```typescript
-const projects = await invoke('get_projects')
+### Backend
+```
+Tauri 2.0         ──────────>  Desktop App Framework
+Rust               ──────────>  Core Language
+Tokio              ──────────>  Async Runtime
+SQLite             ──────────>  Data Persistence
+Serde              ──────────>  Serialization Framework
 ```
 
-### 章节管理
+---
 
-#### 保存章节
-```typescript
-await invoke('save_chapter', {
-  request: {
-    project_id: 'project-id',
-    title: '第一章',
-    content: '章节内容',
-    sort_order: 0
-  }
-})
+## 📦 Installation
+
+### Build from Source
+
+#### Requirements
+- Node.js 18+
+- Rust 1.70+
+- npm 9+
+
+#### Clone Repository
+```bash
+git clone https://github.com/yangfan-ai/ai-novel-studio.git
+cd ai-novel-studio
 ```
 
-#### 获取章节列表
-```typescript
-const chapters = await invoke('get_chapters', { projectId: 'project-id' })
+#### Install Dependencies
+```bash
+npm install
 ```
 
-### 角色管理
-
-#### 创建角色
-```typescript
-await invoke('create_character', {
-  request: {
-    project_id: 'project-id',
-    name: '角色名',
-    age: 25,
-    gender: '男',
-    appearance: '外貌描述',
-    personality: '性格描述',
-    background: '背景故事'
-  }
-})
+#### Development Mode
+```bash
+npm run tauri dev
 ```
 
-#### 获取角色列表
-```typescript
-const characters = await invoke('get_characters', { projectId: 'project-id' })
+#### Production Build
+```bash
+npm run tauri build
 ```
 
-### 插件系统
+Build artifacts are located in `src-tauri/target/release/bundle/`
 
-#### 获取所有插件
-```typescript
-const plugins = await invoke('plugin_get_all')
+---
+
+## 🎮 Usage Guide
+
+### Quick Start
+
+1. **Create Project** - Click "New Project", select type and template
+2. **Edit Chapters** - Start writing in the text editor
+3. **AI Assistance** - Use AI toolbar for continuation or rewriting
+4. **Manage Assets** - Add characters, world views, and plots in the right panel
+5. **Export Works** - Support for multiple export formats
+
+### Plugin Development
+
+1. Open **Plugin Manager** → **Development Wizard**
+2. View plugin API docs and example code
+3. Create plugin directory and implement ScriptEngine trait
+4. Install test plugin
+
+---
+
+## 📸 Feature Matrix
+
+| Module | Features | Status |
+|----------|-----------|---------|
+| Project Management | Create/Edit/Delete/Export | ✅ |
+| Chapter Editing | Rich Text/Word Count/History | ✅ |
+| Character System | Profiles/Relationships/Growth | ✅ |
+| World Building | Categories/Content Editing | ✅ |
+| Plot Outlining | Tree Structure/Plot Points | ✅ |
+| AI Continuation | Streaming/Multi-Model | ✅ |
+| AI Rewriting | Style Adjustment/Optimization | ✅ |
+| Multimedia Generation | Storyboard/Script/Illustration | ✅ |
+| ComfyUI | Workflow Management | ✅ |
+| Seedance | Multi-modal Prompts | ✅ |
+| Plugin System | JS/Python/Lua | ✅ |
+| Plugin Marketplace | Browse/Download/Ratings | ✅ |
+| Cloud Sync | Multi-Cloud/Conflict Resolution | ✅ |
+| Real-time Collaboration | Multi-User/Cursor Sync | ✅ |
+| Logging System | Enterprise Tracking | ✅ |
+| Testing Framework | Unit/E2E/Coverage | ✅ |
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork this repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### Code Standards
+
+```bash
+# Run linting
+npm run lint
+
+# Auto-fix lint issues
+npm run lint:fix
+
+# Format code
+npm run format
+
+# Run tests
+npm run test:all
 ```
 
-#### 安装插件
-```typescript
-await invoke('plugin_install', {
-  manifestUrl: 'https://example.com/plugin-manifest.json'
-})
-```
+---
 
-#### 启用插件
-```typescript
-await invoke('plugin_enable', { pluginId: 'plugin-id' })
-```
+## 📄 License
 
-### 插件市场
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
 
-#### 搜索插件
-```typescript
-const results = await invoke('marketplace_search_plugins', {
-  query: 'AI助手',
-  category: '写作辅助',
-  tags: ['AI', '续写'],
-  sortBy: 'downloads'
-})
-```
+---
 
-#### 下载插件
-```typescript
-await invoke('marketplace_download_plugin', { pluginId: 'plugin-id' })
-```
+## 🙏 Acknowledgments
 
-#### 获取插件详情
-```typescript
-const plugin = await invoke('marketplace_get_plugin', { pluginId: 'plugin-id' })
-```
+- [Tauri](https://tauri.app) - Powerful desktop application framework
+- [React](https://react.dev) - Declarative UI library
+- [TailwindCSS](https://tailwindcss.com) - Utility-first CSS framework
+- [Lucide](https://lucide.dev) - Beautiful icon library
 
-### 云同步
+---
 
-#### 配置云同步
-```typescript
-await invoke('cloud_sync_configure', {
-  config: {
-    provider_type: 'GoogleDrive',
-    credentials: { access_token: 'xxx' },
-    sync_interval_seconds: 300,
-    auto_sync: true,
-    conflict_resolution: 'TimestampBased'
-  }
-})
-```
+## 📮 Contact Us
 
-#### 启动同步
-```typescript
-const syncId = await invoke('cloud_sync_start')
-```
+- **Issues**: [GitHub Issues](https://github.com/yangfan-ai/ai-novel-studio/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yangfan-ai/ai-novel-studio/discussions)
 
-#### 获取同步状态
-```typescript
-const status = await invoke('cloud_sync_get_status')
-// 返回: { status: 'Syncing', last_sync: '2024-01-01T00:00:00Z', progress: 0.5 }
-```
+---
 
-### 多媒体生成
+<div align="center">
 
-#### 场景提取
-```typescript
-const scenes = await invoke('mmg_extract_scenes', {
-  text: '小说文本内容'
-})
-```
+**⭐ If this project helps you, please give us a Star!**
 
-#### 生成分镜脚本
-```typescript
-const storyboard = await invoke('mmg_generate_storyboard', {
-  text: '小说文本内容',
-  title: '分镜标题',
-  format: 'film',
-  style: 'cinematic'
-})
-```
+Made with ❤️ by AI Novel Studio Team
 
-#### 转换为剧本
-```typescript
-const script = await invoke('mmg_convert_to_script', {
-  text: '小说文本内容',
-  format: 'hollywood'
-})
-```
-
-#### 优化剧本
-```typescript
-const optimized = await invoke('mmg_optimize_script', {
-  scriptJson: JSON.stringify(script)
-})
-```
-
-#### 生成漫画
-```typescript
-const comic = await invoke('mmg_generate_comic', {
-  text: '小说文本内容',
-  title: '漫画标题',
-  style: 'manga'
-})
-```
-
-#### 生成场景插画
-```typescript
-const illustration = await invoke('mmg_generate_scene_illustration', {
-  sceneJson: JSON.stringify(scene),
-  style: 'anime',
-  aspectRatio: '16:9',
-  quality: 'high',
-  variations: 3
-})
-```
-
-#### 生成角色肖像
-```typescript
-const portrait = await invoke('mmg_generate_character_portrait', {
-  characterId: 'char_001',
-  characterName: '角色名',
-  appearance: '外貌描述',
-  style: 'anime'
-})
-```
-
-#### 生成封面
-```typescript
-const cover = await invoke('mmg_generate_cover', {
-  projectName: '项目名称',
-  projectDescription: '项目描述',
-  genre: '玄幻',
-  style: 'fantasy'
-})
-```
-
-### 协作编辑
-
-#### 创建协作会话
-```typescript
-const sessionId = await invoke('collab_create_session', {
-  projectId: 'project-id'
-})
-```
-
-#### 加入协作会话
-```typescript
-await invoke('collab_join_session', {
-  sessionId: 'session-id',
-  user: {
-    id: 'user-id',
-    name: '用户名',
-    color: '#FF6B6B'
-  }
-})
-```
-
-#### 离开协作会话
-```typescript
-await invoke('collab_leave_session', {
-  sessionId: 'session-id',
-  userId: 'user-id'
-})
-```
-
-#### 广播编辑操作
-```typescript
-await invoke('collab_broadcast_operation', {
-  sessionId: 'session-id',
-  operation: {
-    id: 'op-id',
-    user_id: 'user-id',
-    chapter_id: 'chapter-id',
-    op_type: {
-      Insert: { position: 100, text: '新增文本' }
-    },
-    timestamp: Date.now()
-  }
-})
-```
-
-#### 更新光标位置
-```typescript
-await invoke('collab_update_cursor', {
-  sessionId: 'session-id',
-  cursor: {
-    user_id: 'user-id',
-    chapter_id: 'chapter-id',
-    line: 10,
-    column: 5
-  }
-})
-```
-
-#### 获取会话信息
-```typescript
-const session = await invoke('collab_get_session', {
-  sessionId: 'session-id'
-})
-```
-
-#### 获取在线用户光标
-```typescript
-const cursors = await invoke('collab_get_user_cursors', {
-  sessionId: 'session-id'
-})
-```
-
-## 数据库表结构
-
-### projects（项目表）
-- id: 项目ID (UUID)
-- name: 项目名称
-- description: 项目描述
-- genre: 项目类型
-- template: 项目模板
-- status: 项目状态
-- created_at: 创建时间
-- updated_at: 更新时间
-
-### chapters（章节表）
-- id: 章节ID (UUID)
-- project_id: 所属项目ID
-- title: 章节标题
-- content: 章节内容
-- word_count: 字数统计
-- sort_order: 排序号
-- status: 章节状态
-- created_at: 创建时间
-- updated_at: 更新时间
-
-### characters（角色表）
-- id: 角色ID (UUID)
-- project_id: 所属项目ID
-- name: 角色名称
-- age: 年龄
-- gender: 性别
-- appearance: 外貌描述
-- personality: 性格描述
-- background: 背景故事
-- avatar_url: 头像URL
-- created_at: 创建时间
-- updated_at: 更新时间
-
-## 后续开发计划
-
-### Phase 2: 核心功能增强 ✅ 已完成
-- ✅ AI续写功能
-- ✅ AI改写功能
-- ✅ 世界观管理
-- ✅ 情节大纲系统
-- ✅ 角色关系图谱
-- ✅ 企业级日志系统
-- ✅ 完整测试框架
-
-### Phase 3: 多媒体生成 ✅
-- ✅ 分镜脚本生成
-- ✅ 剧本格式转换
-- ✅ 漫画分镜生成
-- ✅ 插画生成
-- ✅ 场景提取功能
-- ✅ 动画生成功能
-
-### Phase 5: 高级功能 ✅
-- ✅ 协作编辑功能
-- ✅ 可视化分镜编辑器
-- ✅ 动画生成框架
-
-### Phase 4: 扩展系统 ✅ 已完成
-- ✅ 插件系统（JavaScript/Python/Lua脚本支持）
-- ✅ 脚本系统（ScriptEngine架构）
-- ✅ 插件市场集成
-- ✅ 云同步功能（Dropbox/GoogleDrive/OneDrive/iCloud/WebDAV）
-- [ ] 协作编辑功能
-- ✅ 导出功能（PDF、EPUB、Word等）
-
-## 注意事项
-
-### Tauri开发环境
-- macOS开发需要Xcode命令行工具
-- Windows开发需要Visual Studio C++构建工具
-- Linux开发需要WebKitGTK库
-
-### 数据存储
-- 数据库文件位置: `~/Library/Application Support/com.ainovelstudio.app/novel_studio.db` (macOS)
-- 数据备份: 建议定期备份数据库文件
-
-## 许可证
-
-MIT License
-
-## 贡献
-
-欢迎提交Issue和Pull Request！
+</div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   X,
   Sparkles,
@@ -9,19 +9,12 @@ import {
   Image as ImageIcon,
   Maximize2,
   RefreshCw,
-  Copy
-} from 'lucide-react';
-import { multimediaService } from '../services/multimedia.service';
-import type {
-  Illustration,
-  IllustrationOptions,
-  VisualStyle
-} from '../types/multimedia';
-import {
-  VisualStyle as VS,
-  VISUAL_STYLE_LABELS
-} from '../types/multimedia';
-import type { Chapter, Character } from '../types';
+  Copy,
+} from "lucide-react";
+import { multimediaService } from "../services/multimedia.service";
+import type { Illustration, IllustrationOptions, VisualStyle } from "../types/multimedia";
+import { VisualStyle as VS, VISUAL_STYLE_LABELS } from "../types/multimedia";
+import type { Chapter, Character } from "../types";
 
 interface IllustrationGeneratorDialogProps {
   isOpen: boolean;
@@ -49,7 +42,7 @@ export function IllustrationGeneratorDialog({
   const [options, setOptions] = useState<IllustrationOptions>(
     multimediaService.getIllustrationDefaults()
   );
-  const [customDescription, setCustomDescription] = useState('');
+  const [customDescription, setCustomDescription] = useState("");
   const [selectedCharacters, setSelectedCharacters] = useState<string[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -57,14 +50,14 @@ export function IllustrationGeneratorDialog({
     if (isOpen) {
       setIllustration(null);
       setError(null);
-      setCustomDescription(selectedText || '');
+      setCustomDescription(selectedText || "");
       setSelectedCharacters([]);
     }
   }, [isOpen, selectedText]);
 
   const handleGenerate = async () => {
     if (!customDescription.trim()) {
-      setError('请输入场景描述');
+      setError("请输入场景描述");
       return;
     }
 
@@ -76,7 +69,7 @@ export function IllustrationGeneratorDialog({
       const result = await multimediaService.generateIllustration({
         content: customDescription,
         characterIds: selectedCharacters.length > 0 ? selectedCharacters : undefined,
-        options
+        options,
       });
       setIllustration(result);
     } catch (err) {
@@ -94,13 +87,13 @@ export function IllustrationGeneratorDialog({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
   const handleDownload = () => {
     if (!illustration?.imageData) return;
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = illustration.imageData;
     a.download = `插画_${illustration.title}_${new Date().toISOString().slice(0, 10)}.png`;
     document.body.appendChild(a);
@@ -114,19 +107,17 @@ export function IllustrationGeneratorDialog({
 
   const toggleCharacter = (charId: string) => {
     setSelectedCharacters((prev) =>
-      prev.includes(charId)
-        ? prev.filter((id) => id !== charId)
-        : [...prev, charId]
+      prev.includes(charId) ? prev.filter((id) => id !== charId) : [...prev, charId]
     );
   };
 
   const aspectRatioOptions = [
-    { value: '1:1', label: '1:1 (正方形)', icon: '⬜' },
-    { value: '16:9', label: '16:9 (横版)', icon: '▬' },
-    { value: '9:16', label: '9:16 (竖版)', icon: '▮' },
-    { value: '4:3', label: '4:3 (传统)', icon: '▭' },
-    { value: '3:4', label: '3:4 (肖像)', icon: '▯' },
-    { value: '21:9', label: '21:9 (超宽)', icon: '▬▬' },
+    { value: "1:1", label: "1:1 (正方形)", icon: "⬜" },
+    { value: "16:9", label: "16:9 (横版)", icon: "▬" },
+    { value: "9:16", label: "9:16 (竖版)", icon: "▮" },
+    { value: "4:3", label: "4:3 (传统)", icon: "▭" },
+    { value: "3:4", label: "3:4 (肖像)", icon: "▯" },
+    { value: "21:9", label: "21:9 (超宽)", icon: "▬▬" },
   ];
 
   if (!isOpen) return null;
@@ -172,8 +163,8 @@ export function IllustrationGeneratorDialog({
                     onClick={() => toggleCharacter(char.id)}
                     className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
                       selectedCharacters.includes(char.id)
-                        ? 'bg-pink-500 text-white'
-                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                        ? "bg-pink-500 text-white"
+                        : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
                     }`}
                   >
                     {char.name}
@@ -194,7 +185,9 @@ export function IllustrationGeneratorDialog({
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
               >
                 {Object.entries(VISUAL_STYLE_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>{label}</option>
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -204,7 +197,12 @@ export function IllustrationGeneratorDialog({
               </label>
               <select
                 value={options.aspectRatio}
-                onChange={(e) => setOptions({ ...options, aspectRatio: e.target.value as IllustrationOptions['aspectRatio'] })}
+                onChange={(e) =>
+                  setOptions({
+                    ...options,
+                    aspectRatio: e.target.value as IllustrationOptions["aspectRatio"],
+                  })
+                }
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-pink-500"
               >
                 {aspectRatioOptions.map((opt) => (
@@ -220,7 +218,7 @@ export function IllustrationGeneratorDialog({
             onClick={() => setShowAdvanced(!showAdvanced)}
             className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 mb-2"
           >
-            {showAdvanced ? '▼ 高级选项' : '▶ 高级选项'}
+            {showAdvanced ? "▼ 高级选项" : "▶ 高级选项"}
           </button>
 
           {showAdvanced && (
@@ -232,7 +230,12 @@ export function IllustrationGeneratorDialog({
                   </label>
                   <select
                     value={options.quality}
-                    onChange={(e) => setOptions({ ...options, quality: e.target.value as IllustrationOptions['quality'] })}
+                    onChange={(e) =>
+                      setOptions({
+                        ...options,
+                        quality: e.target.value as IllustrationOptions["quality"],
+                      })
+                    }
                     className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   >
                     <option value="standard">标准</option>
@@ -245,8 +248,13 @@ export function IllustrationGeneratorDialog({
                     图像服务
                   </label>
                   <select
-                    value={options.imageProvider || 'stability'}
-                    onChange={(e) => setOptions({ ...options, imageProvider: e.target.value as IllustrationOptions['imageProvider'] })}
+                    value={options.imageProvider || "stability"}
+                    onChange={(e) =>
+                      setOptions({
+                        ...options,
+                        imageProvider: e.target.value as IllustrationOptions["imageProvider"],
+                      })
+                    }
                     className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   >
                     <option value="stability">Stability AI</option>
@@ -262,7 +270,7 @@ export function IllustrationGeneratorDialog({
                 </label>
                 <input
                   type="text"
-                  value={options.customPrompt || ''}
+                  value={options.customPrompt || ""}
                   onChange={(e) => setOptions({ ...options, customPrompt: e.target.value })}
                   placeholder="例如：cinematic lighting, detailed, 8k"
                   className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
@@ -274,7 +282,7 @@ export function IllustrationGeneratorDialog({
                 </label>
                 <input
                   type="text"
-                  value={options.negativePrompt || ''}
+                  value={options.negativePrompt || ""}
                   onChange={(e) => setOptions({ ...options, negativePrompt: e.target.value })}
                   placeholder="例如：blurry, low quality, distorted"
                   className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
@@ -285,7 +293,9 @@ export function IllustrationGeneratorDialog({
                   <input
                     type="checkbox"
                     checked={options.characterConsistency}
-                    onChange={(e) => setOptions({ ...options, characterConsistency: e.target.checked })}
+                    onChange={(e) =>
+                      setOptions({ ...options, characterConsistency: e.target.checked })
+                    }
                     className="rounded border-slate-300"
                   />
                   角色一致性 (需要角色参考图)
@@ -429,7 +439,9 @@ export function IllustrationGeneratorDialog({
                 </div>
                 <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded">
                   <span className="text-slate-500 dark:text-slate-400">比例: </span>
-                  <span className="text-slate-700 dark:text-slate-300">{illustration.aspectRatio}</span>
+                  <span className="text-slate-700 dark:text-slate-300">
+                    {illustration.aspectRatio}
+                  </span>
                 </div>
                 <div className="p-2 bg-slate-50 dark:bg-slate-700/50 rounded">
                   <span className="text-slate-500 dark:text-slate-400">生成时间: </span>

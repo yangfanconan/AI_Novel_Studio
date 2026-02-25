@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { PlotNode, PlotTree } from '../types/writingAssistant';
-import { writingAssistantService } from '../services/writingAssistant.service';
+import React, { useState, useEffect, useCallback } from "react";
+import { PlotNode, PlotTree } from "../types/writingAssistant";
+import { writingAssistantService } from "../services/writingAssistant.service";
 
 interface PlotTreeViewProps {
   projectId: string;
@@ -30,7 +30,7 @@ const PlotTreeView: React.FC<PlotTreeViewProps> = ({
       // 默认展开所有根节点
       setExpandedNodes(new Set(tree.root_nodes));
     } catch (error) {
-      console.error('Failed to load plot tree:', error);
+      console.error("Failed to load plot tree:", error);
     } finally {
       setLoading(false);
     }
@@ -65,33 +65,33 @@ const PlotTreeView: React.FC<PlotTreeViewProps> = ({
     const hasChildren = children.length > 0;
 
     const getBranchColor = (branchName: string | null, isMainPath: boolean) => {
-      if (isMainPath) return 'border-blue-400 bg-blue-50';
-      if (!branchName) return 'border-gray-300 bg-gray-50';
+      if (isMainPath) return "border-blue-400 bg-blue-50";
+      if (!branchName) return "border-gray-300 bg-gray-50";
 
       const colors = [
-        'border-purple-400 bg-purple-50',
-        'border-green-400 bg-green-50',
-        'border-orange-400 bg-orange-50',
-        'border-pink-400 bg-pink-50',
-        'border-teal-400 bg-teal-50',
+        "border-purple-400 bg-purple-50",
+        "border-green-400 bg-green-50",
+        "border-orange-400 bg-orange-50",
+        "border-pink-400 bg-pink-50",
+        "border-teal-400 bg-teal-50",
       ];
-      const hash = branchName.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+      const hash = branchName.split("").reduce((a, b) => a + b.charCodeAt(0), 0);
       return colors[hash % colors.length];
     };
 
     const getEmotionalIcon = (tone: string | null) => {
-      if (!tone) return '📖';
+      if (!tone) return "📖";
       const toneMap: Record<string, string> = {
-        紧张: '😰',
-        温馨: '😊',
-        悲伤: '😢',
-        欢快: '😄',
-        悬疑: '🤔',
-        激烈: '🔥',
-        平静: '😌',
-        感动: '🥹',
+        紧张: "😰",
+        温馨: "😊",
+        悲伤: "😢",
+        欢快: "😄",
+        悬疑: "🤔",
+        激烈: "🔥",
+        平静: "😌",
+        感动: "🥹",
       };
-      return toneMap[tone] || '📖';
+      return toneMap[tone] || "📖";
     };
 
     return (
@@ -100,7 +100,7 @@ const PlotTreeView: React.FC<PlotTreeViewProps> = ({
           className={`
             relative flex items-center gap-2 p-3 rounded-lg border-2 cursor-pointer
             transition-all duration-200 hover:shadow-md
-            ${isSelected ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
+            ${isSelected ? "ring-2 ring-blue-500 ring-offset-2" : ""}
             ${getBranchColor(node.branch_name, node.is_main_path)}
           `}
           style={{ marginLeft: `${depth * 40}px` }}
@@ -114,7 +114,7 @@ const PlotTreeView: React.FC<PlotTreeViewProps> = ({
               }}
               className="w-6 h-6 flex items-center justify-center rounded-full bg-white border border-gray-300 text-gray-500 hover:bg-gray-100"
             >
-              {isExpanded ? '−' : '+'}
+              {isExpanded ? "−" : "+"}
             </button>
           )}
 
@@ -137,9 +137,7 @@ const PlotTreeView: React.FC<PlotTreeViewProps> = ({
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <span>{node.word_count}字</span>
             {node.characters_involved.length > 0 && (
-              <span className="flex items-center gap-1">
-                👥 {node.characters_involved.length}
-              </span>
+              <span className="flex items-center gap-1">👥 {node.characters_involved.length}</span>
             )}
           </div>
 
@@ -219,8 +217,7 @@ const PlotTreeView: React.FC<PlotTreeViewProps> = ({
         <div className="flex items-center justify-between text-sm text-gray-500">
           <span>共 {plotTree.nodes.length} 个节点</span>
           <span>
-            {plotTree.root_nodes.length} 条{' '}
-            {plotTree.root_nodes.length > 1 ? '故事线' : '故事线'}
+            {plotTree.root_nodes.length} 条 {plotTree.root_nodes.length > 1 ? "故事线" : "故事线"}
           </span>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   X,
   Sparkles,
@@ -14,9 +14,9 @@ import {
   Sun,
   Moon,
   Sunrise,
-  Sunset
-} from 'lucide-react';
-import { multimediaService } from '../services/multimedia.service';
+  Sunset,
+} from "lucide-react";
+import { multimediaService } from "../services/multimedia.service";
 import type {
   Storyboard,
   StoryboardScene,
@@ -25,8 +25,8 @@ import type {
   StoryboardFormat,
   VisualStyle,
   ShotType,
-  TimeOfDay
-} from '../types/multimedia';
+  TimeOfDay,
+} from "../types/multimedia";
 import {
   ShotType as ST,
   VisualStyle as VS,
@@ -34,9 +34,9 @@ import {
   TimeOfDay as TOD,
   SHOT_TYPE_LABELS as STL,
   VISUAL_STYLE_LABELS as VSL,
-  TIME_OF_DAY_LABELS as TOL
-} from '../types/multimedia';
-import type { Chapter } from '../types';
+  TIME_OF_DAY_LABELS as TOL,
+} from "../types/multimedia";
+import type { Chapter } from "../types";
 
 interface StoryboardGeneratorDialogProps {
   isOpen: boolean;
@@ -55,7 +55,7 @@ export function StoryboardGeneratorDialog({
 }: StoryboardGeneratorDialogProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedChapterId, setSelectedChapterId] = useState<string>('');
+  const [selectedChapterId, setSelectedChapterId] = useState<string>("");
   const [storyboard, setStoryboard] = useState<Storyboard | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [expandedScenes, setExpandedScenes] = useState<Set<number>>(new Set([0]));
@@ -66,7 +66,7 @@ export function StoryboardGeneratorDialog({
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedChapterId(currentChapterId || '');
+      setSelectedChapterId(currentChapterId || "");
       setStoryboard(null);
       setError(null);
       setExpandedScenes(new Set([0]));
@@ -75,7 +75,7 @@ export function StoryboardGeneratorDialog({
 
   const handleGenerate = async () => {
     if (!selectedChapterId) {
-      setError('请选择一个章节');
+      setError("请选择一个章节");
       return;
     }
 
@@ -86,7 +86,7 @@ export function StoryboardGeneratorDialog({
     try {
       const result = await multimediaService.generateStoryboard({
         chapterId: selectedChapterId,
-        options
+        options,
       });
       setStoryboard(result);
       setExpandedScenes(new Set([0]));
@@ -115,7 +115,7 @@ export function StoryboardGeneratorDialog({
       setCopiedIndex(sceneIndex * 100 + shotIndex);
       setTimeout(() => setCopiedIndex(null), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
@@ -127,16 +127,16 @@ export function StoryboardGeneratorDialog({
       setCopiedIndex(-1);
       setTimeout(() => setCopiedIndex(null), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
   const handleExport = () => {
     if (!storyboard) return;
     const text = formatStoryboardText(storyboard);
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `分镜脚本_${storyboard.title}_${new Date().toISOString().slice(0, 10)}.txt`;
     document.body.appendChild(a);
@@ -152,31 +152,31 @@ export function StoryboardGeneratorDialog({
     if (shot.camera?.type) {
       text += `镜头运动: ${shot.camera.type}`;
       if (shot.camera.direction) text += ` ${shot.camera.direction}`;
-      text += '\n';
+      text += "\n";
     }
     if (shot.duration) text += `时长: ${shot.duration}秒\n`;
-    if (shot.characters?.length) text += `角色: ${shot.characters.join('、')}\n`;
+    if (shot.characters?.length) text += `角色: ${shot.characters.join("、")}\n`;
     if (shot.action) text += `动作: ${shot.action}\n`;
     if (shot.dialogue) {
       text += `对白: ${shot.dialogue.character}: "${shot.dialogue.text}"\n`;
     }
-    if (shot.soundEffects?.length) text += `音效: ${shot.soundEffects.join(', ')}\n`;
+    if (shot.soundEffects?.length) text += `音效: ${shot.soundEffects.join(", ")}\n`;
     if (shot.visualPrompt) text += `视觉提示词: ${shot.visualPrompt}\n`;
     if (shot.visualNotes) text += `备注: ${shot.visualNotes}\n`;
     return text;
   };
 
   const formatSceneText = (scene: StoryboardScene): string => {
-    let text = `\n${'='.repeat(50)}\n`;
+    let text = `\n${"=".repeat(50)}\n`;
     text += `场景 ${scene.sceneNumber}: ${scene.title}\n`;
-    text += `${'='.repeat(50)}\n`;
+    text += `${"=".repeat(50)}\n`;
     text += `地点: ${scene.location}\n`;
     text += `时间: ${TOL[scene.timeOfDay as TimeOfDay] || scene.timeOfDay}\n`;
     text += `预计时长: ${scene.estimatedDuration}秒\n`;
     if (scene.notes) text += `备注: ${scene.notes}\n`;
     text += `\n`;
     scene.shots.forEach((shot) => {
-      text += formatShotText(shot) + '\n';
+      text += formatShotText(shot) + "\n";
       text += `-'.repeat(30)}\n`;
     });
     return text;
@@ -188,7 +188,7 @@ export function StoryboardGeneratorDialog({
     text += `风格: ${sb.style}\n`;
     text += `总时长: ${sb.totalDuration}秒\n`;
     text += `生成时间: ${sb.metadata.generatedAt}\n`;
-    text += '\n';
+    text += "\n";
     sb.scenes.forEach((scene) => {
       text += formatSceneText(scene);
     });
@@ -273,7 +273,11 @@ export function StoryboardGeneratorDialog({
             onClick={() => setShowOptions(!showOptions)}
             className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
           >
-            {showOptions ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            {showOptions ? (
+              <ChevronDown className="w-4 h-4" />
+            ) : (
+              <ChevronRight className="w-4 h-4" />
+            )}
             高级选项
           </button>
 
@@ -285,7 +289,9 @@ export function StoryboardGeneratorDialog({
                 </label>
                 <select
                   value={options.format || SF.FILM}
-                  onChange={(e) => setOptions({ ...options, format: e.target.value as StoryboardFormat })}
+                  onChange={(e) =>
+                    setOptions({ ...options, format: e.target.value as StoryboardFormat })
+                  }
                   className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                 >
                   <option value={SF.FILM}>电影</option>
@@ -305,7 +311,9 @@ export function StoryboardGeneratorDialog({
                   className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                 >
                   {Object.entries(VSL).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -314,8 +322,13 @@ export function StoryboardGeneratorDialog({
                   详细程度
                 </label>
                 <select
-                  value={options.detailLevel || 'standard'}
-                  onChange={(e) => setOptions({ ...options, detailLevel: e.target.value as 'basic' | 'standard' | 'detailed' })}
+                  value={options.detailLevel || "standard"}
+                  onChange={(e) =>
+                    setOptions({
+                      ...options,
+                      detailLevel: e.target.value as "basic" | "standard" | "detailed",
+                    })
+                  }
                   className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                 >
                   <option value="basic">基础</option>
@@ -337,7 +350,9 @@ export function StoryboardGeneratorDialog({
                   <input
                     type="checkbox"
                     checked={options.includeVisualPrompts !== false}
-                    onChange={(e) => setOptions({ ...options, includeVisualPrompts: e.target.checked })}
+                    onChange={(e) =>
+                      setOptions({ ...options, includeVisualPrompts: e.target.checked })
+                    }
                     className="rounded border-slate-300"
                   />
                   生成视觉提示词
@@ -494,7 +509,9 @@ export function StoryboardGeneratorDialog({
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             {shot.camera?.type && (
                               <div>
-                                <span className="text-slate-500 dark:text-slate-400">镜头运动: </span>
+                                <span className="text-slate-500 dark:text-slate-400">
+                                  镜头运动:{" "}
+                                </span>
                                 <span className="text-slate-700 dark:text-slate-300">
                                   {shot.camera.type}
                                   {shot.camera.direction && ` ${shot.camera.direction}`}
@@ -505,7 +522,7 @@ export function StoryboardGeneratorDialog({
                               <div>
                                 <span className="text-slate-500 dark:text-slate-400">角色: </span>
                                 <span className="text-slate-700 dark:text-slate-300">
-                                  {shot.characters.join('、')}
+                                  {shot.characters.join("、")}
                                 </span>
                               </div>
                             )}
@@ -519,13 +536,16 @@ export function StoryboardGeneratorDialog({
 
                           {shot.dialogue && (
                             <div className="mt-2 p-2 bg-slate-50 dark:bg-slate-700 rounded text-xs italic text-slate-700 dark:text-slate-300">
-                              <span className="font-medium not-italic">{shot.dialogue.character}:</span> "{shot.dialogue.text}"
+                              <span className="font-medium not-italic">
+                                {shot.dialogue.character}:
+                              </span>{" "}
+                              "{shot.dialogue.text}"
                             </div>
                           )}
 
                           {shot.soundEffects?.length > 0 && (
                             <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                              音效: {shot.soundEffects.join(', ')}
+                              音效: {shot.soundEffects.join(", ")}
                             </div>
                           )}
 

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { X, Download, Trash2, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { X, Download, Trash2, ChevronRight } from "lucide-react";
 
 export const DebugPanel: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
-  const [filter, setFilter] = useState('');
+  const [filter, setFilter] = useState("");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -20,20 +20,22 @@ export const DebugPanel: React.FC = () => {
     return () => clearInterval(interval);
   }, [isOpen]);
 
-  const filteredLogs = logs.filter(log => {
+  const filteredLogs = logs.filter((log) => {
     const searchTerm = filter.toLowerCase();
-    return !searchTerm || 
+    return (
+      !searchTerm ||
       JSON.stringify(log).toLowerCase().includes(searchTerm) ||
-      log.message.toLowerCase().includes(searchTerm);
+      log.message.toLowerCase().includes(searchTerm)
+    );
   });
 
   const handleExport = async () => {
     try {
       await (window as any).exportDebugLogs();
-      alert('调试日志已导出到 debug_logs.log');
+      alert("调试日志已导出到 debug_logs.log");
     } catch (error) {
-      console.error('Failed to export logs:', error);
-      alert('导出失败');
+      console.error("Failed to export logs:", error);
+      alert("导出失败");
     }
   };
 
@@ -44,19 +46,27 @@ export const DebugPanel: React.FC = () => {
 
   const getLevelColor = (level: string) => {
     switch (level) {
-      case 'ERROR': return 'text-red-500';
-      case 'WARN': return 'text-yellow-500';
-      case 'INFO': return 'text-blue-500';
-      case 'DEBUG': return 'text-gray-500';
-      default: return 'text-gray-400';
+      case "ERROR":
+        return "text-red-500";
+      case "WARN":
+        return "text-yellow-500";
+      case "INFO":
+        return "text-blue-500";
+      case "DEBUG":
+        return "text-gray-500";
+      default:
+        return "text-gray-400";
     }
   };
 
   const getSourceColor = (source: string) => {
     switch (source) {
-      case 'backend': return 'text-purple-500';
-      case 'system': return 'text-green-500';
-      default: return 'text-blue-400';
+      case "backend":
+        return "text-purple-500";
+      case "system":
+        return "text-green-500";
+      default:
+        return "text-blue-400";
     }
   };
 
@@ -117,12 +127,24 @@ export const DebugPanel: React.FC = () => {
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-background">
               <tr className="border-b border-border">
-                <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground w-32">时间</th>
-                <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground w-16">级别</th>
-                <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground w-16">来源</th>
-                <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">功能</th>
-                <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">组件</th>
-                <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground flex-1">消息</th>
+                <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground w-32">
+                  时间
+                </th>
+                <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground w-16">
+                  级别
+                </th>
+                <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground w-16">
+                  来源
+                </th>
+                <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
+                  功能
+                </th>
+                <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground">
+                  组件
+                </th>
+                <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground flex-1">
+                  消息
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -144,12 +166,8 @@ export const DebugPanel: React.FC = () => {
                     <td className={`px-2 py-2 text-xs font-mono ${getSourceColor(log.source)}`}>
                       {log.source}
                     </td>
-                    <td className="px-2 py-2 text-xs">
-                      {log.feature || '-'}
-                    </td>
-                    <td className="px-2 py-2 text-xs">
-                      {log.component || '-'}
-                    </td>
+                    <td className="px-2 py-2 text-xs">{log.feature || "-"}</td>
+                    <td className="px-2 py-2 text-xs">{log.component || "-"}</td>
                     <td className="px-2 py-2 text-xs text-foreground break-all max-w-md">
                       <div className="font-medium">{log.message}</div>
                       {log.data && (
@@ -164,9 +182,7 @@ export const DebugPanel: React.FC = () => {
                         </details>
                       )}
                       {log.error && (
-                        <div className="mt-1 text-destructive font-mono text-xs">
-                          {log.error}
-                        </div>
+                        <div className="mt-1 text-destructive font-mono text-xs">{log.error}</div>
                       )}
                     </td>
                   </tr>

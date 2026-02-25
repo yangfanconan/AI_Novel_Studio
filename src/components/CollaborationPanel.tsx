@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Wifi, WifiOff, Copy, Settings, UserPlus } from 'lucide-react';
-import { collaborationService, User, CursorPosition, CollaborationSession } from '../services/collaboration.service';
+import React, { useState, useEffect } from "react";
+import { Users, Wifi, WifiOff, Copy, Settings, UserPlus } from "lucide-react";
+import {
+  collaborationService,
+  User,
+  CursorPosition,
+  CollaborationSession,
+} from "../services/collaboration.service";
 
 interface CollaborationPanelProps {
   projectId?: string;
   onShare?: () => void;
 }
 
-export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
-  projectId,
-  onShare,
-}) => {
+export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({ projectId, onShare }) => {
   const [session, setSession] = useState<CollaborationSession | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
         setIsConnected(true);
       }
     } catch (error) {
-      console.error('Failed to initialize collaboration:', error);
+      console.error("Failed to initialize collaboration:", error);
     }
   };
 
@@ -52,7 +54,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
       const sessionData = await collaborationService.getSession(sessionId);
       setSession(sessionData);
     } catch (error) {
-      console.error('Failed to load session:', error);
+      console.error("Failed to load session:", error);
     }
   };
 
@@ -107,9 +109,11 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
             <button
               onClick={() => setShowUsers(!showUsers)}
               className={`p-1.5 rounded-md transition-colors ${
-                showUsers ? 'text-foreground bg-muted' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                showUsers
+                  ? "text-foreground bg-muted"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
-              title={showUsers ? '隐藏用户' : '显示用户'}
+              title={showUsers ? "隐藏用户" : "显示用户"}
             >
               <Users className="w-4 h-4" />
             </button>
@@ -134,10 +138,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                   border: `1px solid ${user.color}40`,
                 }}
               >
-                <div
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: user.color }}
-                />
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: user.color }} />
                 <span className="font-medium">{user.name}</span>
                 {user.id === currentUser?.id && (
                   <span className="text-xs text-muted-foreground">(你)</span>
@@ -148,9 +149,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
         )}
 
         {session && session.users.length === 0 && (
-          <div className="mt-3 text-sm text-muted-foreground">
-            等待其他用户加入...
-          </div>
+          <div className="mt-3 text-sm text-muted-foreground">等待其他用户加入...</div>
         )}
       </div>
     </div>

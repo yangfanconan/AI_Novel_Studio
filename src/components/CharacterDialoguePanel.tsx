@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   MessageSquare,
   Plus,
@@ -9,7 +9,7 @@ import {
   History,
   User,
   Edit,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   characterDialogueService,
   DialogueSession,
@@ -17,7 +17,7 @@ import {
   CreateSessionRequest,
   SendMessageRequest,
   UpdateSessionRequest,
-} from '../services/characterDialogue.service';
+} from "../services/characterDialogue.service";
 
 interface CharacterDialoguePanelProps {
   characterId: string;
@@ -30,20 +30,20 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
   characterName,
   onClose,
 }) => {
-  const [tabValue, setTabValue] = useState<'sessions' | 'current'>('sessions');
+  const [tabValue, setTabValue] = useState<"sessions" | "current">("sessions");
   const [sessions, setSessions] = useState<DialogueSession[]>([]);
   const [currentSession, setCurrentSession] = useState<DialogueSession | null>(null);
-  const [messageInput, setMessageInput] = useState('');
+  const [messageInput, setMessageInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
-  const [newSessionName, setNewSessionName] = useState('');
-  const [newSystemPrompt, setNewSystemPrompt] = useState('');
+  const [newSessionName, setNewSessionName] = useState("");
+  const [newSystemPrompt, setNewSystemPrompt] = useState("");
   const [settings, setSettings] = useState({
-    session_name: '',
-    system_prompt: '',
-    ai_model: 'default',
+    session_name: "",
+    system_prompt: "",
+    ai_model: "default",
     temperature: 0.7,
     max_tokens: 1000,
   });
@@ -59,7 +59,7 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
       setSessions(data);
       setError(null);
     } catch (err) {
-      setError('加载对话会话失败');
+      setError("加载对话会话失败");
       console.error(err);
     } finally {
       setLoading(false);
@@ -73,7 +73,7 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
       setCurrentSession(session);
       setError(null);
     } catch (err) {
-      setError('加载会话详情失败');
+      setError("加载会话详情失败");
       console.error(err);
     } finally {
       setLoading(false);
@@ -92,11 +92,11 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
       setSessions([session, ...sessions]);
       setCurrentSession(session);
       setCreateDialogOpen(false);
-      setNewSessionName('');
-      setNewSystemPrompt('');
+      setNewSessionName("");
+      setNewSystemPrompt("");
       setError(null);
     } catch (err) {
-      setError('创建会话失败');
+      setError("创建会话失败");
       console.error(err);
     } finally {
       setLoading(false);
@@ -111,7 +111,7 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
       setCurrentSession(session);
       setError(null);
     } catch (err) {
-      setError('创建快速会话失败');
+      setError("创建快速会话失败");
       console.error(err);
     } finally {
       setLoading(false);
@@ -129,10 +129,10 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
       };
       await characterDialogueService.sendMessage(request);
       await loadSession(currentSession.id);
-      setMessageInput('');
+      setMessageInput("");
       setError(null);
     } catch (err) {
-      setError('发送消息失败');
+      setError("发送消息失败");
       console.error(err);
     } finally {
       setLoading(false);
@@ -143,13 +143,13 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
     try {
       setLoading(true);
       await characterDialogueService.deleteSession(sessionId);
-      setSessions(sessions.filter(s => s.id !== sessionId));
+      setSessions(sessions.filter((s) => s.id !== sessionId));
       if (currentSession?.id === sessionId) {
         setCurrentSession(null);
       }
       setError(null);
     } catch (err) {
-      setError('删除会话失败');
+      setError("删除会话失败");
       console.error(err);
     } finally {
       setLoading(false);
@@ -171,11 +171,11 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
       };
       const updated = await characterDialogueService.updateSession(request);
       setCurrentSession(updated);
-      setSessions(sessions.map(s => s.id === updated.id ? updated : s));
+      setSessions(sessions.map((s) => (s.id === updated.id ? updated : s)));
       setSettingsDialogOpen(false);
       setError(null);
     } catch (err) {
-      setError('更新设置失败');
+      setError("更新设置失败");
       console.error(err);
     } finally {
       setLoading(false);
@@ -191,7 +191,7 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
       }
       setError(null);
     } catch (err) {
-      setError('重新生成回复失败');
+      setError("重新生成回复失败");
       console.error(err);
     } finally {
       setLoading(false);
@@ -207,7 +207,7 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
       }
       setError(null);
     } catch (err) {
-      setError('删除消息失败');
+      setError("删除消息失败");
       console.error(err);
     } finally {
       setLoading(false);
@@ -218,7 +218,7 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
     if (currentSession) {
       setSettings({
         session_name: currentSession.session_name,
-        system_prompt: currentSession.system_prompt || '',
+        system_prompt: currentSession.system_prompt || "",
         ai_model: currentSession.settings.ai_model,
         temperature: currentSession.settings.temperature,
         max_tokens: currentSession.settings.max_tokens,
@@ -249,22 +249,22 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
       <div className="border-b border-border">
         <div className="flex gap-1">
           <button
-            onClick={() => setTabValue('sessions')}
+            onClick={() => setTabValue("sessions")}
             className={`px-4 py-2 text-sm rounded-t-md transition-colors ${
-              tabValue === 'sessions'
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-muted'
+              tabValue === "sessions"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-muted"
             }`}
           >
             对话列表
           </button>
           <button
-            onClick={() => setTabValue('current')}
+            onClick={() => setTabValue("current")}
             disabled={!currentSession}
             className={`px-4 py-2 text-sm rounded-t-md transition-colors ${
-              tabValue === 'current' && currentSession
-                ? 'bg-primary text-primary-foreground'
-                : 'text-muted-foreground hover:bg-muted'
+              tabValue === "current" && currentSession
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-muted"
             }`}
           >
             当前对话
@@ -272,7 +272,7 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
         </div>
       </div>
 
-      {tabValue === 'sessions' && (
+      {tabValue === "sessions" && (
         <div className="p-4 bg-card">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold">对话会话</h2>
@@ -302,7 +302,7 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
                 disabled={loading}
                 className="p-1.5 border border-border rounded-md hover:bg-muted"
               >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               </button>
             </div>
           </div>
@@ -322,7 +322,7 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
                   key={session.id}
                   onClick={() => {
                     loadSession(session.id);
-                    setTabValue('current');
+                    setTabValue("current");
                   }}
                   className="p-3 border border-border rounded-md hover:bg-muted cursor-pointer"
                 >
@@ -330,7 +330,8 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
                     <div className="flex-1">
                       <div className="font-medium">{session.session_name}</div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        {session.messages.length} 条消息 • 更新于 {new Date(session.updated_at).toLocaleString()}
+                        {session.messages.length} 条消息 • 更新于{" "}
+                        {new Date(session.updated_at).toLocaleString()}
                       </div>
                       {session.context_summary && (
                         <div className="text-xs text-muted-foreground mt-0.5">
@@ -367,7 +368,7 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
         </div>
       )}
 
-      {tabValue === 'current' && currentSession && (
+      {tabValue === "current" && currentSession && (
         <div className="flex flex-col gap-4 p-4">
           <div className="p-4 border border-border rounded-md bg-card">
             <div className="flex justify-between items-center">
@@ -414,16 +415,16 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
                 {currentSession.messages.map((msg, idx) => (
                   <div
                     key={msg.id}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                   >
-                    <div className={`max-w-[80%] p-3 rounded-lg ${
-                      msg.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                    }`}>
+                    <div
+                      className={`max-w-[80%] p-3 rounded-lg ${
+                        msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                      }`}
+                    >
                       <div className="flex justify-between items-start gap-2 mb-1">
                         <span className="text-xs font-medium">
-                          {msg.role === 'user' ? '你' : characterName}
+                          {msg.role === "user" ? "你" : characterName}
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {new Date(msg.created_at).toLocaleString()}
@@ -431,7 +432,7 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
                       </div>
                       <div className="whitespace-pre-wrap text-sm">{msg.content}</div>
                     </div>
-                    {msg.role === 'assistant' && (
+                    {msg.role === "assistant" && (
                       <div className="flex gap-2 mt-2 text-xs">
                         <button
                           onClick={() => handleRegenerateResponse(msg.id)}
@@ -467,7 +468,7 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
                 onKeyPress={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
+                  if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     handleSendMessage();
                   }
@@ -573,14 +574,18 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">温度: {settings.temperature}</label>
+                <label className="block text-sm font-medium mb-1">
+                  温度: {settings.temperature}
+                </label>
                 <input
                   type="range"
                   min={0}
                   max={2}
                   step={0.1}
                   value={settings.temperature}
-                  onChange={(e) => setSettings({ ...settings, temperature: parseFloat(e.target.value) })}
+                  onChange={(e) =>
+                    setSettings({ ...settings, temperature: parseFloat(e.target.value) })
+                  }
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
@@ -590,14 +595,18 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">最大令牌数: {settings.max_tokens}</label>
+                <label className="block text-sm font-medium mb-1">
+                  最大令牌数: {settings.max_tokens}
+                </label>
                 <input
                   type="range"
                   min={100}
                   max={4000}
                   step={100}
                   value={settings.max_tokens}
-                  onChange={(e) => setSettings({ ...settings, max_tokens: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setSettings({ ...settings, max_tokens: parseInt(e.target.value) })
+                  }
                   className="w-full"
                 />
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">

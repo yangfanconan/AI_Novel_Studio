@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   WritingChoice,
   WritingSuggestion,
   ConsistencyWarning,
   DetectedCharacter,
-} from '../types/writingAssistant';
-import { writingAssistantService } from '../services/writingAssistant.service';
-import { Character, KnowledgeContext } from '../types';
-import { characterService } from '../services/api';
+} from "../types/writingAssistant";
+import { writingAssistantService } from "../services/writingAssistant.service";
+import { Character, KnowledgeContext } from "../types";
+import { characterService } from "../services/api";
 
 interface WritingAssistantProps {
   projectId: string;
@@ -19,7 +19,28 @@ interface WritingAssistantProps {
 }
 
 const isPronoun = (name: string): boolean => {
-  const pronouns = ['我', '你', '他', '她', '它', '我们', '你们', '他们', '她们', '它们', '自己', '咱们', '这', '那', '谁', '哪', '什么', '怎么', '怎样', '如何'];
+  const pronouns = [
+    "我",
+    "你",
+    "他",
+    "她",
+    "它",
+    "我们",
+    "你们",
+    "他们",
+    "她们",
+    "它们",
+    "自己",
+    "咱们",
+    "这",
+    "那",
+    "谁",
+    "哪",
+    "什么",
+    "怎么",
+    "怎样",
+    "如何",
+  ];
   return pronouns.includes(name.trim()) || name.length <= 1;
 };
 
@@ -42,7 +63,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
     new_settings: string[];
   } | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
-  const [activeTab, setActiveTab] = useState<'choices' | 'validation' | 'context'>('choices');
+  const [activeTab, setActiveTab] = useState<"choices" | "validation" | "context">("choices");
   const [expandedWarning, setExpandedWarning] = useState<string | null>(null);
   const [knowledgeContext, setKnowledgeContext] = useState<KnowledgeContext | null>(null);
   const [loadingContext, setLoadingContext] = useState(false);
@@ -62,7 +83,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
       const chars = await characterService.getCharacters(projectId);
       setCharacters(chars);
     } catch (error) {
-      console.error('Failed to load characters:', error);
+      console.error("Failed to load characters:", error);
     }
   };
 
@@ -72,7 +93,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
       const context = await writingAssistantService.buildKnowledgeContext(projectId, chapterId);
       setKnowledgeContext(context);
     } catch (error) {
-      console.error('Failed to load knowledge context:', error);
+      console.error("Failed to load knowledge context:", error);
     } finally {
       setLoadingContext(false);
     }
@@ -93,7 +114,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
       });
       setSuggestion(result);
     } catch (error) {
-      console.error('Failed to generate choices:', error);
+      console.error("Failed to generate choices:", error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       setError(errorMessage);
     } finally {
@@ -113,9 +134,9 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
         content: currentContent,
       });
       setValidationResult(result);
-      setActiveTab('validation');
+      setActiveTab("validation");
     } catch (error) {
-      console.error('Failed to validate content:', error);
+      console.error("Failed to validate content:", error);
     } finally {
       setValidating(false);
     }
@@ -127,23 +148,23 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'high':
-        return 'text-red-500 bg-red-50 border-red-200';
-      case 'medium':
-        return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case "high":
+        return "text-red-500 bg-red-50 border-red-200";
+      case "medium":
+        return "text-yellow-600 bg-yellow-50 border-yellow-200";
       default:
-        return 'text-blue-500 bg-blue-50 border-blue-200';
+        return "text-blue-500 bg-blue-50 border-blue-200";
     }
   };
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
-      case 'high':
-        return '🔴';
-      case 'medium':
-        return '🟡';
+      case "high":
+        return "🔴";
+      case "medium":
+        return "🟡";
       default:
-        return '🔵';
+        return "🔵";
     }
   };
 
@@ -158,21 +179,21 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
       <div className="flex border-b border-gray-200">
         <button
           className={`flex-1 py-2 text-sm font-medium ${
-            activeTab === 'choices'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
+            activeTab === "choices"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
           }`}
-          onClick={() => setActiveTab('choices')}
+          onClick={() => setActiveTab("choices")}
         >
           续写选项
         </button>
         <button
           className={`flex-1 py-2 text-sm font-medium ${
-            activeTab === 'validation'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
+            activeTab === "validation"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
           }`}
-          onClick={() => setActiveTab('validation')}
+          onClick={() => setActiveTab("validation")}
         >
           一致性检查
           {validationResult && validationResult.consistency_warnings.length > 0 && (
@@ -183,18 +204,18 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
         </button>
         <button
           className={`flex-1 py-2 text-sm font-medium ${
-            activeTab === 'context'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
+            activeTab === "context"
+              ? "text-blue-600 border-b-2 border-blue-600"
+              : "text-gray-500 hover:text-gray-700"
           }`}
-          onClick={() => setActiveTab('context')}
+          onClick={() => setActiveTab("context")}
         >
           知识库
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {activeTab === 'choices' ? (
+        {activeTab === "choices" ? (
           <div className="p-4">
             <button
               onClick={generateChoices}
@@ -222,26 +243,22 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
                   生成中...
                 </span>
               ) : (
-                '✨ 生成续写选项'
+                "✨ 生成续写选项"
               )}
             </button>
 
             {currentContent && currentContent.length < 100 && (
-              <p className="text-sm text-gray-500 text-center">
-                请先输入至少100字的内容
-              </p>
+              <p className="text-sm text-gray-500 text-center">请先输入至少100字的内容</p>
             )}
 
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-700 font-medium mb-1">
-                  ❌ 生成失败
-                </p>
+                <p className="text-sm text-red-700 font-medium mb-1">❌ 生成失败</p>
                 <p className="text-xs text-red-600">{error}</p>
-                {(error.includes('401') || error.includes('Unauthorized') || error.includes('API')) && (
-                  <p className="text-xs text-red-500 mt-1">
-                    请检查API密钥是否正确配置
-                  </p>
+                {(error.includes("401") ||
+                  error.includes("Unauthorized") ||
+                  error.includes("API")) && (
+                  <p className="text-xs text-red-500 mt-1">请检查API密钥是否正确配置</p>
                 )}
               </div>
             )}
@@ -250,9 +267,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
               <div className="space-y-4">
                 {suggestion.consistency_warnings.length > 0 && (
                   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm text-yellow-700 font-medium mb-2">
-                      ⚠️ 检测到一致性问题
-                    </p>
+                    <p className="text-sm text-yellow-700 font-medium mb-2">⚠️ 检测到一致性问题</p>
                     <ul className="text-xs text-yellow-600 space-y-1">
                       {suggestion.consistency_warnings.slice(0, 2).map((w, i) => (
                         <li key={i}>
@@ -265,9 +280,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
 
                 {suggestion.new_characters.length > 0 && (
                   <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <p className="text-sm text-purple-700 font-medium mb-2">
-                      🆕 检测到新角色
-                    </p>
+                    <p className="text-sm text-purple-700 font-medium mb-2">🆕 检测到新角色</p>
                     <div className="flex flex-wrap gap-2">
                       {suggestion.new_characters.map((name, i) => (
                         <button
@@ -292,16 +305,12 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-lg">{choice.direction_icon}</span>
-                        <span className="font-medium text-gray-800">
-                          {choice.direction}
-                        </span>
+                        <span className="font-medium text-gray-800">{choice.direction}</span>
                         <span className="text-xs px-2 py-0.5 bg-gray-200 text-gray-600 rounded">
                           {choice.emotional_tone}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600 line-clamp-3 mb-2">
-                        {choice.preview}
-                      </p>
+                      <p className="text-sm text-gray-600 line-clamp-3 mb-2">{choice.preview}</p>
                       <p className="text-xs text-gray-400">{choice.hint}</p>
                       {choice.characters.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
@@ -321,7 +330,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
               </div>
             )}
           </div>
-        ) : activeTab === 'validation' ? (
+        ) : activeTab === "validation" ? (
           <div className="p-4">
             <button
               onClick={validateContent}
@@ -349,44 +358,49 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
                   检查中...
                 </span>
               ) : (
-                '🔍 检查一致性'
+                "🔍 检查一致性"
               )}
             </button>
 
             {validationResult && (
               <div className="space-y-4">
-                {validationResult.detected_characters.filter(char => !isPronoun(char.name)).length > 0 && (
+                {validationResult.detected_characters.filter((char) => !isPronoun(char.name))
+                  .length > 0 && (
                   <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm font-medium text-blue-700 mb-2">
-                      👥 出场角色 ({validationResult.detected_characters.filter(char => !isPronoun(char.name)).length})
+                      👥 出场角色 (
+                      {
+                        validationResult.detected_characters.filter((char) => !isPronoun(char.name))
+                          .length
+                      }
+                      )
                     </p>
                     <div className="space-y-2">
-                      {validationResult.detected_characters.filter(char => !isPronoun(char.name)).map((char, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between text-sm"
-                        >
-                          <span
-                            className={
-                              char.is_new ? 'text-purple-600 font-medium' : 'text-gray-700'
-                            }
-                          >
-                            {char.is_new && '🆕 '}
-                            {char.name}
-                          </span>
-                          {char.is_new && (
-                            <button
-                              onClick={() => {
-                                console.log('Creating character:', char.name);
-                                onCreateCharacter(char.name);
-                              }}
-                              className="text-xs px-2 py-1 bg-purple-100 text-purple-600 rounded hover:bg-purple-200 transition-colors"
+                      {validationResult.detected_characters
+                        .filter((char) => !isPronoun(char.name))
+                        .map((char, i) => (
+                          <div key={i} className="flex items-center justify-between text-sm">
+                            <span
+                              className={
+                                char.is_new ? "text-purple-600 font-medium" : "text-gray-700"
+                              }
                             >
-                              创建
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                              {char.is_new && "🆕 "}
+                              {char.name}
+                            </span>
+                            {char.is_new && (
+                              <button
+                                onClick={() => {
+                                  console.log("Creating character:", char.name);
+                                  onCreateCharacter(char.name);
+                                }}
+                                className="text-xs px-2 py-1 bg-purple-100 text-purple-600 rounded hover:bg-purple-200 transition-colors"
+                              >
+                                创建
+                              </button>
+                            )}
+                          </div>
+                        ))}
                     </div>
                   </div>
                 )}
@@ -399,16 +413,12 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
                     {validationResult.consistency_warnings.map((warning, i) => (
                       <div
                         key={i}
-                        className={`p-3 border rounded-lg ${getSeverityColor(
-                          warning.severity
-                        )}`}
+                        className={`p-3 border rounded-lg ${getSeverityColor(warning.severity)}`}
                       >
                         <div
                           className="flex items-center justify-between cursor-pointer"
                           onClick={() =>
-                            setExpandedWarning(
-                              expandedWarning === `${i}` ? null : `${i}`
-                            )
+                            setExpandedWarning(expandedWarning === `${i}` ? null : `${i}`)
                           }
                         >
                           <div className="flex items-center gap-2">
@@ -417,9 +427,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
                               {warning.character_name || warning.warning_type}
                             </span>
                           </div>
-                          <span className="text-xs">
-                            {expandedWarning === `${i}` ? '▼' : '▶'}
-                          </span>
+                          <span className="text-xs">{expandedWarning === `${i}` ? "▼" : "▶"}</span>
                         </div>
                         {expandedWarning === `${i}` && (
                           <div className="mt-2 text-sm space-y-1">
@@ -439,17 +447,13 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
                 ) : (
                   <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
                     <span className="text-2xl">✅</span>
-                    <p className="text-sm text-green-700 mt-2">
-                      未发现一致性问题
-                    </p>
+                    <p className="text-sm text-green-700 mt-2">未发现一致性问题</p>
                   </div>
                 )}
 
                 {validationResult.new_settings.length > 0 && (
                   <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                    <p className="text-sm font-medium text-orange-700 mb-2">
-                      📝 新设定/名词
-                    </p>
+                    <p className="text-sm font-medium text-orange-700 mb-2">📝 新设定/名词</p>
                     <div className="flex flex-wrap gap-2">
                       {validationResult.new_settings.map((setting, i) => (
                         <div key={i} className="flex items-center gap-1">
@@ -459,7 +463,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
                           {onCreateWorldView && (
                             <button
                               onClick={() => {
-                                console.log('Creating worldview:', setting);
+                                console.log("Creating worldview:", setting);
                                 onCreateWorldView(setting);
                               }}
                               className="text-xs px-1.5 py-1 bg-orange-200 text-orange-700 rounded hover:bg-orange-300 transition-colors"
@@ -476,7 +480,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
               </div>
             )}
           </div>
-        ) : activeTab === 'context' ? (
+        ) : activeTab === "context" ? (
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-sm font-medium text-gray-700">项目知识库</h4>
@@ -485,7 +489,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
                 disabled={loadingContext}
                 className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
               >
-                {loadingContext ? '刷新中...' : '刷新'}
+                {loadingContext ? "刷新中..." : "刷新"}
               </button>
             </div>
 
@@ -513,9 +517,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
 
                 {knowledgeContext.characters_summary && (
                   <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <p className="text-sm font-medium text-purple-700 mb-2">
-                      📋 角色信息摘要
-                    </p>
+                    <p className="text-sm font-medium text-purple-700 mb-2">📋 角色信息摘要</p>
                     <p className="text-xs text-purple-600 whitespace-pre-line max-h-32 overflow-y-auto">
                       {knowledgeContext.characters_summary}
                     </p>
@@ -524,9 +526,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
 
                 {knowledgeContext.worldview_summary && (
                   <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm font-medium text-green-700 mb-2">
-                      🌍 世界观摘要
-                    </p>
+                    <p className="text-sm font-medium text-green-700 mb-2">🌍 世界观摘要</p>
                     <p className="text-xs text-green-600 whitespace-pre-line max-h-32 overflow-y-auto">
                       {knowledgeContext.worldview_summary}
                     </p>
@@ -555,9 +555,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
 
                 {knowledgeContext.plot_summary && (
                   <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                    <p className="text-sm font-medium text-orange-700 mb-2">
-                      📖 剧情概要
-                    </p>
+                    <p className="text-sm font-medium text-orange-700 mb-2">📖 剧情概要</p>
                     <p className="text-xs text-orange-600 whitespace-pre-line max-h-32 overflow-y-auto">
                       {knowledgeContext.plot_summary}
                     </p>

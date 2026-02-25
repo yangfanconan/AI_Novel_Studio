@@ -4,27 +4,34 @@ use crate::multimedia_generation::storyboard::StoryboardGenerator;
 use crate::multimedia_generation::script::ScriptGenerator;
 use crate::multimedia_generation::comic::ComicGenerator;
 use crate::multimedia_generation::illustration::IllustrationGenerator;
+use crate::multimedia_generation::image_client::{ImageClient, ImageProviderConfig};
 use crate::ai::OpenAIAdapter;
 use std::sync::Arc;
 use tauri::State;
+use tokio::sync::RwLock;
 
 #[derive(Clone)]
 pub struct MultimediaState {
-    storyboard_generator: Arc<StoryboardGenerator>,
-    script_generator: Arc<ScriptGenerator>,
-    comic_generator: Arc<ComicGenerator>,
-    illustration_generator: Arc<IllustrationGenerator>,
+    pub storyboard_generator: Arc<StoryboardGenerator>,
+    pub script_generator: Arc<ScriptGenerator>,
+    pub comic_generator: Arc<ComicGenerator>,
+    pub illustration_generator: Arc<IllustrationGenerator>,
+    pub image_client: Arc<ImageClient>,
+    pub provider_config: Arc<RwLock<Option<ImageProviderConfig>>>,
 }
 
 impl MultimediaState {
     pub fn new(api_key: String) -> Self {
-        let ai_model = Arc::new(OpenAIAdapter::new(api_key, "gpt-4".to_string()));
+        let ai_model = Arc::new(OpenAIAdapter::new(api_key.clone(), "gpt-4".to_string()));
+        let image_client = Arc::new(ImageClient::new());
 
         Self {
             storyboard_generator: Arc::new(StoryboardGenerator::new(ai_model.clone())),
             script_generator: Arc::new(ScriptGenerator::new(ai_model.clone())),
             comic_generator: Arc::new(ComicGenerator::new(ai_model.clone())),
             illustration_generator: Arc::new(IllustrationGenerator::new(ai_model)),
+            image_client,
+            provider_config: Arc::new(RwLock::new(None)),
         }
     }
 }

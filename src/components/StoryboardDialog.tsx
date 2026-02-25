@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, Sparkles, Loader2, Copy, Download, Check, Film } from 'lucide-react';
-import { aiGeneratorService } from '../services/api';
-import type { StoryboardScene, Chapter } from '../types';
+import React, { useState, useEffect } from "react";
+import { X, Sparkles, Loader2, Copy, Download, Check, Film } from "lucide-react";
+import { aiGeneratorService } from "../services/api";
+import type { StoryboardScene, Chapter } from "../types";
 
 interface StoryboardDialogProps {
   isOpen: boolean;
@@ -20,13 +20,13 @@ export function StoryboardDialog({
 }: StoryboardDialogProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedChapterId, setSelectedChapterId] = useState<string>('');
+  const [selectedChapterId, setSelectedChapterId] = useState<string>("");
   const [scenes, setScenes] = useState<StoryboardScene[]>([]);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedChapterId(currentChapterId || '');
+      setSelectedChapterId(currentChapterId || "");
       setScenes([]);
       setError(null);
     }
@@ -34,7 +34,7 @@ export function StoryboardDialog({
 
   const handleGenerate = async () => {
     if (!selectedChapterId) {
-      setError('请选择一个章节');
+      setError("请选择一个章节");
       return;
     }
 
@@ -60,26 +60,30 @@ export function StoryboardDialog({
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
   const handleCopyAll = async () => {
-    const text = scenes.map((scene, index) => formatSceneText(scene, index + 1)).join('\n\n---\n\n');
+    const text = scenes
+      .map((scene, index) => formatSceneText(scene, index + 1))
+      .join("\n\n---\n\n");
     try {
       await navigator.clipboard.writeText(text);
       setCopiedIndex(-1);
       setTimeout(() => setCopiedIndex(null), 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
   const handleExport = () => {
-    const text = scenes.map((scene, index) => formatSceneText(scene, index + 1)).join('\n\n---\n\n');
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const text = scenes
+      .map((scene, index) => formatSceneText(scene, index + 1))
+      .join("\n\n---\n\n");
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `分镜_${selectedChapterId}_${new Date().toISOString().slice(0, 10)}.txt`;
     document.body.appendChild(a);
@@ -96,7 +100,7 @@ export function StoryboardDialog({
     if (scene.lighting) text += `灯光: ${scene.lighting}\n`;
     if (scene.mood) text += `氛围: ${scene.mood}\n`;
     if (scene.character_actions && scene.character_actions.length > 0) {
-      text += `角色动作:\n${scene.character_actions.map(a => `  - ${a}`).join('\n')}\n`;
+      text += `角色动作:\n${scene.character_actions.map((a) => `  - ${a}`).join("\n")}\n`;
     }
     if (scene.dialogue) text += `对白: ${scene.dialogue}\n`;
     if (scene.notes) text += `备注: ${scene.notes}\n`;
@@ -159,7 +163,7 @@ export function StoryboardDialog({
               )}
             </button>
           </div>
-          
+
           {error && (
             <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm">
               {error}
@@ -254,20 +258,26 @@ export function StoryboardDialog({
                       {scene.camera_angle && (
                         <div>
                           <span className="text-slate-500 dark:text-slate-400">机位: </span>
-                          <span className="text-slate-700 dark:text-slate-300">{scene.camera_angle}</span>
+                          <span className="text-slate-700 dark:text-slate-300">
+                            {scene.camera_angle}
+                          </span>
                         </div>
                       )}
                       {scene.lighting && (
                         <div>
                           <span className="text-slate-500 dark:text-slate-400">灯光: </span>
-                          <span className="text-slate-700 dark:text-slate-300">{scene.lighting}</span>
+                          <span className="text-slate-700 dark:text-slate-300">
+                            {scene.lighting}
+                          </span>
                         </div>
                       )}
                     </div>
 
                     {scene.character_actions && scene.character_actions.length > 0 && (
                       <div>
-                        <span className="text-slate-500 dark:text-slate-400 text-xs">角色动作:</span>
+                        <span className="text-slate-500 dark:text-slate-400 text-xs">
+                          角色动作:
+                        </span>
                         <ul className="mt-1 text-xs text-slate-700 dark:text-slate-300 list-disc list-inside">
                           {scene.character_actions.map((action, i) => (
                             <li key={i}>{action}</li>

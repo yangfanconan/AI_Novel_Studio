@@ -26,6 +26,10 @@ mod character_tags;
 mod character_growth_commands;
 mod character_dialogue;
 mod character_dialogue_commands;
+mod import;
+mod prompt_template_commands;
+mod outline;
+mod reverse_analysis;
 
 use tauri::Manager;
 use logger::Logger;
@@ -47,6 +51,7 @@ fn load_api_key_from_db(db_path: &std::path::PathBuf, provider: &str) -> Option<
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let app_logger = Logger::new().with_feature("main");
             app_logger.info("Initializing application");
@@ -141,7 +146,6 @@ fn main() {
             commands::get_models,
             commands::ai_continue_novel,
             commands::ai_rewrite_content,
-            commands::get_prompt_templates,
             commands::save_debug_log,
             commands::save_debug_log_file,
             commands::set_bigmodel_api_key,
@@ -201,6 +205,26 @@ fn main() {
             commands::export_project,
             commands::export_chapter,
             commands::get_export_formats,
+            // 导入命令
+            commands::import_file,
+            commands::import_to_project,
+            // 提示词模板命令
+            prompt_template_commands::get_custom_prompt_templates,
+            prompt_template_commands::get_prompt_template_by_id,
+            prompt_template_commands::create_prompt_template,
+            prompt_template_commands::update_prompt_template,
+            prompt_template_commands::delete_prompt_template,
+            prompt_template_commands::reset_prompt_template_to_default,
+            prompt_template_commands::initialize_default_prompt_templates,
+            // 大纲系统命令
+            outline::commands::get_outline_nodes,
+            outline::commands::create_outline_node,
+            outline::commands::update_outline_node,
+            outline::commands::delete_outline_node,
+            outline::commands::get_outline_templates,
+            outline::commands::apply_outline_template,
+            outline::commands::generate_outline_with_ai,
+            outline::commands::save_generated_outline,
             // 插件系统命令
             plugin_commands::plugin_get_all,
             plugin_commands::plugin_get,
@@ -295,6 +319,85 @@ fn main() {
             multimedia_generation_commands::mmg_generate_scene_illustration,
             multimedia_generation_commands::mmg_generate_character_portrait,
             multimedia_generation_commands::mmg_generate_cover,
+            // 逆向分析命令
+            reverse_analysis::commands::reverse_analyze_novel,
+            reverse_analysis::commands::reverse_analyze_and_import,
+            // AI 影视生成命令 (moyin-creator 集成)
+            ai::prompt_compiler::compile_image_prompt,
+            ai::prompt_compiler::compile_video_prompt,
+            ai::prompt_compiler::compile_screenplay_prompt,
+            ai::prompt_compiler::get_negative_prompt,
+            ai::character_bible::create_character_bible,
+            ai::character_bible::get_character_bibles,
+            ai::character_bible::update_character_bible,
+            ai::character_bible::delete_character_bible,
+            ai::character_bible::build_consistency_prompt,
+            ai::character_bible::get_character_style_tokens,
+            ai::task_poller::poll_task_status,
+            ai::task_queue::create_task,
+            ai::task_queue::get_task,
+            ai::task_queue::get_project_tasks,
+            ai::task_queue::cancel_task,
+            ai::task_queue::get_queue_stats,
+            ai::task_queue::clear_completed_tasks,
+            // 剧本解析命令
+            ai::script_parser::parse_novel_to_screenplay,
+            ai::script_parser::parse_ai_screenplay_response,
+            ai::script_parser::merge_screenplay_scenes,
+            // 场景管理命令
+            ai::scene_manager::create_script_scene,
+            ai::scene_manager::get_script_scene,
+            ai::scene_manager::get_project_script_scenes,
+            ai::scene_manager::get_chapter_script_scenes,
+            ai::scene_manager::update_script_scene,
+            ai::scene_manager::delete_script_scene,
+            ai::scene_manager::batch_create_script_scenes,
+            ai::scene_manager::update_scene_generation_status,
+            ai::scene_manager::set_scene_generated_image,
+            ai::scene_manager::set_scene_generated_video,
+            ai::scene_manager::get_scene_statistics_cmd,
+            // 批量生产命令
+            ai::batch_production::create_batch_production_job,
+            ai::batch_production::get_batch_production_job,
+            ai::batch_production::get_project_batch_jobs,
+            ai::batch_production::cancel_batch_job,
+            ai::batch_production::pause_batch_job,
+            ai::batch_production::resume_batch_job,
+            ai::batch_production::get_batch_job_progress,
+            ai::batch_production::prepare_scenes_from_novel,
+            ai::batch_production::prepare_scenes_from_ai,
+            ai::batch_production::get_batch_job_statistics,
+            // ComfyUI 命令
+            ai::comfyui_client::comfyui_check_connection,
+            ai::comfyui_client::comfyui_queue_prompt,
+            ai::comfyui_client::comfyui_get_queue_status,
+            ai::comfyui_client::comfyui_wait_for_completion,
+            ai::comfyui_client::comfyui_generate_image,
+            ai::comfyui_client::comfyui_get_image_base64,
+            ai::comfyui_client::comfyui_upload_image,
+            ai::comfyui_client::comfyui_interrupt,
+            ai::comfyui_client::comfyui_clear_queue,
+            ai::comfyui_client::comfyui_get_object_info,
+            // 工作流模板命令
+            ai::workflow_templates::create_workflow_template,
+            ai::workflow_templates::get_workflow_template,
+            ai::workflow_templates::get_all_workflow_templates,
+            ai::workflow_templates::get_templates_by_category,
+            ai::workflow_templates::search_workflow_templates,
+            ai::workflow_templates::update_workflow_template,
+            ai::workflow_templates::delete_workflow_template,
+            ai::workflow_templates::toggle_template_favorite,
+            ai::workflow_templates::get_template_categories,
+            ai::workflow_templates::parse_workflow_template,
+            ai::workflow_templates::apply_template_variables,
+            ai::workflow_templates::init_builtin_templates,
+            // Seedance 2.0 命令
+            ai::seedance_2_0::seedance_validate_request,
+            ai::seedance_2_0::seedance_build_prompt,
+            ai::seedance_2_0::seedance_get_constraints,
+            ai::seedance_2_0::seedance_create_grid,
+            ai::seedance_2_0::seedance_validate_grid,
+            ai::seedance_2_0::seedance_prepare_narrative_video,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

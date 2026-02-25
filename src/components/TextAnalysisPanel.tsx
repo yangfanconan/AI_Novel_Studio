@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   FileText,
   BarChart3,
@@ -8,21 +8,20 @@ import {
   CheckCircle,
   TrendingUp,
   Zap,
-} from 'lucide-react';
-import { textAnalysisService, FullAnalysis } from '../services/textAnalysis.service';
+} from "lucide-react";
+import { textAnalysisService, FullAnalysis } from "../services/textAnalysis.service";
 
 interface TextAnalysisPanelProps {
   text: string;
   characters?: any[];
 }
 
-export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({
-  text,
-  characters = [],
-}) => {
+export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({ text, characters = [] }) => {
   const [analysis, setAnalysis] = useState<FullAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'style' | 'rhythm' | 'emotion' | 'readability' | 'repetitions' | 'logic'>('style');
+  const [activeTab, setActiveTab] = useState<
+    "style" | "rhythm" | "emotion" | "readability" | "repetitions" | "logic"
+  >("style");
 
   const runAnalysis = async () => {
     setLoading(true);
@@ -30,24 +29,28 @@ export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({
       const result = await textAnalysisService.runFullAnalysis(text, characters);
       setAnalysis(result);
     } catch (error) {
-      console.error('Analysis failed:', error);
+      console.error("Analysis failed:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-red-600';
+    if (score >= 80) return "text-green-600";
+    if (score >= 60) return "text-yellow-600";
+    return "text-red-600";
   };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'low': return 'text-yellow-600';
-      case 'medium': return 'text-orange-600';
-      case 'high': return 'text-red-600';
-      default: return 'text-gray-600';
+      case "low":
+        return "text-yellow-600";
+      case "medium":
+        return "text-orange-600";
+      case "high":
+        return "text-red-600";
+      default:
+        return "text-gray-600";
     }
   };
 
@@ -83,66 +86,66 @@ export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({
           <>
             <div className="mt-3 flex gap-1 border-b border-border pb-2">
               <button
-                onClick={() => setActiveTab('style')}
+                onClick={() => setActiveTab("style")}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  activeTab === 'style'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted'
+                  activeTab === "style"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
                 }`}
               >
                 <BookOpen className="w-3 h-3 inline mr-1" />
                 文风
               </button>
               <button
-                onClick={() => setActiveTab('rhythm')}
+                onClick={() => setActiveTab("rhythm")}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  activeTab === 'rhythm'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted'
+                  activeTab === "rhythm"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
                 }`}
               >
                 <BarChart3 className="w-3 h-3 inline mr-1" />
                 节奏
               </button>
               <button
-                onClick={() => setActiveTab('emotion')}
+                onClick={() => setActiveTab("emotion")}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  activeTab === 'emotion'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted'
+                  activeTab === "emotion"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
                 }`}
               >
                 <Heart className="w-3 h-3 inline mr-1" />
                 情感
               </button>
               <button
-                onClick={() => setActiveTab('readability')}
+                onClick={() => setActiveTab("readability")}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  activeTab === 'readability'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted'
+                  activeTab === "readability"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
                 }`}
               >
                 <BookOpen className="w-3 h-3 inline mr-1" />
                 可读性
               </button>
               <button
-                onClick={() => setActiveTab('repetitions')}
+                onClick={() => setActiveTab("repetitions")}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  activeTab === 'repetitions'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted'
+                  activeTab === "repetitions"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
                 }`}
               >
                 <TrendingUp className="w-3 h-3 inline mr-1" />
                 重复
               </button>
               <button
-                onClick={() => setActiveTab('logic')}
+                onClick={() => setActiveTab("logic")}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                  activeTab === 'logic'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted'
+                  activeTab === "logic"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted"
                 }`}
               >
                 <AlertTriangle className="w-3 h-3 inline mr-1" />
@@ -151,26 +154,34 @@ export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({
             </div>
 
             <div className="mt-3 space-y-3">
-              {activeTab === 'style' && (
+              {activeTab === "style" && (
                 <div className="space-y-2">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 bg-muted rounded-md">
                       <div className="text-xs text-muted-foreground mb-1">平均句长</div>
-                      <div className="text-lg font-semibold">{analysis.writing_style.avg_sentence_length.toFixed(1)} 字符</div>
+                      <div className="text-lg font-semibold">
+                        {analysis.writing_style.avg_sentence_length.toFixed(1)} 字符
+                      </div>
                     </div>
                     <div className="p-3 bg-muted rounded-md">
                       <div className="text-xs text-muted-foreground mb-1">平均词长</div>
-                      <div className="text-lg font-semibold">{analysis.writing_style.avg_word_length.toFixed(1)} 字符</div>
+                      <div className="text-lg font-semibold">
+                        {analysis.writing_style.avg_word_length.toFixed(1)} 字符
+                      </div>
                     </div>
                     <div className="p-3 bg-muted rounded-md">
                       <div className="text-xs text-muted-foreground mb-1">词汇丰富度</div>
-                      <div className={`text-lg font-semibold ${getScoreColor(analysis.writing_style.vocabulary_richness)}`}>
+                      <div
+                        className={`text-lg font-semibold ${getScoreColor(analysis.writing_style.vocabulary_richness)}`}
+                      >
                         {analysis.writing_style.vocabulary_richness.toFixed(1)}%
                       </div>
                     </div>
                     <div className="p-3 bg-muted rounded-md">
                       <div className="text-xs text-muted-foreground mb-1">基调</div>
-                      <div className="text-lg font-semibold capitalize">{analysis.writing_style.tone}</div>
+                      <div className="text-lg font-semibold capitalize">
+                        {analysis.writing_style.tone}
+                      </div>
                     </div>
                   </div>
                   {analysis.writing_style.writing_style_tags.length > 0 && (
@@ -191,22 +202,28 @@ export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({
                 </div>
               )}
 
-              {activeTab === 'rhythm' && (
+              {activeTab === "rhythm" && (
                 <div className="space-y-3">
                   <div className="grid grid-cols-3 gap-3">
                     <div className="p-3 bg-muted rounded-md">
                       <div className="text-xs text-muted-foreground mb-1">节奏评分</div>
-                      <div className={`text-lg font-semibold ${getScoreColor(analysis.rhythm.pacing_score)}`}>
+                      <div
+                        className={`text-lg font-semibold ${getScoreColor(analysis.rhythm.pacing_score)}`}
+                      >
                         {analysis.rhythm.pacing_score.toFixed(0)}
                       </div>
                     </div>
                     <div className="p-3 bg-muted rounded-md">
                       <div className="text-xs text-muted-foreground mb-1">动作/描述比</div>
-                      <div className="text-lg font-semibold">{analysis.rhythm.action_vs_description_ratio.toFixed(1)}%</div>
+                      <div className="text-lg font-semibold">
+                        {analysis.rhythm.action_vs_description_ratio.toFixed(1)}%
+                      </div>
                     </div>
                     <div className="p-3 bg-muted rounded-md">
                       <div className="text-xs text-muted-foreground mb-1">对话比例</div>
-                      <div className="text-lg font-semibold">{analysis.rhythm.dialogue_ratio.toFixed(1)}%</div>
+                      <div className="text-lg font-semibold">
+                        {analysis.rhythm.dialogue_ratio.toFixed(1)}%
+                      </div>
                     </div>
                   </div>
                   {analysis.rhythm.pacing_segments.length > 0 && (
@@ -229,7 +246,9 @@ export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({
                                   style={{ width: `${segment.intensity}%` }}
                                 />
                               </div>
-                              <span className="text-xs text-muted-foreground">{segment.intensity.toFixed(0)}%</span>
+                              <span className="text-xs text-muted-foreground">
+                                {segment.intensity.toFixed(0)}%
+                              </span>
                             </div>
                           </div>
                         ))}
@@ -239,16 +258,20 @@ export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({
                 </div>
               )}
 
-              {activeTab === 'emotion' && (
+              {activeTab === "emotion" && (
                 <div className="space-y-3">
                   <div className="p-3 bg-muted rounded-md">
                     <div className="text-xs text-muted-foreground mb-1">整体情感</div>
-                    <div className="text-lg font-semibold capitalize">{analysis.emotion.overall_emotion}</div>
+                    <div className="text-lg font-semibold capitalize">
+                      {analysis.emotion.overall_emotion}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 bg-muted rounded-md">
                       <div className="text-xs text-muted-foreground mb-1">情感变化次数</div>
-                      <div className="text-lg font-semibold">{analysis.emotion.emotion_changes}</div>
+                      <div className="text-lg font-semibold">
+                        {analysis.emotion.emotion_changes}
+                      </div>
                     </div>
                     <div className="p-3 bg-muted rounded-md">
                       <div className="text-xs text-muted-foreground mb-1">主导情感</div>
@@ -279,22 +302,28 @@ export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({
                 </div>
               )}
 
-              {activeTab === 'readability' && (
+              {activeTab === "readability" && (
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 bg-muted rounded-md">
                       <div className="text-xs text-muted-foreground mb-1">Flesch 评分</div>
-                      <div className={`text-lg font-semibold ${getScoreColor(analysis.readability.flesch_score)}`}>
+                      <div
+                        className={`text-lg font-semibold ${getScoreColor(analysis.readability.flesch_score)}`}
+                      >
                         {analysis.readability.flesch_score.toFixed(1)}
                       </div>
                     </div>
                     <div className="p-3 bg-muted rounded-md">
                       <div className="text-xs text-muted-foreground mb-1">阅读级别</div>
-                      <div className="text-lg font-semibold">{analysis.readability.reading_level}</div>
+                      <div className="text-lg font-semibold">
+                        {analysis.readability.reading_level}
+                      </div>
                     </div>
                     <div className="p-3 bg-muted rounded-md">
                       <div className="text-xs text-muted-foreground mb-1">句子复杂度</div>
-                      <div className={`text-lg font-semibold ${getScoreColor(100 - analysis.readability.avg_sentence_complexity)}`}>
+                      <div
+                        className={`text-lg font-semibold ${getScoreColor(100 - analysis.readability.avg_sentence_complexity)}`}
+                      >
                         {analysis.readability.avg_sentence_complexity.toFixed(1)}
                       </div>
                     </div>
@@ -309,11 +338,13 @@ export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({
                 </div>
               )}
 
-              {activeTab === 'repetitions' && (
+              {activeTab === "repetitions" && (
                 <div className="space-y-3">
                   <div className="p-3 bg-muted rounded-md">
                     <div className="text-xs text-muted-foreground mb-1">重复评分</div>
-                    <div className={`text-lg font-semibold ${getScoreColor(100 - analysis.repetitions.repetition_score)}`}>
+                    <div
+                      className={`text-lg font-semibold ${getScoreColor(100 - analysis.repetitions.repetition_score)}`}
+                    >
                       {analysis.repetitions.repetition_score.toFixed(1)}%
                     </div>
                   </div>
@@ -328,7 +359,8 @@ export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({
                           >
                             <span className="text-sm font-medium">"{item.text}"</span>
                             <span className="text-sm text-muted-foreground">
-                              {item.count} 次 (位置: {item.positions.slice(0, 3).join(', ')}{item.positions.length > 3 ? '...' : ''})
+                              {item.count} 次 (位置: {item.positions.slice(0, 3).join(", ")}
+                              {item.positions.length > 3 ? "..." : ""})
                             </span>
                           </div>
                         ))}
@@ -345,9 +377,7 @@ export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({
                             className="flex items-center justify-between p-2 bg-muted/50 rounded-md"
                           >
                             <span className="text-sm font-medium">"{item.text}"</span>
-                            <span className="text-sm text-muted-foreground">
-                              {item.count} 次
-                            </span>
+                            <span className="text-sm text-muted-foreground">{item.count} 次</span>
                           </div>
                         ))}
                       </div>
@@ -356,13 +386,15 @@ export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({
                 </div>
               )}
 
-              {activeTab === 'logic' && (
+              {activeTab === "logic" && (
                 <div className="space-y-3">
                   <div className="p-3 bg-muted rounded-md">
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-xs text-muted-foreground mb-1">逻辑评分</div>
-                        <div className={`text-lg font-semibold ${getScoreColor(analysis.logic.overall_score)}`}>
+                        <div
+                          className={`text-lg font-semibold ${getScoreColor(analysis.logic.overall_score)}`}
+                        >
                           {analysis.logic.overall_score.toFixed(0)}
                         </div>
                       </div>
@@ -383,11 +415,15 @@ export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({
                             className="p-2 bg-yellow-50 border border-yellow-200 rounded-md"
                           >
                             <div className="flex items-center gap-2 mb-1">
-                              <AlertTriangle className={`w-4 h-4 ${getSeverityColor(issue.severity)}`} />
+                              <AlertTriangle
+                                className={`w-4 h-4 ${getSeverityColor(issue.severity)}`}
+                              />
                               <span className="text-sm font-medium">{issue.issue_type}</span>
                             </div>
                             <div className="text-sm text-muted-foreground">{issue.description}</div>
-                            <div className="text-xs text-muted-foreground mt-1">位置: 第 {issue.position} 段</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              位置: 第 {issue.position} 段
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -407,7 +443,9 @@ export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({
                               <span className="text-sm font-medium">{issue.character_name}</span>
                             </div>
                             <div className="text-sm text-muted-foreground">{issue.description}</div>
-                            <div className="text-xs text-muted-foreground mt-1">位置: {issue.positions.join(', ')}</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              位置: {issue.positions.join(", ")}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -427,7 +465,9 @@ export const TextAnalysisPanel: React.FC<TextAnalysisPanelProps> = ({
                               <span className="text-sm font-medium">{issue.issue_type}</span>
                             </div>
                             <div className="text-sm text-muted-foreground">{issue.description}</div>
-                            <div className="text-xs text-muted-foreground mt-1">位置: 第 {issue.position} 段</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              位置: 第 {issue.position} 段
+                            </div>
                           </div>
                         ))}
                       </div>

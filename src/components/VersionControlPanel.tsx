@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   GitBranch,
   Clock,
@@ -13,12 +13,12 @@ import {
   CheckCircle,
   XCircle,
   Plus,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   versionControlService,
   ProjectSnapshot,
   VersionControlConfig,
-} from '../services/versionControl.service';
+} from "../services/versionControl.service";
 
 interface VersionControlPanelProps {
   projectId: string;
@@ -37,8 +37,8 @@ export const VersionControlPanel: React.FC<VersionControlPanelProps> = ({
   const [selectedSnapshot, setSelectedSnapshot] = useState<ProjectSnapshot | null>(null);
   const [compareFrom, setCompareFrom] = useState<ProjectSnapshot | null>(null);
   const [compareTo, setCompareTo] = useState<ProjectSnapshot | null>(null);
-  const [newSnapshotVersion, setNewSnapshotVersion] = useState('');
-  const [newSnapshotDescription, setNewSnapshotDescription] = useState('');
+  const [newSnapshotVersion, setNewSnapshotVersion] = useState("");
+  const [newSnapshotDescription, setNewSnapshotDescription] = useState("");
 
   useEffect(() => {
     loadSnapshots();
@@ -51,7 +51,7 @@ export const VersionControlPanel: React.FC<VersionControlPanelProps> = ({
       const data = await versionControlService.getSnapshots(projectId);
       setSnapshots(data);
     } catch (error) {
-      console.error('Failed to load snapshots:', error);
+      console.error("Failed to load snapshots:", error);
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ export const VersionControlPanel: React.FC<VersionControlPanelProps> = ({
       const data = await versionControlService.getVersionConfig();
       setConfig(data);
     } catch (error) {
-      console.error('Failed to load config:', error);
+      console.error("Failed to load config:", error);
     }
   };
 
@@ -78,18 +78,18 @@ export const VersionControlPanel: React.FC<VersionControlPanelProps> = ({
         false
       );
       setShowCreateModal(false);
-      setNewSnapshotVersion('');
-      setNewSnapshotDescription('');
+      setNewSnapshotVersion("");
+      setNewSnapshotDescription("");
       loadSnapshots();
     } catch (error) {
-      console.error('Failed to create snapshot:', error);
+      console.error("Failed to create snapshot:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleRestoreSnapshot = async (snapshotId: string) => {
-    if (!confirm('确定要回滚到此版本吗？当前的所有更改将会丢失。')) {
+    if (!confirm("确定要回滚到此版本吗？当前的所有更改将会丢失。")) {
       return;
     }
 
@@ -99,14 +99,14 @@ export const VersionControlPanel: React.FC<VersionControlPanelProps> = ({
       loadSnapshots();
       onRestore?.();
     } catch (error) {
-      console.error('Failed to restore snapshot:', error);
+      console.error("Failed to restore snapshot:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteSnapshot = async (snapshotId: string) => {
-    if (!confirm('确定要删除此快照吗？此操作无法撤销。')) {
+    if (!confirm("确定要删除此快照吗？此操作无法撤销。")) {
       return;
     }
 
@@ -115,19 +115,19 @@ export const VersionControlPanel: React.FC<VersionControlPanelProps> = ({
       await versionControlService.deleteSnapshot(snapshotId);
       loadSnapshots();
     } catch (error) {
-      console.error('Failed to delete snapshot:', error);
+      console.error("Failed to delete snapshot:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Date(timestamp * 1000).toLocaleString("zh-CN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -157,8 +157,12 @@ export const VersionControlPanel: React.FC<VersionControlPanelProps> = ({
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1">
                   <span className="text-muted-foreground">自动保存:</span>
-                  <span className={config.auto_save_enabled ? 'text-green-600' : 'text-muted-foreground'}>
-                    {config.auto_save_enabled ? '开启' : '关闭'}
+                  <span
+                    className={
+                      config.auto_save_enabled ? "text-green-600" : "text-muted-foreground"
+                    }
+                  >
+                    {config.auto_save_enabled ? "开启" : "关闭"}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -173,11 +177,7 @@ export const VersionControlPanel: React.FC<VersionControlPanelProps> = ({
           </div>
         )}
 
-        {loading && (
-          <div className="mt-3 text-center text-sm text-muted-foreground">
-            加载中...
-          </div>
-        )}
+        {loading && <div className="mt-3 text-center text-sm text-muted-foreground">加载中...</div>}
 
         {!loading && snapshots.length === 0 && (
           <div className="mt-3 p-4 text-center text-sm text-muted-foreground">
@@ -195,9 +195,7 @@ export const VersionControlPanel: React.FC<VersionControlPanelProps> = ({
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-sm truncate">
-                        {snapshot.version}
-                      </span>
+                      <span className="font-medium text-sm truncate">{snapshot.version}</span>
                       {snapshot.auto_generated && (
                         <span className="px-1.5 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">
                           自动
@@ -307,7 +305,7 @@ export const VersionControlPanel: React.FC<VersionControlPanelProps> = ({
                   disabled={!newSnapshotVersion.trim() || loading}
                   className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {loading ? '创建中...' : '创建'}
+                  {loading ? "创建中..." : "创建"}
                 </button>
               </div>
             </div>
@@ -345,16 +343,45 @@ export const VersionControlPanel: React.FC<VersionControlPanelProps> = ({
                 <div className="p-3 bg-green-50 border border-green-200 rounded-md">
                   <div className="font-medium text-green-800 mb-2">统计变化</div>
                   <div className="space-y-1">
-                    <div>章节: {compareTo.metadata.total_chapters - compareFrom.metadata.total_chapters > 0 ? '+' : ''}{compareTo.metadata.total_chapters - compareFrom.metadata.total_chapters}</div>
-                    <div>角色: {compareTo.metadata.total_characters - compareFrom.metadata.total_characters > 0 ? '+' : ''}{compareTo.metadata.total_characters - compareFrom.metadata.total_characters}</div>
-                    <div>字数: {compareTo.metadata.total_words - compareFrom.metadata.total_words > 0 ? '+' : ''}{(compareTo.metadata.total_words - compareFrom.metadata.total_words).toLocaleString()}</div>
+                    <div>
+                      章节:{" "}
+                      {compareTo.metadata.total_chapters - compareFrom.metadata.total_chapters > 0
+                        ? "+"
+                        : ""}
+                      {compareTo.metadata.total_chapters - compareFrom.metadata.total_chapters}
+                    </div>
+                    <div>
+                      角色:{" "}
+                      {compareTo.metadata.total_characters - compareFrom.metadata.total_characters >
+                      0
+                        ? "+"
+                        : ""}
+                      {compareTo.metadata.total_characters - compareFrom.metadata.total_characters}
+                    </div>
+                    <div>
+                      字数:{" "}
+                      {compareTo.metadata.total_words - compareFrom.metadata.total_words > 0
+                        ? "+"
+                        : ""}
+                      {(
+                        compareTo.metadata.total_words - compareFrom.metadata.total_words
+                      ).toLocaleString()}
+                    </div>
                   </div>
                 </div>
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
                   <div className="font-medium text-blue-800 mb-2">元数据变化</div>
                   <div className="space-y-1">
-                    <div>设定: {compareTo.world_views.length - compareFrom.world_views.length > 0 ? '+' : ''}{compareTo.world_views.length - compareFrom.world_views.length}</div>
-                    <div>剧情点: {compareTo.plot_points.length - compareFrom.plot_points.length > 0 ? '+' : ''}{compareTo.plot_points.length - compareFrom.plot_points.length}</div>
+                    <div>
+                      设定:{" "}
+                      {compareTo.world_views.length - compareFrom.world_views.length > 0 ? "+" : ""}
+                      {compareTo.world_views.length - compareFrom.world_views.length}
+                    </div>
+                    <div>
+                      剧情点:{" "}
+                      {compareTo.plot_points.length - compareFrom.plot_points.length > 0 ? "+" : ""}
+                      {compareTo.plot_points.length - compareFrom.plot_points.length}
+                    </div>
                   </div>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   X,
   ChevronLeft,
@@ -11,8 +11,8 @@ import {
   BookOpen,
   Clock,
   AlignJustify,
-} from 'lucide-react';
-import type { Chapter } from '../types';
+} from "lucide-react";
+import type { Chapter } from "../types";
 
 interface ReadingModeProps {
   chapter: Chapter;
@@ -21,9 +21,9 @@ interface ReadingModeProps {
   onNavigate: (chapter: Chapter) => void;
 }
 
-type FontSize = 'small' | 'medium' | 'large' | 'xlarge';
-type BackgroundTheme = 'light' | 'sepia' | 'dark';
-type LineHeight = 'compact' | 'normal' | 'relaxed' | 'loose';
+type FontSize = "small" | "medium" | "large" | "xlarge";
+type BackgroundTheme = "light" | "sepia" | "dark";
+type LineHeight = "compact" | "normal" | "relaxed" | "loose";
 
 interface ReadingSettings {
   fontSize: FontSize;
@@ -32,10 +32,10 @@ interface ReadingSettings {
 }
 
 const fontSizeMap: Record<FontSize, string> = {
-  small: 'text-base',
-  medium: 'text-lg',
-  large: 'text-xl',
-  xlarge: 'text-2xl',
+  small: "text-base",
+  medium: "text-lg",
+  large: "text-xl",
+  xlarge: "text-2xl",
 };
 
 const fontSizeValueMap: Record<FontSize, number> = {
@@ -46,10 +46,10 @@ const fontSizeValueMap: Record<FontSize, number> = {
 };
 
 const lineHeightMap: Record<LineHeight, string> = {
-  compact: 'leading-relaxed',
-  normal: 'leading-loose',
-  relaxed: 'leading-[2]',
-  loose: 'leading-[2.5]',
+  compact: "leading-relaxed",
+  normal: "leading-loose",
+  relaxed: "leading-[2]",
+  loose: "leading-[2.5]",
 };
 
 const lineHeightValueMap: Record<LineHeight, number> = {
@@ -60,9 +60,9 @@ const lineHeightValueMap: Record<LineHeight, number> = {
 };
 
 const backgroundThemeMap: Record<BackgroundTheme, { bg: string; text: string; name: string }> = {
-  light: { bg: 'bg-white', text: 'text-gray-900', name: '白色' },
-  sepia: { bg: 'bg-amber-50', text: 'text-amber-950', name: '米黄' },
-  dark: { bg: 'bg-gray-900', text: 'text-gray-100', name: '深色' },
+  light: { bg: "bg-white", text: "text-gray-900", name: "白色" },
+  sepia: { bg: "bg-amber-50", text: "text-amber-950", name: "米黄" },
+  dark: { bg: "bg-gray-900", text: "text-gray-100", name: "深色" },
 };
 
 export const ReadingMode: React.FC<ReadingModeProps> = ({
@@ -73,22 +73,22 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
 }) => {
   const [showSettings, setShowSettings] = useState(false);
   const [settings, setSettings] = useState<ReadingSettings>(() => {
-    const saved = localStorage.getItem('reading-settings');
+    const saved = localStorage.getItem("reading-settings");
     if (saved) {
       try {
         return JSON.parse(saved);
       } catch {
         return {
-          fontSize: 'medium',
-          backgroundTheme: 'light',
-          lineHeight: 'normal',
+          fontSize: "medium",
+          backgroundTheme: "light",
+          lineHeight: "normal",
         };
       }
     }
     return {
-      fontSize: 'medium',
-      backgroundTheme: 'light',
-      lineHeight: 'normal',
+      fontSize: "medium",
+      backgroundTheme: "light",
+      lineHeight: "normal",
     };
   });
 
@@ -106,7 +106,7 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
   const estimatedReadingTime = useMemo(() => {
     const wordsPerMinute = 300;
     const minutes = Math.ceil(chapter.word_count / wordsPerMinute);
-    if (minutes < 1) return '不到 1 分钟';
+    if (minutes < 1) return "不到 1 分钟";
     if (minutes < 60) return `约 ${minutes} 分钟`;
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
@@ -115,22 +115,22 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
 
   // 格式化内容为段落
   const paragraphs = useMemo(() => {
-    return chapter.content.split('\n').filter((p) => p.trim());
+    return chapter.content.split("\n").filter((p) => p.trim());
   }, [chapter.content]);
 
   // 保存设置到 localStorage
   useEffect(() => {
-    localStorage.setItem('reading-settings', JSON.stringify(settings));
+    localStorage.setItem("reading-settings", JSON.stringify(settings));
   }, [settings]);
 
   // 键盘快捷键
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         onClose();
-      } else if (e.key === 'ArrowLeft' && prevChapter) {
+      } else if (e.key === "ArrowLeft" && prevChapter) {
         onNavigate(prevChapter);
-      } else if (e.key === 'ArrowRight' && nextChapter) {
+      } else if (e.key === "ArrowRight" && nextChapter) {
         onNavigate(nextChapter);
       }
     },
@@ -138,30 +138,30 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
   );
 
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
   // 禁止页面滚动
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, []);
 
   const themeStyle = backgroundThemeMap[settings.backgroundTheme];
-  const isDark = settings.backgroundTheme === 'dark';
+  const isDark = settings.backgroundTheme === "dark";
 
   const cycleFontSize = () => {
-    const sizes: FontSize[] = ['small', 'medium', 'large', 'xlarge'];
+    const sizes: FontSize[] = ["small", "medium", "large", "xlarge"];
     const currentIndex = sizes.indexOf(settings.fontSize);
     const nextIndex = (currentIndex + 1) % sizes.length;
     setSettings((prev) => ({ ...prev, fontSize: sizes[nextIndex] }));
   };
 
   const cycleLineHeight = () => {
-    const heights: LineHeight[] = ['compact', 'normal', 'relaxed', 'loose'];
+    const heights: LineHeight[] = ["compact", "normal", "relaxed", "loose"];
     const currentIndex = heights.indexOf(settings.lineHeight);
     const nextIndex = (currentIndex + 1) % heights.length;
     setSettings((prev) => ({ ...prev, lineHeight: heights[nextIndex] }));
@@ -178,16 +178,12 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
       {/* 顶部工具栏 */}
       <header
         className={`flex items-center justify-between px-6 py-4 border-b transition-colors duration-300 ${
-          isDark ? 'border-gray-700 bg-gray-800/95' : 'border-gray-200 bg-white/95'
+          isDark ? "border-gray-700 bg-gray-800/95" : "border-gray-200 bg-white/95"
         } backdrop-blur-sm`}
       >
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-semibold max-w-md truncate">
-            {chapter.title}
-          </h1>
-          <span
-            className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-          >
+          <h1 className="text-lg font-semibold max-w-md truncate">{chapter.title}</h1>
+          <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
             第 {currentIndex + 1} / {chapters.length} 章
           </span>
         </div>
@@ -196,7 +192,7 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
           {/* 阅读统计 */}
           <div
             className={`hidden sm:flex items-center gap-4 text-sm ${
-              isDark ? 'text-gray-400' : 'text-gray-500'
+              isDark ? "text-gray-400" : "text-gray-500"
             }`}
           >
             <div className="flex items-center gap-1">
@@ -215,11 +211,11 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
             className={`p-2 rounded-lg transition-colors ${
               showSettings
                 ? isDark
-                  ? 'bg-gray-700 text-white'
-                  : 'bg-gray-200 text-gray-900'
+                  ? "bg-gray-700 text-white"
+                  : "bg-gray-200 text-gray-900"
                 : isDark
-                ? 'hover:bg-gray-700 text-gray-300'
-                : 'hover:bg-gray-100 text-gray-600'
+                  ? "hover:bg-gray-700 text-gray-300"
+                  : "hover:bg-gray-100 text-gray-600"
             }`}
             title="阅读设置"
           >
@@ -230,9 +226,7 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
           <button
             onClick={onClose}
             className={`p-2 rounded-lg transition-colors ${
-              isDark
-                ? 'hover:bg-gray-700 text-gray-300'
-                : 'hover:bg-gray-100 text-gray-600'
+              isDark ? "hover:bg-gray-700 text-gray-300" : "hover:bg-gray-100 text-gray-600"
             }`}
             title="退出阅读模式 (Esc)"
           >
@@ -245,16 +239,14 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
       {showSettings && (
         <div
           className={`absolute top-[73px] right-6 z-10 p-4 rounded-lg shadow-lg border transition-colors ${
-            isDark
-              ? 'bg-gray-800 border-gray-700'
-              : 'bg-white border-gray-200'
+            isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
           }`}
         >
           {/* 字体大小 */}
           <div className="mb-4">
             <label
               className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
+                isDark ? "text-gray-300" : "text-gray-700"
               }`}
             >
               字体大小
@@ -264,17 +256,17 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
                 onClick={() =>
                   setSettings((prev) => ({
                     ...prev,
-                    fontSize: 'small',
+                    fontSize: "small",
                   }))
                 }
                 className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${
-                  settings.fontSize === 'small'
+                  settings.fontSize === "small"
                     ? isDark
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-blue-500 text-white'
+                      ? "bg-blue-600 text-white"
+                      : "bg-blue-500 text-white"
                     : isDark
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
                 <span className="text-xs">A</span>
@@ -283,17 +275,17 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
                 onClick={() =>
                   setSettings((prev) => ({
                     ...prev,
-                    fontSize: 'medium',
+                    fontSize: "medium",
                   }))
                 }
                 className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${
-                  settings.fontSize === 'medium'
+                  settings.fontSize === "medium"
                     ? isDark
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-blue-500 text-white'
+                      ? "bg-blue-600 text-white"
+                      : "bg-blue-500 text-white"
                     : isDark
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
                 <span className="text-sm">A</span>
@@ -302,17 +294,17 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
                 onClick={() =>
                   setSettings((prev) => ({
                     ...prev,
-                    fontSize: 'large',
+                    fontSize: "large",
                   }))
                 }
                 className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${
-                  settings.fontSize === 'large'
+                  settings.fontSize === "large"
                     ? isDark
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-blue-500 text-white'
+                      ? "bg-blue-600 text-white"
+                      : "bg-blue-500 text-white"
                     : isDark
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
                 <span className="text-base">A</span>
@@ -321,17 +313,17 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
                 onClick={() =>
                   setSettings((prev) => ({
                     ...prev,
-                    fontSize: 'xlarge',
+                    fontSize: "xlarge",
                   }))
                 }
                 className={`w-8 h-8 rounded flex items-center justify-center transition-colors ${
-                  settings.fontSize === 'xlarge'
+                  settings.fontSize === "xlarge"
                     ? isDark
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-blue-500 text-white'
+                      ? "bg-blue-600 text-white"
+                      : "bg-blue-500 text-white"
                     : isDark
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
                 <span className="text-lg font-bold">A</span>
@@ -343,39 +335,35 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
           <div className="mb-4">
             <label
               className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
+                isDark ? "text-gray-300" : "text-gray-700"
               }`}
             >
               行距
             </label>
             <div className="flex items-center gap-2">
-              {(['compact', 'normal', 'relaxed', 'loose'] as LineHeight[]).map(
-                (height) => (
-                  <button
-                    key={height}
-                    onClick={() =>
-                      setSettings((prev) => ({ ...prev, lineHeight: height }))
-                    }
-                    className={`px-3 py-1.5 rounded text-sm transition-colors ${
-                      settings.lineHeight === height
-                        ? isDark
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-blue-500 text-white'
-                        : isDark
-                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {height === 'compact'
-                      ? '紧凑'
-                      : height === 'normal'
-                      ? '适中'
-                      : height === 'relaxed'
-                      ? '宽松'
-                      : '超宽'}
-                  </button>
-                )
-              )}
+              {(["compact", "normal", "relaxed", "loose"] as LineHeight[]).map((height) => (
+                <button
+                  key={height}
+                  onClick={() => setSettings((prev) => ({ ...prev, lineHeight: height }))}
+                  className={`px-3 py-1.5 rounded text-sm transition-colors ${
+                    settings.lineHeight === height
+                      ? isDark
+                        ? "bg-blue-600 text-white"
+                        : "bg-blue-500 text-white"
+                      : isDark
+                        ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {height === "compact"
+                    ? "紧凑"
+                    : height === "normal"
+                      ? "适中"
+                      : height === "relaxed"
+                        ? "宽松"
+                        : "超宽"}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -383,36 +371,36 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
           <div>
             <label
               className={`block text-sm font-medium mb-2 ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
+                isDark ? "text-gray-300" : "text-gray-700"
               }`}
             >
               背景色
             </label>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setBackgroundTheme('light')}
+                onClick={() => setBackgroundTheme("light")}
                 className={`w-8 h-8 rounded-full bg-white border-2 transition-all ${
-                  settings.backgroundTheme === 'light'
-                    ? 'border-blue-500 ring-2 ring-blue-200'
-                    : 'border-gray-300'
+                  settings.backgroundTheme === "light"
+                    ? "border-blue-500 ring-2 ring-blue-200"
+                    : "border-gray-300"
                 }`}
                 title="白色"
               />
               <button
-                onClick={() => setBackgroundTheme('sepia')}
+                onClick={() => setBackgroundTheme("sepia")}
                 className={`w-8 h-8 rounded-full bg-amber-50 border-2 transition-all ${
-                  settings.backgroundTheme === 'sepia'
-                    ? 'border-blue-500 ring-2 ring-blue-200'
-                    : 'border-gray-300'
+                  settings.backgroundTheme === "sepia"
+                    ? "border-blue-500 ring-2 ring-blue-200"
+                    : "border-gray-300"
                 }`}
                 title="米黄"
               />
               <button
-                onClick={() => setBackgroundTheme('dark')}
+                onClick={() => setBackgroundTheme("dark")}
                 className={`w-8 h-8 rounded-full bg-gray-900 border-2 transition-all ${
-                  settings.backgroundTheme === 'dark'
-                    ? 'border-blue-500 ring-2 ring-blue-400'
-                    : 'border-gray-600'
+                  settings.backgroundTheme === "dark"
+                    ? "border-blue-500 ring-2 ring-blue-400"
+                    : "border-gray-600"
                 }`}
                 title="深色"
               />
@@ -422,26 +410,26 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
           {/* 快捷键提示 */}
           <div
             className={`mt-4 pt-4 border-t text-xs ${
-              isDark ? 'border-gray-700 text-gray-500' : 'border-gray-200 text-gray-400'
+              isDark ? "border-gray-700 text-gray-500" : "border-gray-200 text-gray-400"
             }`}
           >
             <div className="flex items-center gap-4">
               <span>
                 <kbd className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                   Esc
-                </kbd>{' '}
+                </kbd>{" "}
                 退出
               </span>
               <span>
                 <kbd className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                   ←
-                </kbd>{' '}
+                </kbd>{" "}
                 上一章
               </span>
               <span>
                 <kbd className="px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                   →
-                </kbd>{' '}
+                </kbd>{" "}
                 下一章
               </span>
             </div>
@@ -460,14 +448,14 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
           <header className="mb-8 sm:mb-12">
             <h2
               className={`text-2xl sm:text-3xl font-bold mb-2 ${
-                isDark ? 'text-white' : 'text-gray-900'
+                isDark ? "text-white" : "text-gray-900"
               }`}
             >
               {chapter.title}
             </h2>
             <div
               className={`flex items-center gap-4 text-sm ${
-                isDark ? 'text-gray-500' : 'text-gray-400'
+                isDark ? "text-gray-500" : "text-gray-400"
               }`}
             >
               <span>{chapter.word_count.toLocaleString()} 字</span>
@@ -482,7 +470,7 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
               <p
                 key={index}
                 className={`text-justify indent-[2em] ${
-                  isDark ? 'text-gray-300' : 'text-gray-800'
+                  isDark ? "text-gray-300" : "text-gray-800"
                 }`}
               >
                 {paragraph}
@@ -491,19 +479,13 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
           </div>
 
           {/* 章节导航 */}
-          <nav
-            className={`mt-12 pt-8 border-t ${
-              isDark ? 'border-gray-700' : 'border-gray-200'
-            }`}
-          >
+          <nav className={`mt-12 pt-8 border-t ${isDark ? "border-gray-700" : "border-gray-200"}`}>
             <div className="flex items-center justify-between">
               {prevChapter ? (
                 <button
                   onClick={() => onNavigate(prevChapter)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                    isDark
-                      ? 'hover:bg-gray-800 text-gray-300'
-                      : 'hover:bg-gray-100 text-gray-600'
+                    isDark ? "hover:bg-gray-800 text-gray-300" : "hover:bg-gray-100 text-gray-600"
                   }`}
                 >
                   <ChevronLeft className="w-5 h-5" />
@@ -522,9 +504,7 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
                 <button
                   onClick={() => onNavigate(nextChapter)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                    isDark
-                      ? 'hover:bg-gray-800 text-gray-300'
-                      : 'hover:bg-gray-100 text-gray-600'
+                    isDark ? "hover:bg-gray-800 text-gray-300" : "hover:bg-gray-100 text-gray-600"
                   }`}
                 >
                   <div className="text-right">
@@ -546,30 +526,24 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
       {/* 底部进度条 */}
       <footer
         className={`px-6 py-3 border-t transition-colors ${
-          isDark ? 'border-gray-700 bg-gray-800/95' : 'border-gray-200 bg-white/95'
+          isDark ? "border-gray-700 bg-gray-800/95" : "border-gray-200 bg-white/95"
         } backdrop-blur-sm`}
       >
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between mb-2">
-            <span
-              className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-            >
+            <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
               {Math.round(((currentIndex + 1) / chapters.length) * 100)}% 已读
             </span>
-            <span
-              className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-            >
+            <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
               第 {currentIndex + 1} 章 / 共 {chapters.length} 章
             </span>
           </div>
           <div
-            className={`h-1 rounded-full overflow-hidden ${
-              isDark ? 'bg-gray-700' : 'bg-gray-200'
-            }`}
+            className={`h-1 rounded-full overflow-hidden ${isDark ? "bg-gray-700" : "bg-gray-200"}`}
           >
             <div
               className={`h-full rounded-full transition-all duration-300 ${
-                isDark ? 'bg-blue-500' : 'bg-blue-600'
+                isDark ? "bg-blue-500" : "bg-blue-600"
               }`}
               style={{
                 width: `${((currentIndex + 1) / chapters.length) * 100}%`,
@@ -582,7 +556,7 @@ export const ReadingMode: React.FC<ReadingModeProps> = ({
       {/* 移动端阅读统计 */}
       <div
         className={`sm:hidden fixed bottom-20 left-0 right-0 px-6 py-2 text-center text-xs ${
-          isDark ? 'text-gray-500' : 'text-gray-400'
+          isDark ? "text-gray-500" : "text-gray-400"
         }`}
       >
         <span>{chapter.word_count.toLocaleString()} 字</span>

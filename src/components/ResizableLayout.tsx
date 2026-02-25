@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from "react";
 
 interface ResizableLayoutProps {
   leftPanel: React.ReactNode;
@@ -30,63 +30,72 @@ export const ResizableLayout: React.FC<ResizableLayoutProps> = ({
   const startLeftWidth = useRef(0);
   const startRightWidth = useRef(0);
 
-  const handleLeftMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizingLeft(true);
-    startX.current = e.clientX;
-    startLeftWidth.current = leftWidth;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, [leftWidth]);
+  const handleLeftMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      setIsResizingLeft(true);
+      startX.current = e.clientX;
+      startLeftWidth.current = leftWidth;
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    },
+    [leftWidth]
+  );
 
-  const handleRightMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizingRight(true);
-    startX.current = e.clientX;
-    startRightWidth.current = rightWidth;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, [rightWidth]);
+  const handleRightMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      setIsResizingRight(true);
+      startX.current = e.clientX;
+      startRightWidth.current = rightWidth;
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    },
+    [rightWidth]
+  );
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isResizingLeft && !isResizingRight) return;
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizingLeft && !isResizingRight) return;
 
-    const deltaX = e.clientX - startX.current;
+      const deltaX = e.clientX - startX.current;
 
-    if (isResizingLeft) {
-      const newLeftWidth = Math.max(minLeftWidth, startLeftWidth.current + deltaX);
-      setLeftWidth(newLeftWidth);
-    }
+      if (isResizingLeft) {
+        const newLeftWidth = Math.max(minLeftWidth, startLeftWidth.current + deltaX);
+        setLeftWidth(newLeftWidth);
+      }
 
-    if (isResizingRight) {
-      const newRightWidth = Math.max(minRightWidth, startRightWidth.current - deltaX);
-      setRightWidth(newRightWidth);
-    }
-  }, [isResizingLeft, isResizingRight, minLeftWidth, minRightWidth]);
+      if (isResizingRight) {
+        const newRightWidth = Math.max(minRightWidth, startRightWidth.current - deltaX);
+        setRightWidth(newRightWidth);
+      }
+    },
+    [isResizingLeft, isResizingRight, minLeftWidth, minRightWidth]
+  );
 
   const handleMouseUp = useCallback(() => {
     setIsResizingLeft(false);
     setIsResizingRight(false);
-    document.body.style.cursor = '';
-    document.body.style.userSelect = '';
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
   }, []);
 
   useEffect(() => {
     if (isResizingLeft || isResizingRight) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
     }
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isResizingLeft, isResizingRight, handleMouseMove, handleMouseUp]);
 
   useEffect(() => {
-    const projectId = localStorage.getItem('current-project-id') || 'default';
-    const savedLeftWidths = localStorage.getItem('resizable-left-widths');
-    const savedRightWidths = localStorage.getItem('resizable-right-widths');
+    const projectId = localStorage.getItem("current-project-id") || "default";
+    const savedLeftWidths = localStorage.getItem("resizable-left-widths");
+    const savedRightWidths = localStorage.getItem("resizable-right-widths");
 
     if (savedLeftWidths) {
       try {
@@ -94,7 +103,7 @@ export const ResizableLayout: React.FC<ResizableLayoutProps> = ({
         const savedWidth = parsed[projectId];
         if (savedWidth) setLeftWidth(savedWidth);
       } catch (e) {
-        console.warn('Failed to parse saved left widths:', e);
+        console.warn("Failed to parse saved left widths:", e);
       }
     }
 
@@ -104,35 +113,35 @@ export const ResizableLayout: React.FC<ResizableLayoutProps> = ({
         const savedWidth = parsed[projectId];
         if (savedWidth) setRightWidth(savedWidth);
       } catch (e) {
-        console.warn('Failed to parse saved right widths:', e);
+        console.warn("Failed to parse saved right widths:", e);
       }
     }
   }, []);
 
   useEffect(() => {
-    const projectId = localStorage.getItem('current-project-id') || 'default';
-    const savedLeftWidths = localStorage.getItem('resizable-left-widths');
+    const projectId = localStorage.getItem("current-project-id") || "default";
+    const savedLeftWidths = localStorage.getItem("resizable-left-widths");
     if (savedLeftWidths) {
       try {
         const parsed = JSON.parse(savedLeftWidths);
         const newWidths = { ...parsed, [projectId]: leftWidth };
-        localStorage.setItem('resizable-left-widths', JSON.stringify(newWidths));
+        localStorage.setItem("resizable-left-widths", JSON.stringify(newWidths));
       } catch (e) {
-        console.warn('Failed to save left width:', e);
+        console.warn("Failed to save left width:", e);
       }
     }
   }, [leftWidth]);
 
   useEffect(() => {
-    const projectId = localStorage.getItem('current-project-id') || 'default';
-    const savedRightWidths = localStorage.getItem('resizable-right-widths');
+    const projectId = localStorage.getItem("current-project-id") || "default";
+    const savedRightWidths = localStorage.getItem("resizable-right-widths");
     if (savedRightWidths) {
       try {
         const parsed = JSON.parse(savedRightWidths);
         const newWidths = { ...parsed, [projectId]: rightWidth };
-        localStorage.setItem('resizable-right-widths', JSON.stringify(newWidths));
+        localStorage.setItem("resizable-right-widths", JSON.stringify(newWidths));
       } catch (e) {
-        console.warn('Failed to save right width:', e);
+        console.warn("Failed to save right width:", e);
       }
     }
   }, [rightWidth]);
@@ -151,7 +160,7 @@ export const ResizableLayout: React.FC<ResizableLayoutProps> = ({
       <div
         onMouseDown={handleLeftMouseDown}
         className={`flex-shrink-0 w-1 cursor-col-resize transition-colors ${
-          isResizingLeft ? 'bg-primary' : 'hover:bg-border'
+          isResizingLeft ? "bg-primary" : "hover:bg-border"
         }`}
       />
 
@@ -165,7 +174,7 @@ export const ResizableLayout: React.FC<ResizableLayoutProps> = ({
       <div
         onMouseDown={handleRightMouseDown}
         className={`flex-shrink-0 w-1 cursor-col-resize transition-colors ${
-          isResizingRight ? 'bg-primary' : 'hover:bg-border'
+          isResizingRight ? "bg-primary" : "hover:bg-border"
         }`}
       />
 

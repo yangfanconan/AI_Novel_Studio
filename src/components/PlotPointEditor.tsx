@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, Save } from 'lucide-react';
-import { PlotPointNode, CreatePlotPointRequest, UpdatePlotPointRequest } from '../types';
-import { invoke } from '@tauri-apps/api/core';
+import React, { useState, useEffect } from "react";
+import { X, Save } from "lucide-react";
+import { PlotPointNode, CreatePlotPointRequest, UpdatePlotPointRequest } from "../types";
+import { invoke } from "@tauri-apps/api/core";
 
 interface PlotPointEditorProps {
   plotPoint: PlotPointNode | null;
@@ -16,14 +16,14 @@ export function PlotPointEditor({
   availableChapters,
   availableParentPoints,
   onClose,
-  onSave
+  onSave,
 }: PlotPointEditorProps) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [note, setNote] = useState('');
-  const [chapterId, setChapterId] = useState<string>('');
-  const [status, setStatus] = useState('draft');
-  const [parentId, setParentId] = useState<string>('');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [note, setNote] = useState("");
+  const [chapterId, setChapterId] = useState<string>("");
+  const [status, setStatus] = useState("draft");
+  const [parentId, setParentId] = useState<string>("");
   const [sortOrder, setSortOrder] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,11 +31,11 @@ export function PlotPointEditor({
   useEffect(() => {
     if (plotPoint) {
       setTitle(plotPoint.title);
-      setDescription(plotPoint.description || '');
-      setNote(plotPoint.note || '');
-      setChapterId(plotPoint.chapter_id || '');
+      setDescription(plotPoint.description || "");
+      setNote(plotPoint.note || "");
+      setChapterId(plotPoint.chapter_id || "");
       setStatus(plotPoint.status);
-      setParentId(plotPoint.parent_id || '');
+      setParentId(plotPoint.parent_id || "");
       setSortOrder(plotPoint.sort_order);
     }
   }, [plotPoint]);
@@ -57,10 +57,10 @@ export function PlotPointEditor({
           sort_order: sortOrder,
           parent_id: parentId || undefined,
         };
-        await invoke('update_plot_point', { request: updateData });
+        await invoke("update_plot_point", { request: updateData });
       } else {
         const createData: CreatePlotPointRequest = {
-          project_id: plotPoint?.project_id || '',
+          project_id: plotPoint?.project_id || "",
           parent_id: parentId || undefined,
           title,
           description,
@@ -68,7 +68,7 @@ export function PlotPointEditor({
           chapter_id: chapterId || undefined,
           sort_order: sortOrder,
         };
-        await invoke('create_plot_point', { request: createData });
+        await invoke("create_plot_point", { request: createData });
       }
       onSave();
     } catch (err) {
@@ -83,7 +83,7 @@ export function PlotPointEditor({
       <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-auto">
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-            {plotPoint?.id ? '编辑情节点' : '新建情节点'}
+            {plotPoint?.id ? "编辑情节点" : "新建情节点"}
           </h2>
           <button
             onClick={onClose}
@@ -151,7 +151,7 @@ export function PlotPointEditor({
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">无（根节点）</option>
-                {availableParentPoints.map(point => (
+                {availableParentPoints.map((point) => (
                   <option key={point.id} value={point.id}>
                     {point.title}
                   </option>
@@ -169,7 +169,7 @@ export function PlotPointEditor({
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">未关联</option>
-                {availableChapters.map(chapter => (
+                {availableChapters.map((chapter) => (
                   <option key={chapter.id} value={chapter.id}>
                     {chapter.title}
                   </option>
@@ -222,7 +222,7 @@ export function PlotPointEditor({
               className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" />
-              {loading ? '保存中...' : '保存'}
+              {loading ? "保存中..." : "保存"}
             </button>
           </div>
         </form>

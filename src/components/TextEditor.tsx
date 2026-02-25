@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Save, FileText, Loader2, Bot } from 'lucide-react';
-import { AIToolbar } from './AIToolbar';
-import WritingAssistant from './WritingAssistant';
-import type { Chapter, Character } from '../types';
+import React, { useState, useEffect } from "react";
+import { Save, FileText, Loader2, Bot, Maximize } from "lucide-react";
+import { AIToolbar } from "./AIToolbar";
+import WritingAssistant from "./WritingAssistant";
+import FocusMode from "./FocusMode";
+import type { Chapter, Character } from "../types";
 
 interface TextEditorProps {
   content: string;
@@ -33,6 +34,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
 }) => {
   const [localContent, setLocalContent] = useState(content);
   const [showAssistant, setShowAssistant] = useState(false);
+  const [showFocusMode, setShowFocusMode] = useState(false);
 
   useEffect(() => {
     setLocalContent(content);
@@ -44,7 +46,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
   };
 
   const handleAIInsert = (text: string) => {
-    const newContent = localContent + '\n\n' + text;
+    const newContent = localContent + "\n\n" + text;
     setLocalContent(newContent);
     onChange(newContent);
   };
@@ -77,12 +79,19 @@ export const TextEditor: React.FC<TextEditorProps> = ({
             onClick={() => setShowAssistant(!showAssistant)}
             className={`flex items-center gap-1 px-3 py-1 text-sm rounded-md transition-colors ${
               showAssistant
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
             <Bot className="w-4 h-4" />
             写作助手
+          </button>
+          <button
+            onClick={() => setShowFocusMode(true)}
+            className="flex items-center gap-1 px-3 py-1 text-sm rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+            title="专注模式"
+          >
+            <Maximize className="w-4 h-4" />
           </button>
           <span className="text-sm text-muted-foreground">
             {wordCount || localContent.length} 字
@@ -149,6 +158,23 @@ export const TextEditor: React.FC<TextEditorProps> = ({
           />
         )}
       </div>
+
+      {/* Focus Mode */}
+      {showFocusMode && (
+        <FocusMode
+          content={localContent}
+          title="专注写作"
+          onChange={(newContent) => {
+            setLocalContent(newContent);
+            onChange(newContent);
+          }}
+          onSave={() => {
+            if (onSave) onSave();
+          }}
+          onExit={() => setShowFocusMode(false)}
+          wordCount={wordCount || localContent.length}
+        />
+      )}
     </div>
   );
 };

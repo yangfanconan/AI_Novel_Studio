@@ -553,6 +553,126 @@ pub fn init_database(db_path: &Path) -> SqlResult<()> {
         [],
     )?;
 
+    // 提示词模板表
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS prompt_templates (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL,
+            description TEXT,
+            system_prompt TEXT NOT NULL,
+            user_prompt_template TEXT NOT NULL,
+            variables TEXT,
+            is_default INTEGER DEFAULT 0,
+            is_custom INTEGER DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_prompt_templates_category ON prompt_templates(category)",
+        [],
+    )?;
+
+    // 角色圣经表 (Character Bible - 用于AI影视生成的角色一致性)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS character_bibles (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            type TEXT NOT NULL,
+            visual_traits TEXT,
+            style_tokens TEXT,
+            color_palette TEXT,
+            personality TEXT,
+            reference_images TEXT,
+            three_view_images TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_character_bibles_project ON character_bibles(project_id)",
+        [],
+    )?;
+
+    // AI任务队列表 (用于批量生成任务管理)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS ai_task_queue (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL,
+            task_type TEXT NOT NULL,
+            priority INTEGER DEFAULT 5,
+            state TEXT NOT NULL DEFAULT 'pending',
+            provider TEXT,
+            input_data TEXT NOT NULL,
+            output_data TEXT,
+            error_message TEXT,
+            retry_count INTEGER DEFAULT 0,
+            max_retries INTEGER DEFAULT 3,
+            progress INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            started_at TEXT,
+            completed_at TEXT,
+            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_ai_task_queue_project ON ai_task_queue(project_id)",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_ai_task_queue_state ON ai_task_queue(state)",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_ai_task_queue_type ON ai_task_queue(task_type)",
+        [],
+    )?;
+
+    // 剧本场景表 (用于AI影视场景解析)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS script_scenes (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL,
+            chapter_id TEXT,
+            scene_index INTEGER NOT NULL,
+            narration TEXT,
+            visual_content TEXT,
+            action TEXT,
+            camera TEXT,
+            character_description TEXT,
+            generated_image_url TEXT,
+            generated_video_url TEXT,
+            status TEXT DEFAULT 'pending',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+            FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE SET NULL
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_script_scenes_project ON script_scenes(project_id)",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_script_scenes_chapter ON script_scenes(chapter_id)",
+        [],
+    )?;
+
     // 数据库迁移：为 characters 表添加新列（如果不存在）
     let migrations = vec![
         "ALTER TABLE characters ADD COLUMN role_type TEXT",

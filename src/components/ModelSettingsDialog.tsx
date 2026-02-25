@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { X, Loader2, Eye, EyeOff, Check, Star, Key, Sliders } from 'lucide-react';
-import { invoke } from '@tauri-apps/api/core';
-import { logger } from '../utils/logger';
-import { uiLogger } from '../utils/uiLogger';
+import React, { useState, useEffect } from "react";
+import { X, Loader2, Eye, EyeOff, Check, Star, Key, Sliders } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
+import { logger } from "../utils/logger";
+import { uiLogger } from "../utils/uiLogger";
 
 interface ModelSettingsDialogProps {
   open: boolean;
@@ -29,16 +29,13 @@ interface APIKeyInfo {
   masked_key: string | null;
 }
 
-type TabType = 'models' | 'params' | 'keys';
+type TabType = "models" | "params" | "keys";
 
-export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
-  open,
-  onClose,
-}) => {
-  console.log('ModelSettingsDialog render, open:', open);
+export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({ open, onClose }) => {
+  console.log("ModelSettingsDialog render, open:", open);
 
   // Tab 状态
-  const [activeTab, setActiveTab] = useState<TabType>('models');
+  const [activeTab, setActiveTab] = useState<TabType>("models");
 
   // 模型相关状态
   const [models, setModels] = useState<ModelInfo[]>([]);
@@ -55,27 +52,27 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
   // API 密钥状态
   const [apiKeys, setAPIKeys] = useState<APIKeyInfo[]>([]);
   const [editingProvider, setEditingProvider] = useState<string | null>(null);
-  const [newApiKey, setNewApiKey] = useState('');
+  const [newApiKey, setNewApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
 
   // 通用状态
   const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [hasChanges, setHasChanges] = useState(false);
 
   // 加载模型列表
   const loadModels = async () => {
-    console.log('loadModels called');
+    console.log("loadModels called");
     setIsLoadingModels(true);
     try {
-      const availableModels = await invoke<ModelInfo[]>('get_models_with_default');
-      logger.info('Loaded models with default', {
-        feature: 'model-settings',
-        data: { count: availableModels.length }
+      const availableModels = await invoke<ModelInfo[]>("get_models_with_default");
+      logger.info("Loaded models with default", {
+        feature: "model-settings",
+        data: { count: availableModels.length },
       });
       setModels(availableModels);
     } catch (error) {
-      logger.error('Failed to load models', error, { feature: 'model-settings' });
+      logger.error("Failed to load models", error, { feature: "model-settings" });
     } finally {
       setIsLoadingModels(false);
     }
@@ -84,21 +81,21 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
   // 加载 AI 参数
   const loadAIParams = async () => {
     try {
-      const params = await invoke<AIParams>('get_ai_params');
+      const params = await invoke<AIParams>("get_ai_params");
       setAIParams(params);
       setOriginalAIParams(params);
     } catch (error) {
-      logger.error('Failed to load AI params', error, { feature: 'model-settings' });
+      logger.error("Failed to load AI params", error, { feature: "model-settings" });
     }
   };
 
   // 加载 API 密钥列表
   const loadAPIKeys = async () => {
     try {
-      const keys = await invoke<APIKeyInfo[]>('get_api_keys');
+      const keys = await invoke<APIKeyInfo[]>("get_api_keys");
       setAPIKeys(keys);
     } catch (error) {
-      logger.error('Failed to load API keys', error, { feature: 'model-settings' });
+      logger.error("Failed to load API keys", error, { feature: "model-settings" });
     }
   };
 
@@ -112,35 +109,35 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
   }, [aiParams, originalAIParams]);
 
   useEffect(() => {
-    console.log('ModelSettingsDialog useEffect called, open:', open);
-    uiLogger.open('ModelSettingsDialog');
+    console.log("ModelSettingsDialog useEffect called, open:", open);
+    uiLogger.open("ModelSettingsDialog");
 
     if (open) {
-      console.log('open is true, loading all settings');
+      console.log("open is true, loading all settings");
       loadModels();
       loadAIParams();
       loadAPIKeys();
-      setSaveStatus('idle');
-      setActiveTab('models');
+      setSaveStatus("idle");
+      setActiveTab("models");
     }
   }, [open]);
 
   // 设置默认模型
   const handleSetDefaultModel = async (modelId: string) => {
-    uiLogger.click('ModelSettingsDialog', 'set_default_model', { modelId });
+    uiLogger.click("ModelSettingsDialog", "set_default_model", { modelId });
 
     setIsSaving(true);
     try {
-      await invoke('set_default_model', { modelId });
-      logger.info('Default model set', {
-        feature: 'model-settings',
-        data: { modelId }
+      await invoke("set_default_model", { modelId });
+      logger.info("Default model set", {
+        feature: "model-settings",
+        data: { modelId },
       });
       // 刷新模型列表
       await loadModels();
     } catch (error) {
-      logger.error('Failed to set default model', error, { feature: 'model-settings' });
-      alert('设置默认模型失败: ' + (error as Error).message);
+      logger.error("Failed to set default model", error, { feature: "model-settings" });
+      alert("设置默认模型失败: " + (error as Error).message);
     } finally {
       setIsSaving(false);
     }
@@ -148,32 +145,32 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
 
   // 保存 API 密钥
   const handleSaveAPIKey = async (provider: string) => {
-    uiLogger.click('ModelSettingsDialog', 'save_api_key', { provider });
+    uiLogger.click("ModelSettingsDialog", "save_api_key", { provider });
 
     if (!newApiKey.trim()) {
-      logger.warn('API key is empty', { feature: 'model-settings' });
+      logger.warn("API key is empty", { feature: "model-settings" });
       return;
     }
 
     setIsSaving(true);
     try {
-      await invoke('set_api_key', { provider, apiKey: newApiKey });
-      logger.info('API key saved', {
-        feature: 'model-settings',
-        data: { provider }
+      await invoke("set_api_key", { provider, apiKey: newApiKey });
+      logger.info("API key saved", {
+        feature: "model-settings",
+        data: { provider },
       });
-      setNewApiKey('');
+      setNewApiKey("");
       setEditingProvider(null);
       setShowApiKey(false);
       // 刷新密钥列表
       await loadAPIKeys();
       // 如果是 bigmodel，也刷新模型列表
-      if (provider === 'bigmodel') {
+      if (provider === "bigmodel") {
         await loadModels();
       }
     } catch (error) {
-      logger.error('Failed to save API key', error, { feature: 'model-settings' });
-      alert('保存 API 密钥失败: ' + (error as Error).message);
+      logger.error("Failed to save API key", error, { feature: "model-settings" });
+      alert("保存 API 密钥失败: " + (error as Error).message);
     } finally {
       setIsSaving(false);
     }
@@ -181,27 +178,27 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
 
   // 保存所有设置
   const handleSaveAll = async () => {
-    uiLogger.click('ModelSettingsDialog', 'save_all', aiParams);
+    uiLogger.click("ModelSettingsDialog", "save_all", aiParams);
 
-    setSaveStatus('saving');
+    setSaveStatus("saving");
     setIsSaving(true);
     try {
       // 保存 AI 参数
-      await invoke('set_ai_params', { params: aiParams });
+      await invoke("set_ai_params", { params: aiParams });
       setOriginalAIParams(aiParams);
       setHasChanges(false);
-      
-      logger.info('AI params saved', {
-        feature: 'model-settings',
-        data: aiParams
+
+      logger.info("AI params saved", {
+        feature: "model-settings",
+        data: aiParams,
       });
-      
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
+
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
     } catch (error) {
-      logger.error('Failed to save settings', error, { feature: 'model-settings' });
-      setSaveStatus('error');
-      alert('保存设置失败: ' + (error as Error).message);
+      logger.error("Failed to save settings", error, { feature: "model-settings" });
+      setSaveStatus("error");
+      alert("保存设置失败: " + (error as Error).message);
     } finally {
       setIsSaving(false);
     }
@@ -212,22 +209,22 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
     setAIParams(originalAIParams);
     setHasChanges(false);
     setEditingProvider(null);
-    setNewApiKey('');
+    setNewApiKey("");
   };
 
-  console.log('ModelSettingsDialog render check, open:', open);
+  console.log("ModelSettingsDialog render check, open:", open);
 
   if (!open) {
-    console.log('ModelSettingsDialog returning null because open is false');
+    console.log("ModelSettingsDialog returning null because open is false");
     return null;
   }
 
-  console.log('ModelSettingsDialog rendering dialog');
+  console.log("ModelSettingsDialog rendering dialog");
 
   const tabs = [
-    { id: 'models' as TabType, label: '模型管理', icon: Star },
-    { id: 'params' as TabType, label: 'AI 参数', icon: Sliders },
-    { id: 'keys' as TabType, label: 'API 密钥', icon: Key },
+    { id: "models" as TabType, label: "模型管理", icon: Star },
+    { id: "params" as TabType, label: "AI 参数", icon: Sliders },
+    { id: "keys" as TabType, label: "API 密钥", icon: Key },
   ];
 
   return (
@@ -237,20 +234,17 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">系统设置</h2>
           <div className="flex items-center gap-2">
-            {saveStatus === 'saved' && (
+            {saveStatus === "saved" && (
               <span className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
                 <Check className="w-4 h-4" /> 已保存
               </span>
             )}
-            {saveStatus === 'saving' && (
+            {saveStatus === "saving" && (
               <span className="text-sm text-blue-600 dark:text-blue-400 flex items-center gap-1">
                 <Loader2 className="w-4 h-4 animate-spin" /> 保存中...
               </span>
             )}
-            <button
-              onClick={onClose}
-              className="p-1 hover:bg-accent rounded transition-colors"
-            >
+            <button onClick={onClose} className="p-1 hover:bg-accent rounded transition-colors">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -264,8 +258,8 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 activeTab === tab.id
-                  ? 'text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400'
-                  : 'text-slate-600 dark:text-slate-400 border-transparent hover:text-slate-900 dark:hover:text-white'
+                  ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
+                  : "text-slate-600 dark:text-slate-400 border-transparent hover:text-slate-900 dark:hover:text-white"
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -277,7 +271,7 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
         {/* 内容区 */}
         <div className="flex-1 overflow-y-auto p-6">
           {/* 模型管理 Tab */}
-          {activeTab === 'models' && (
+          {activeTab === "models" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -305,8 +299,8 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
                         key={model.id}
                         className={`flex items-center justify-between p-3 rounded-lg border ${
                           model.is_default
-                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                            : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
+                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                            : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -344,7 +338,7 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
           )}
 
           {/* AI 参数 Tab */}
-          {activeTab === 'params' && (
+          {activeTab === "params" && (
             <div className="space-y-6">
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 调整 AI 生成内容的参数设置，这些参数会影响所有 AI 功能的输出效果。
@@ -420,9 +414,7 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
                   max="1"
                   step="0.1"
                   value={aiParams.top_p}
-                  onChange={(e) =>
-                    setAIParams({ ...aiParams, top_p: parseFloat(e.target.value) })
-                  }
+                  onChange={(e) => setAIParams({ ...aiParams, top_p: parseFloat(e.target.value) })}
                   className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
                 />
                 <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
@@ -433,12 +425,11 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
 
               {/* 参数说明 */}
               <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg space-y-2">
-                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  参数说明
-                </h4>
+                <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">参数说明</h4>
                 <ul className="text-xs text-slate-500 dark:text-slate-400 space-y-1">
                   <li>
-                    <strong>Temperature</strong>：控制输出的随机性。较低的值使输出更确定，较高的值增加创意性。
+                    <strong>Temperature</strong>
+                    ：控制输出的随机性。较低的值使输出更确定，较高的值增加创意性。
                   </li>
                   <li>
                     <strong>Max Tokens</strong>：限制生成的最大 Token 数量，影响输出长度。
@@ -452,7 +443,7 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
           )}
 
           {/* API 密钥 Tab */}
-          {activeTab === 'keys' && (
+          {activeTab === "keys" && (
             <div className="space-y-4">
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 配置各 AI 服务的 API 密钥。密钥将安全存储在本地数据库中。
@@ -479,11 +470,11 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
                         <button
                           onClick={() => {
                             setEditingProvider(keyInfo.provider);
-                            setNewApiKey('');
+                            setNewApiKey("");
                           }}
                           className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                         >
-                          {keyInfo.is_configured ? '更新密钥' : '配置密钥'}
+                          {keyInfo.is_configured ? "更新密钥" : "配置密钥"}
                         </button>
                       )}
                     </div>
@@ -492,7 +483,7 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
                       <div className="space-y-2">
                         <div className="relative">
                           <input
-                            type={showApiKey ? 'text' : 'password'}
+                            type={showApiKey ? "text" : "password"}
                             value={newApiKey}
                             onChange={(e) => setNewApiKey(e.target.value)}
                             className="w-full px-3 py-2 pr-10 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white text-sm"
@@ -516,12 +507,12 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
                             disabled={isSaving || !newApiKey.trim()}
                             className="text-xs px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
                           >
-                            {isSaving ? '保存中...' : '保存'}
+                            {isSaving ? "保存中..." : "保存"}
                           </button>
                           <button
                             onClick={() => {
                               setEditingProvider(null);
-                              setNewApiKey('');
+                              setNewApiKey("");
                               setShowApiKey(false);
                             }}
                             className="text-xs px-3 py-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
@@ -543,9 +534,9 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
                     )}
 
                     {/* 提供商特定说明 */}
-                    {keyInfo.provider === 'bigmodel' && (
+                    {keyInfo.provider === "bigmodel" && (
                       <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
-                        从{' '}
+                        从{" "}
                         <a
                           href="https://open.bigmodel.cn/"
                           target="_blank"
@@ -553,13 +544,13 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
                           className="text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           智谱AI开放平台
-                        </a>{' '}
+                        </a>{" "}
                         获取 API 密钥
                       </p>
                     )}
-                    {keyInfo.provider === 'openai' && (
+                    {keyInfo.provider === "openai" && (
                       <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
-                        从{' '}
+                        从{" "}
                         <a
                           href="https://platform.openai.com/api-keys"
                           target="_blank"
@@ -567,13 +558,13 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
                           className="text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           OpenAI Platform
-                        </a>{' '}
+                        </a>{" "}
                         获取 API 密钥
                       </p>
                     )}
-                    {keyInfo.provider === 'anthropic' && (
+                    {keyInfo.provider === "anthropic" && (
                       <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
-                        从{' '}
+                        从{" "}
                         <a
                           href="https://console.anthropic.com/"
                           target="_blank"
@@ -581,7 +572,7 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
                           className="text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           Anthropic Console
-                        </a>{' '}
+                        </a>{" "}
                         获取 API 密钥
                       </p>
                     )}
@@ -595,7 +586,9 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
         {/* 底部按钮栏 */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 dark:border-slate-700 shrink-0">
           <div className="text-sm text-slate-500 dark:text-slate-400">
-            {hasChanges && <span className="text-yellow-600 dark:text-yellow-400">有未保存的更改</span>}
+            {hasChanges && (
+              <span className="text-yellow-600 dark:text-yellow-400">有未保存的更改</span>
+            )}
           </div>
           <div className="flex gap-3">
             {hasChanges && (
@@ -611,7 +604,7 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({
               disabled={isSaving || !hasChanges}
               className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
             >
-              {isSaving ? '保存中...' : '保存设置'}
+              {isSaving ? "保存中..." : "保存设置"}
             </button>
           </div>
         </div>

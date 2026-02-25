@@ -1,8 +1,19 @@
-import { useState, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
-import { Plus, Search, Settings, Trash2, Power, PowerOff, Download, Shield, Cpu, BookOpen } from 'lucide-react';
-import { Plugin, PluginCommand, PermissionStatus } from '../types/plugin';
-import { PluginDevGuideDialog } from './PluginDevGuideDialog';
+import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import {
+  Plus,
+  Search,
+  Settings,
+  Trash2,
+  Power,
+  PowerOff,
+  Download,
+  Shield,
+  Cpu,
+  BookOpen,
+} from "lucide-react";
+import { Plugin, PluginCommand, PermissionStatus } from "../types/plugin";
+import { PluginDevGuideDialog } from "./PluginDevGuideDialog";
 
 interface PluginManagerProps {
   onClose?: () => void;
@@ -10,26 +21,26 @@ interface PluginManagerProps {
 
 const getStateBadge = (state: string) => {
   const badges: Record<string, { text: string; color: string }> = {
-    loaded: { text: '已加载', color: 'bg-blue-100 text-blue-800' },
-    activated: { text: '已激活', color: 'bg-green-100 text-green-800' },
-    deactivated: { text: '已停用', color: 'bg-gray-100 text-gray-800' },
-    error: { text: '错误', color: 'bg-red-100 text-red-800' },
-    unloaded: { text: '未加载', color: 'bg-gray-100 text-gray-800' }
+    loaded: { text: "已加载", color: "bg-blue-100 text-blue-800" },
+    activated: { text: "已激活", color: "bg-green-100 text-green-800" },
+    deactivated: { text: "已停用", color: "bg-gray-100 text-gray-800" },
+    error: { text: "错误", color: "bg-red-100 text-red-800" },
+    unloaded: { text: "未加载", color: "bg-gray-100 text-gray-800" },
   };
-  const badge = badges[state] || { text: state, color: 'bg-gray-100 text-gray-800' };
+  const badge = badges[state] || { text: state, color: "bg-gray-100 text-gray-800" };
   return <span className={`px-2 py-1 text-xs rounded ${badge.color}`}>{badge.text}</span>;
 };
 
 const getPluginTypeLabel = (type: string) => {
   const labels: Record<string, string> = {
-    editor_extension: '编辑器扩展',
-    feature_module: '功能模块',
-    theme: '主题',
-    language_pack: '语言包',
-    ai_adapter: 'AI 适配器',
-    import_export: '导入/导出',
-    utility: '工具',
-    integration: '集成'
+    editor_extension: "编辑器扩展",
+    feature_module: "功能模块",
+    theme: "主题",
+    language_pack: "语言包",
+    ai_adapter: "AI 适配器",
+    import_export: "导入/导出",
+    utility: "工具",
+    integration: "集成",
   };
   return labels[type] || type;
 };
@@ -37,7 +48,7 @@ const getPluginTypeLabel = (type: string) => {
 export default function PluginManager({ onClose }: PluginManagerProps) {
   const [plugins, setPlugins] = useState<Plugin[]>([]);
   const [commands, setCommands] = useState<PluginCommand[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlugin, setSelectedPlugin] = useState<Plugin | null>(null);
   const [showInstallDialog, setShowInstallDialog] = useState(false);
   const [showDevGuide, setShowDevGuide] = useState(false);
@@ -50,13 +61,13 @@ export default function PluginManager({ onClose }: PluginManagerProps) {
 
   const loadPlugins = async () => {
     try {
-      const result = await invoke('plugin_get_all');
-      console.log('Raw plugins result:', result, typeof result);
+      const result = await invoke("plugin_get_all");
+      console.log("Raw plugins result:", result, typeof result);
       const parsedPlugins = Array.isArray(result) ? result : [];
-      console.log('Parsed plugins:', parsedPlugins);
+      console.log("Parsed plugins:", parsedPlugins);
       setPlugins(parsedPlugins);
     } catch (error) {
-      console.error('Failed to load plugins:', error);
+      console.error("Failed to load plugins:", error);
       setPlugins([]);
     } finally {
       setLoading(false);
@@ -65,35 +76,35 @@ export default function PluginManager({ onClose }: PluginManagerProps) {
 
   const loadCommands = async () => {
     try {
-      const result = await invoke('plugin_get_commands');
-      console.log('Raw commands result:', result, typeof result);
+      const result = await invoke("plugin_get_commands");
+      console.log("Raw commands result:", result, typeof result);
       const parsedCommands = Array.isArray(result) ? result : [];
-      console.log('Parsed commands:', parsedCommands);
+      console.log("Parsed commands:", parsedCommands);
       setCommands(parsedCommands);
     } catch (error) {
-      console.error('Failed to load commands:', error);
+      console.error("Failed to load commands:", error);
       setCommands([]);
     }
   };
 
   const handleActivate = async (pluginId: string) => {
     try {
-      await invoke('plugin_activate', { pluginId });
+      await invoke("plugin_activate", { pluginId });
       await loadPlugins();
       await loadCommands();
     } catch (error) {
-      console.error('Failed to activate plugin:', error);
+      console.error("Failed to activate plugin:", error);
       alert(`激活插件失败: ${error}`);
     }
   };
 
   const handleDeactivate = async (pluginId: string) => {
     try {
-      await invoke('plugin_deactivate', { pluginId });
+      await invoke("plugin_deactivate", { pluginId });
       await loadPlugins();
       await loadCommands();
     } catch (error) {
-      console.error('Failed to deactivate plugin:', error);
+      console.error("Failed to deactivate plugin:", error);
       alert(`停用插件失败: ${error}`);
     }
   };
@@ -104,14 +115,14 @@ export default function PluginManager({ onClose }: PluginManagerProps) {
     }
 
     try {
-      await invoke('plugin_uninstall', { pluginId });
+      await invoke("plugin_uninstall", { pluginId });
       await loadPlugins();
       await loadCommands();
       if (selectedPlugin?.manifest.info.id === pluginId) {
         setSelectedPlugin(null);
       }
     } catch (error) {
-      console.error('Failed to uninstall plugin:', error);
+      console.error("Failed to uninstall plugin:", error);
       alert(`卸载插件失败: ${error}`);
     }
   };
@@ -120,17 +131,17 @@ export default function PluginManager({ onClose }: PluginManagerProps) {
     setSearchQuery(query);
     if (query.trim()) {
       try {
-        const result = await invoke<Plugin[]>('plugin_search', { query });
+        const result = await invoke<Plugin[]>("plugin_search", { query });
         setPlugins(result);
       } catch (error) {
-        console.error('Failed to search plugins:', error);
+        console.error("Failed to search plugins:", error);
       }
     } else {
       await loadPlugins();
     }
   };
 
-  const filteredPlugins = plugins.filter(p => {
+  const filteredPlugins = plugins.filter((p) => {
     if (searchQuery) {
       return true;
     }
@@ -183,7 +194,7 @@ export default function PluginManager({ onClose }: PluginManagerProps) {
             <div className="p-4 text-center text-muted-foreground">加载中...</div>
           ) : filteredPlugins.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
-              {searchQuery ? '未找到匹配的插件' : '暂无已安装的插件'}
+              {searchQuery ? "未找到匹配的插件" : "暂无已安装的插件"}
             </div>
           ) : (
             <div className="divide-y divide-border">
@@ -192,7 +203,7 @@ export default function PluginManager({ onClose }: PluginManagerProps) {
                   key={plugin.manifest.info.id}
                   onClick={() => setSelectedPlugin(plugin)}
                   className={`p-4 cursor-pointer hover:bg-accent ${
-                    selectedPlugin?.manifest.info.id === plugin.manifest.info.id ? 'bg-accent' : ''
+                    selectedPlugin?.manifest.info.id === plugin.manifest.info.id ? "bg-accent" : ""
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -225,7 +236,7 @@ export default function PluginManager({ onClose }: PluginManagerProps) {
         {selectedPlugin && (
           <PluginDetailPanel
             plugin={selectedPlugin}
-            commands={commands.filter(c => c.plugin_id === selectedPlugin.manifest.info.id)}
+            commands={commands.filter((c) => c.plugin_id === selectedPlugin.manifest.info.id)}
             onActivate={handleActivate}
             onDeactivate={handleDeactivate}
             onUninstall={handleUninstall}
@@ -243,9 +254,7 @@ export default function PluginManager({ onClose }: PluginManagerProps) {
         />
       )}
 
-      {showDevGuide && (
-        <PluginDevGuideDialog onClose={() => setShowDevGuide(false)} />
-      )}
+      {showDevGuide && <PluginDevGuideDialog onClose={() => setShowDevGuide(false)} />}
     </div>
   );
 }
@@ -258,8 +267,16 @@ interface PluginDetailPanelProps {
   onUninstall: (pluginId: string) => void;
 }
 
-function PluginDetailPanel({ plugin, commands, onActivate, onDeactivate, onUninstall }: PluginDetailPanelProps) {
-  const [activeTab, setActiveTab] = useState<'overview' | 'permissions' | 'settings' | 'commands'>('overview');
+function PluginDetailPanel({
+  plugin,
+  commands,
+  onActivate,
+  onDeactivate,
+  onUninstall,
+}: PluginDetailPanelProps) {
+  const [activeTab, setActiveTab] = useState<"overview" | "permissions" | "settings" | "commands">(
+    "overview"
+  );
   const [permissions, setPermissions] = useState<PermissionStatus[]>([]);
   const [settings, setSettings] = useState<Record<string, any>>({});
 
@@ -270,40 +287,40 @@ function PluginDetailPanel({ plugin, commands, onActivate, onDeactivate, onUnins
 
   const loadPermissions = async () => {
     try {
-      const result = await invoke<PermissionStatus[]>('plugin_get_permissions', {
-        pluginId: plugin.manifest.info.id
+      const result = await invoke<PermissionStatus[]>("plugin_get_permissions", {
+        pluginId: plugin.manifest.info.id,
       });
       setPermissions(result);
     } catch (error) {
-      console.error('Failed to load permissions:', error);
+      console.error("Failed to load permissions:", error);
     }
   };
 
   const loadSettings = async () => {
     try {
-      const result = await invoke('plugin_get_settings', {
-        pluginId: plugin.manifest.info.id
+      const result = await invoke("plugin_get_settings", {
+        pluginId: plugin.manifest.info.id,
       });
       setSettings(result as Record<string, any>);
     } catch (error) {
-      console.error('Failed to load settings:', error);
+      console.error("Failed to load settings:", error);
     }
   };
 
   const handleSaveSettings = async () => {
     try {
-      await invoke('plugin_update_settings', {
+      await invoke("plugin_update_settings", {
         pluginId: plugin.manifest.info.id,
-        settings
+        settings,
       });
-      alert('设置已保存');
+      alert("设置已保存");
     } catch (error) {
-      console.error('Failed to save settings:', error);
-      alert('保存设置失败');
+      console.error("Failed to save settings:", error);
+      alert("保存设置失败");
     }
   };
 
-  const isActive = plugin.state === 'activated';
+  const isActive = plugin.state === "activated";
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -359,18 +376,18 @@ function PluginDetailPanel({ plugin, commands, onActivate, onDeactivate, onUnins
 
         <div className="flex gap-1 mt-4">
           {[
-            { id: 'overview', label: '概览' },
-            { id: 'permissions', label: '权限' },
-            { id: 'settings', label: '设置' },
-            { id: 'commands', label: '命令' }
+            { id: "overview", label: "概览" },
+            { id: "permissions", label: "权限" },
+            { id: "settings", label: "设置" },
+            { id: "commands", label: "命令" },
           ].map((tab) => (
             <button
               key={tab.id as any}
               onClick={() => setActiveTab(tab.id as any)}
               className={`px-4 py-2 text-sm rounded-t ${
                 activeTab === tab.id
-                  ? 'bg-background border-b-2 border-primary'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? "bg-background border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {tab.label}
@@ -380,7 +397,7 @@ function PluginDetailPanel({ plugin, commands, onActivate, onDeactivate, onUnins
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        {activeTab === 'overview' && (
+        {activeTab === "overview" && (
           <div className="space-y-6">
             <div>
               <h4 className="font-medium mb-2">基本信息</h4>
@@ -399,12 +416,12 @@ function PluginDetailPanel({ plugin, commands, onActivate, onDeactivate, onUnins
                 </div>
                 <div>
                   <dt className="text-sm text-muted-foreground">安装时间</dt>
-                  <dd>{new Date(plugin.installed_at).toLocaleString('zh-CN')}</dd>
+                  <dd>{new Date(plugin.installed_at).toLocaleString("zh-CN")}</dd>
                 </div>
                 {plugin.last_activated && (
                   <div>
                     <dt className="text-sm text-muted-foreground">最后激活</dt>
-                    <dd>{new Date(plugin.last_activated).toLocaleString('zh-CN')}</dd>
+                    <dd>{new Date(plugin.last_activated).toLocaleString("zh-CN")}</dd>
                   </div>
                 )}
               </dl>
@@ -443,10 +460,7 @@ function PluginDetailPanel({ plugin, commands, onActivate, onDeactivate, onUnins
                 <h4 className="font-medium mb-2">关键词</h4>
                 <div className="flex flex-wrap gap-2">
                   {plugin.manifest.info.keywords.map((keyword, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-1 text-xs bg-secondary rounded"
-                    >
+                    <span key={index} className="px-2 py-1 text-xs bg-secondary rounded">
                       {keyword}
                     </span>
                   ))}
@@ -459,10 +473,7 @@ function PluginDetailPanel({ plugin, commands, onActivate, onDeactivate, onUnins
                 <h4 className="font-medium mb-2">功能能力</h4>
                 <div className="flex flex-wrap gap-2">
                   {plugin.manifest.capabilities.map((cap, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-1 text-xs bg-secondary rounded"
-                    >
+                    <span key={index} className="px-2 py-1 text-xs bg-secondary rounded">
                       {cap}
                     </span>
                   ))}
@@ -472,7 +483,7 @@ function PluginDetailPanel({ plugin, commands, onActivate, onDeactivate, onUnins
           </div>
         )}
 
-        {activeTab === 'permissions' && (
+        {activeTab === "permissions" && (
           <div className="space-y-4">
             <PermissionsPanel
               pluginId={plugin.manifest.info.id}
@@ -482,7 +493,7 @@ function PluginDetailPanel({ plugin, commands, onActivate, onDeactivate, onUnins
           </div>
         )}
 
-        {activeTab === 'settings' && (
+        {activeTab === "settings" && (
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
               <h4 className="font-medium">插件设置</h4>
@@ -499,12 +510,10 @@ function PluginDetailPanel({ plugin, commands, onActivate, onDeactivate, onUnins
           </div>
         )}
 
-        {activeTab === 'commands' && (
+        {activeTab === "commands" && (
           <div className="space-y-4">
             {commands.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                此插件未注册任何命令
-              </div>
+              <div className="text-center text-muted-foreground py-8">此插件未注册任何命令</div>
             ) : (
               commands.map((command) => (
                 <div key={command.command_id} className="p-4 border border-border rounded-lg">
@@ -517,15 +526,12 @@ function PluginDetailPanel({ plugin, commands, onActivate, onDeactivate, onUnins
                     )}
                   </div>
                   {command.description && (
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {command.description}
-                    </p>
+                    <p className="text-sm text-muted-foreground mb-2">{command.description}</p>
                   )}
                   {command.keybinding && (
                     <div className="text-sm text-muted-foreground">
-                      快捷键: <kbd className="px-2 py-1 bg-muted rounded text-xs">
-                        {command.keybinding}
-                      </kbd>
+                      快捷键:{" "}
+                      <kbd className="px-2 py-1 bg-muted rounded text-xs">{command.keybinding}</kbd>
                     </div>
                   )}
                 </div>
@@ -547,48 +553,54 @@ interface PermissionsPanelProps {
 function PermissionsPanel({ pluginId, permissions, onRefresh }: PermissionsPanelProps) {
   const handleGrantPermission = async (permissionName: string) => {
     try {
-      await invoke('plugin_grant_permission', { pluginId, permissionName });
+      await invoke("plugin_grant_permission", { pluginId, permissionName });
       await onRefresh();
     } catch (error) {
-      console.error('Failed to grant permission:', error);
+      console.error("Failed to grant permission:", error);
       alert(`授权失败: ${error}`);
     }
   };
 
   const handleRevokePermission = async (permissionName: string) => {
     try {
-      await invoke('plugin_revoke_permission', { pluginId, permissionName });
+      await invoke("plugin_revoke_permission", { pluginId, permissionName });
       await onRefresh();
     } catch (error) {
-      console.error('Failed to revoke permission:', error);
+      console.error("Failed to revoke permission:", error);
       alert(`撤销授权失败: ${error}`);
     }
   };
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
-      case 'low': return 'text-green-600';
-      case 'medium': return 'text-yellow-600';
-      case 'high': return 'text-red-600';
-      default: return 'text-gray-600';
+      case "low":
+        return "text-green-600";
+      case "medium":
+        return "text-yellow-600";
+      case "high":
+        return "text-red-600";
+      default:
+        return "text-gray-600";
     }
   };
 
   const getRiskLabel = (risk: string) => {
     switch (risk) {
-      case 'low': return '低';
-      case 'medium': return '中';
-      case 'high': return '高';
-      default: return risk;
+      case "low":
+        return "低";
+      case "medium":
+        return "中";
+      case "high":
+        return "高";
+      default:
+        return risk;
     }
   };
 
   return (
     <div className="space-y-4">
       {permissions.length === 0 ? (
-        <div className="text-center text-muted-foreground py-8">
-          此插件不需要任何权限
-        </div>
+        <div className="text-center text-muted-foreground py-8">此插件不需要任何权限</div>
       ) : (
         permissions.map((perm) => (
           <div key={perm.name} className="p-4 border border-border rounded-lg">
@@ -632,22 +644,28 @@ function PermissionsPanel({ pluginId, permissions, onRefresh }: PermissionsPanel
   );
 }
 
-function InstallPluginDialog({ onClose, onInstall }: { onClose: () => void; onInstall: () => void }) {
-  const [pluginPath, setPluginPath] = useState('');
+function InstallPluginDialog({
+  onClose,
+  onInstall,
+}: {
+  onClose: () => void;
+  onInstall: () => void;
+}) {
+  const [pluginPath, setPluginPath] = useState("");
   const [installing, setInstalling] = useState(false);
 
   const handleInstall = async () => {
     if (!pluginPath.trim()) {
-      alert('请输入插件路径');
+      alert("请输入插件路径");
       return;
     }
 
     setInstalling(true);
     try {
-      await invoke('plugin_install', { pluginPath });
+      await invoke("plugin_install", { pluginPath });
       await onInstall();
     } catch (error) {
-      console.error('Failed to install plugin:', error);
+      console.error("Failed to install plugin:", error);
       alert(`安装失败: ${error}`);
     } finally {
       setInstalling(false);
@@ -660,9 +678,7 @@ function InstallPluginDialog({ onClose, onInstall }: { onClose: () => void; onIn
         <h3 className="text-lg font-semibold mb-4">安装插件</h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">
-              插件路径
-            </label>
+            <label className="block text-sm font-medium mb-2">插件路径</label>
             <input
               type="text"
               value={pluginPath}
@@ -688,7 +704,7 @@ function InstallPluginDialog({ onClose, onInstall }: { onClose: () => void; onIn
             disabled={installing}
             className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
           >
-            {installing ? '安装中...' : '安装'}
+            {installing ? "安装中..." : "安装"}
           </button>
         </div>
       </div>

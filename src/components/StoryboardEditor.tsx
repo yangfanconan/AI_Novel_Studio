@@ -1,433 +1,876 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from "react";
 import {
-  Plus,
-  Trash2,
-  Edit2,
-  Play,
-  Save,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  ChevronLeft,
-  ChevronRight,
-  Film,
-  Clock,
-  Camera,
-} from 'lucide-react';
+  Storyboard,
+  StoryboardScene,
+  StoryboardShot,
+  VisualStyle,
+  ShotType,
+  CameraAngle,
+  CameraMovement,
+  TimeOfDay,
+  CreateStoryboardRequest,
+  CreateStoryboardSceneRequest,
+  CreateStoryboardShotRequest,
+  UpdateStoryboardShotRequest,
+} from "../services/moyin.service";
 
-export interface Shot {
-  id: string;
-  scene_number: number;
-  shot_number: number;
-  description: string;
-  camera_angle: string;
-  camera_movement: string;
-  duration: number;
-  action: string;
-  dialogue?: string;
-  sound?: string;
-  notes?: string;
+const VISUAL_STYLES: VisualStyle[] = [
+  "Realistic",
+  "Anime2D",
+  "Anime3D",
+  "StopMotion",
+  "Watercolor",
+  "OilPainting",
+  "Sketch",
+];
+
+const SHOT_TYPES: ShotType[] = [
+  "ExtremeCloseUp",
+  "CloseUp",
+  "MediumCloseUp",
+  "MediumShot",
+  "MediumFullShot",
+  "FullShot",
+  "WideShot",
+  "ExtremeWideShot",
+  "TwoShot",
+  "OverTheShoulder",
+  "PointOfView",
+  "Establishing",
+];
+
+const CAMERA_ANGLES: CameraAngle[] = [
+  "EyeLevel",
+  "LowAngle",
+  "HighAngle",
+  "DutchAngle",
+  "BirdEye",
+  "WormEye",
+];
+
+const CAMERA_MOVEMENTS: CameraMovement[] = [
+  "Static",
+  "PanLeft",
+  "PanRight",
+  "TiltUp",
+  "TiltDown",
+  "ZoomIn",
+  "ZoomOut",
+  "DollyIn",
+  "DollyOut",
+  "TruckLeft",
+  "TruckRight",
+  "PedestalUp",
+  "PedestalDown",
+  "Arc",
+  "Crane",
+  "Handheld",
+  "Steadicam",
+];
+
+const TIME_OF_DAY: TimeOfDay[] = [
+  "Dawn",
+  "Morning",
+  "Noon",
+  "Afternoon",
+  "Evening",
+  "Night",
+  "Midnight",
+];
+
+interface CameraStats {
+  total_shots: number;
+  shot_types: Record<string, number>;
+  angles: Record<string, number>;
+  movements: Record<string, number>;
 }
 
-export interface StoryboardScene {
-  id: string;
-  scene_number: number;
-  title: string;
-  location: string;
-  time_of_day: string;
-  description: string;
-  shots: Shot[];
-  estimated_duration: number;
-  color_mood: string;
-}
+export default function StoryboardEditor() {
+  const [storyboard, setStoryboard] = useState<Storyboard | null>(null);
+  const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
+  const [selectedShotId, setSelectedShotId] = useState<string | null>(null);
+  const [showNewSceneDialog, setShowNewSceneDialog] = useState(false);
+  const [showNewShotDialog, setShowNewShotDialog] = useState(false);
+  const [showEditShotDialog, setShowEditShotDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState<"overview" | "scenes" | "shots" | "export">(
+    "overview"
+  );
 
-interface StoryboardEditorProps {
-  scenes: StoryboardScene[];
-  onChange?: (scenes: StoryboardScene[]) => void;
-  onSave?: () => void;
-  readonly?: boolean;
-}
+  const [newScene, setNewScene] = useState<Partial<CreateStoryboardSceneRequest>>({
+    storyboard_id: "",
+    scene_number: 1,
+    location: "",
+    time_of_day: "Morning",
+  });
 
-export const StoryboardEditor: React.FC<StoryboardEditorProps> = ({
-  scenes,
-  onChange,
-  onSave,
-  readonly = false,
-}) => {
-  const [selectedScene, setSelectedScene] = useState<string | null>(null);
-  const [selectedShot, setSelectedShot] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(100);
-  const [showTimeline, setShowTimeline] = useState(true);
-  const [editingShot, setEditingShot] = useState<Shot | null>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [newShot, setNewShot] = useState<Partial<CreateStoryboardShotRequest>>({
+    scene_id: "",
+    shot_number: 1,
+    shot_type: "MediumShot",
+    camera_angle: "EyeLevel",
+    camera_movement: "Static",
+    subject: "",
+    action: "",
+    dialogue: "",
+    duration: 3.0,
+    description: "",
+  });
 
-  const handleAddScene = useCallback(() => {
-    if (readonly || !onChange) return;
+  const [editShot, setEditShot] = useState<Partial<UpdateStoryboardShotRequest>>({
+    visual_reference: undefined,
+    video_reference: undefined,
+    audio_reference: undefined,
+    notes: undefined,
+  });
 
-    const newScene: StoryboardScene = {
-      id: `scene_${Date.now()}`,
-      scene_number: scenes.length + 1,
-      title: `场景 ${scenes.length + 1}`,
-      location: '未设定',
-      time_of_day: 'day',
-      description: '',
+  const handleCreateStoryboard = () => {
+    const name = prompt("输入分镜名称:");
+    if (!name) return;
+
+    const created: Storyboard = {
+      id: crypto.randomUUID(),
+      project_id: "default",
+      name,
+      description: "",
+      scenes: [],
+      visual_style: "Realistic",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    setStoryboard(created);
+  };
+
+  const handleCreateScene = () => {
+    if (!storyboard || !newScene.location) return;
+
+    const scene: StoryboardScene = {
+      id: crypto.randomUUID(),
+      storyboard_id: storyboard.id,
+      scene_number: newScene.scene_number || 1,
+      location: newScene.location,
+      time_of_day: newScene.time_of_day || "Morning",
       shots: [],
-      estimated_duration: 0,
-      color_mood: 'neutral',
     };
 
-    onChange([...scenes, newScene]);
-    setSelectedScene(newScene.id);
-  }, [scenes, onChange, readonly]);
+    setStoryboard({
+      ...storyboard,
+      scenes: [...storyboard.scenes, scene],
+      updated_at: new Date().toISOString(),
+    });
 
-  const handleAddShot = useCallback((sceneId: string) => {
-    if (readonly || !onChange) return;
+    setNewScene({
+      ...newScene,
+      storyboard_id: storyboard.id,
+      scene_number: (newScene.scene_number || 1) + 1,
+    });
+    setShowNewSceneDialog(false);
+  };
 
-    const scene = scenes.find((s) => s.id === sceneId);
+  const handleCreateShot = () => {
+    if (!storyboard || !selectedSceneId || !newShot.subject || !newShot.action) return;
+
+    const scene = storyboard.scenes.find((s) => s.id === selectedSceneId);
     if (!scene) return;
 
-    const newShot: Shot = {
-      id: `shot_${Date.now()}`,
-      scene_number: scene.scene_number,
-      shot_number: scene.shots.length + 1,
-      description: '新镜头',
-      camera_angle: '中景',
-      camera_movement: '固定',
-      duration: 3,
-      action: '',
+    const shot: StoryboardShot = {
+      id: crypto.randomUUID(),
+      scene_id: selectedSceneId,
+      shot_number: newShot.shot_number || 1,
+      shot_type: newShot.shot_type || "MediumShot",
+      camera_angle: newShot.camera_angle || "EyeLevel",
+      camera_movement: newShot.camera_movement || "Static",
+      subject: newShot.subject,
+      action: newShot.action,
+      dialogue: newShot.dialogue || undefined,
+      duration: newShot.duration || 3.0,
+      description: newShot.description || "",
+      visual_reference: undefined,
+      video_reference: undefined,
+      audio_reference: undefined,
+      notes: undefined,
     };
 
-    const updatedScenes = scenes.map((s) =>
-      s.id === sceneId
-        ? { ...s, shots: [...s.shots, newShot] }
-        : s
-    );
+    const updatedScenes = storyboard.scenes.map((s) => {
+      if (s.id === selectedSceneId) {
+        return { ...s, shots: [...s.shots, shot] };
+      }
+      return s;
+    });
 
-    onChange(updatedScenes);
-    setSelectedShot(newShot.id);
-  }, [scenes, onChange, readonly]);
+    setStoryboard({
+      ...storyboard,
+      scenes: updatedScenes,
+      updated_at: new Date().toISOString(),
+    });
 
-  const handleDeleteScene = useCallback((sceneId: string) => {
-    if (readonly || !onChange) return;
+    setNewShot({
+      ...newShot,
+      scene_id: selectedSceneId,
+      shot_number: (newShot.shot_number || 1) + 1,
+    });
+    setShowNewShotDialog(false);
+  };
 
-    const updatedScenes = scenes.filter((s) => s.id !== sceneId);
-    onChange(updatedScenes);
+  const handleUpdateShot = () => {
+    if (!storyboard || !selectedShotId) return;
 
-    if (selectedScene === sceneId) {
-      setSelectedScene(null);
-    }
-  }, [scenes, onChange, readonly, selectedScene]);
-
-  const handleDeleteShot = useCallback((sceneId: string, shotId: string) => {
-    if (readonly || !onChange) return;
-
-    const updatedScenes = scenes.map((s) =>
-      s.id === sceneId
-        ? { ...s, shots: s.shots.filter((shot) => shot.id !== shotId) }
-        : s
-    );
-
-    onChange(updatedScenes);
-
-    if (selectedShot === shotId) {
-      setSelectedShot(null);
-    }
-  }, [scenes, onChange, readonly, selectedShot]);
-
-  const handleUpdateShot = useCallback((sceneId: string, shotId: string, updates: Partial<Shot>) => {
-    if (readonly || !onChange) return;
-
-    const updatedScenes = scenes.map((s) =>
-      s.id === sceneId
-        ? {
-            ...s,
-            shots: s.shots.map((shot) =>
-              shot.id === shotId ? { ...shot, ...updates } : shot
-            ),
+    const updatedScenes = storyboard.scenes.map((scene) => {
+      if (scene.id === editShot.id) {
+        const updatedShots = scene.shots.map((shot) => {
+          if (shot.id === selectedShotId) {
+            return {
+              ...shot,
+              visual_reference: editShot.visual_reference,
+              video_reference: editShot.video_reference,
+              audio_reference: editShot.audio_reference,
+              notes: editShot.notes,
+            };
           }
-        : s
-    );
+          return shot;
+        });
+        return { ...scene, shots: updatedShots };
+      }
+      return scene;
+    });
 
-    onChange(updatedScenes);
-  }, [scenes, onChange, readonly]);
-
-  const handleMoveShot = useCallback((sceneId: string, shotId: string, direction: 'up' | 'down') => {
-    if (readonly || !onChange) return;
-
-    const scene = scenes.find((s) => s.id === sceneId);
-    if (!scene) return;
-
-    const shotIndex = scene.shots.findIndex((s) => s.id === shotId);
-    if (shotIndex === -1) return;
-
-    const newIndex = direction === 'up' ? shotIndex - 1 : shotIndex + 1;
-    if (newIndex < 0 || newIndex >= scene.shots.length) return;
-
-    const newShots = [...scene.shots];
-    [newShots[shotIndex], newShots[newIndex]] = [newShots[newIndex], newShots[shotIndex]];
-
-    const updatedScenes = scenes.map((s) =>
-      s.id === sceneId ? { ...s, shots: newShots } : s
-    );
-
-    onChange(updatedScenes);
-  }, [scenes, onChange, readonly]);
-
-  const getTotalDuration = () => {
-    return scenes.reduce((total, scene) => total + scene.estimated_duration, 0);
+    setStoryboard({
+      ...storyboard,
+      scenes: updatedScenes,
+      updated_at: new Date().toISOString(),
+    });
+    setShowEditShotDialog(false);
   };
 
-  const formatDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  const handleDeleteScene = (sceneId: string) => {
+    if (!storyboard) return;
+    if (!confirm("确定要删除这个场景吗？")) return;
+
+    setStoryboard({
+      ...storyboard,
+      scenes: storyboard.scenes.filter((s) => s.id !== sceneId),
+      updated_at: new Date().toISOString(),
+    });
   };
+
+  const handleDeleteShot = (shotId: string) => {
+    if (!storyboard) return;
+    if (!confirm("确定要删除这个镜头吗？")) return;
+
+    const updatedScenes = storyboard.scenes.map((scene) => ({
+      ...scene,
+      shots: scene.shots.filter((s) => s.id !== shotId),
+    }));
+
+    setStoryboard({
+      ...storyboard,
+      scenes: updatedScenes,
+      updated_at: new Date().toISOString(),
+    });
+  };
+
+  const getCameraStats = (): CameraStats | null => {
+    if (!storyboard) return null;
+
+    const allShots = storyboard.scenes.flatMap((s) => s.shots);
+    const shotTypes: Record<string, number> = {};
+    const angles: Record<string, number> = {};
+    const movements: Record<string, number> = {};
+
+    allShots.forEach((shot) => {
+      shotTypes[shot.shot_type] = (shotTypes[shot.shot_type] || 0) + 1;
+      angles[shot.camera_angle] = (angles[shot.camera_angle] || 0) + 1;
+      movements[shot.camera_movement] = (movements[shot.camera_movement] || 0) + 1;
+    });
+
+    return {
+      total_shots: allShots.length,
+      shot_types: shotTypes,
+      angles,
+      movements,
+    };
+  };
+
+  const calculateTotalDuration = (): number => {
+    if (!storyboard) return 0;
+    return storyboard.scenes.flatMap((s) => s.shots).reduce((sum, s) => sum + s.duration, 0);
+  };
+
+  const exportToCSV = () => {
+    if (!storyboard) return;
+
+    let csv = "Scene,Shot,Type,Angle,Movement,Subject,Action,Dialogue,Duration\n";
+
+    for (const scene of storyboard.scenes) {
+      for (const shot of scene.shots) {
+        csv += `${scene.scene_number},${shot.shot_number},${shot.shot_type},${shot.camera_angle},${shot.camera_movement},${shot.subject},${shot.action},"${shot.dialogue || ""}",${shot.duration}\n`;
+      }
+    }
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${storyboard.name}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToJSON = () => {
+    if (!storyboard) return;
+
+    const json = JSON.stringify(storyboard, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${storyboard.name}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const selectedScene = storyboard?.scenes.find((s) => s.id === selectedSceneId);
+  const selectedShot = selectedScene?.shots.find((s) => s.id === selectedShotId);
+  const stats = getCameraStats();
+  const totalDuration = calculateTotalDuration();
 
   return (
-    <div className={`flex flex-col h-full bg-background ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card">
-        <div className="flex items-center gap-2">
-          <Film className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium">分镜编辑器</span>
-          <span className="text-sm text-muted-foreground">
-            ({scenes.length} 场景, {scenes.reduce((total, s) => total + s.shots.length, 0)} 镜头)
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 px-3 py-1 bg-muted rounded-md">
-            <Clock className="w-3 h-3 text-muted-foreground" />
-            <span className="text-sm font-medium">{formatDuration(getTotalDuration())}</span>
-          </div>
-
+    <div className="h-full flex flex-col">
+      <div className="flex border-b">
+        <button
+          onClick={() => setActiveTab("overview")}
+          className={`px-4 py-2 text-sm font-medium ${activeTab === "overview" ? "border-b-2 border-blue-500 text-blue-500" : ""}`}
+        >
+          概览
+        </button>
+        <button
+          onClick={() => setActiveTab("scenes")}
+          className={`px-4 py-2 text-sm font-medium ${activeTab === "scenes" ? "border-b-2 border-blue-500 text-blue-500" : ""}`}
+        >
+          场景
+        </button>
+        <button
+          onClick={() => setActiveTab("shots")}
+          className={`px-4 py-2 text-sm font-medium ${activeTab === "shots" ? "border-b-2 border-blue-500 text-blue-500" : ""}`}
+        >
+          镜头
+        </button>
+        <button
+          onClick={() => setActiveTab("export")}
+          className={`px-4 py-2 text-sm font-medium ${activeTab === "export" ? "border-b-2 border-blue-500 text-blue-500" : ""}`}
+        >
+          导出
+        </button>
+        <div className="flex-1" />
+        {!storyboard && (
           <button
-            onClick={() => setShowTimeline(!showTimeline)}
-            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-            title={showTimeline ? '隐藏时间轴' : '显示时间轴'}
+            onClick={handleCreateStoryboard}
+            className="px-4 py-2 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
           >
-            <Clock className="w-4 h-4" />
+            新建分镜
           </button>
-
-          <button
-            onClick={() => setZoom(zoom === 100 ? 75 : zoom === 75 ? 50 : 100)}
-            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-            title="缩放"
-          >
-            {zoom === 100 ? <ZoomIn className="w-4 h-4" /> : zoom === 75 ? <ZoomOut className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
-
-          <button
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-            title={isFullscreen ? '退出全屏' : '全屏'}
-          >
-            <Maximize2 className="w-4 h-4" />
-          </button>
-
-          {onSave && (
-            <button
-              onClick={onSave}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
-            >
-              <Save className="w-4 h-4" />
-              保存
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="max-w-7xl mx-auto space-y-6">
-          {scenes.length === 0 ? (
-            <div className="text-center py-12">
-              <Film className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground mb-4">还没有分镜场景</p>
-              {!readonly && (
-                <button
-                  onClick={handleAddScene}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors mx-auto"
-                >
-                  <Plus className="w-4 h-4" />
-                  添加场景
-                </button>
-              )}
+      <div className="flex-1 overflow-auto p-4">
+        {!storyboard ? (
+          <div className="flex items-center justify-center h-full text-gray-500">
+            <p>点击"新建分镜"开始创建</p>
+          </div>
+        ) : activeTab === "overview" ? (
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-4 rounded">
+              <h3 className="text-lg font-semibold mb-2">{storyboard.name}</h3>
+              <p className="text-gray-600">{storyboard.description || "暂无描述"}</p>
+              <div className="mt-2 text-sm text-gray-500">风格: {storyboard.visual_style}</div>
             </div>
-          ) : (
-            scenes.map((scene) => (
+
+            {stats && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-blue-50 p-4 rounded">
+                  <div className="text-2xl font-bold text-blue-600">{stats.total_shots}</div>
+                  <div className="text-sm text-gray-600">总镜头数</div>
+                </div>
+                <div className="bg-green-50 p-4 rounded">
+                  <div className="text-2xl font-bold text-green-600">
+                    {totalDuration.toFixed(1)}s
+                  </div>
+                  <div className="text-sm text-gray-600">总时长</div>
+                </div>
+              </div>
+            )}
+
+            {stats && Object.keys(stats.shot_types).length > 0 && (
+              <div className="bg-gray-50 p-4 rounded">
+                <h4 className="font-semibold mb-2">镜头类型统计</h4>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  {Object.entries(stats.shot_types).map(([type, count]) => (
+                    <div key={type} className="bg-white p-2 rounded">
+                      <span className="font-medium">{type}</span>: {count}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {stats && Object.keys(stats.angles).length > 0 && (
+              <div className="bg-gray-50 p-4 rounded">
+                <h4 className="font-semibold mb-2">拍摄角度统计</h4>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  {Object.entries(stats.angles).map(([angle, count]) => (
+                    <div key={angle} className="bg-white p-2 rounded">
+                      <span className="font-medium">{angle}</span>: {count}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {stats && Object.keys(stats.movements).length > 0 && (
+              <div className="bg-gray-50 p-4 rounded">
+                <h4 className="font-semibold mb-2">运镜方式统计</h4>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  {Object.entries(stats.movements).map(([movement, count]) => (
+                    <div key={movement} className="bg-white p-2 rounded">
+                      <span className="font-medium">{movement}</span>: {count}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : activeTab === "scenes" ? (
+          <div className="space-y-4">
+            <button
+              onClick={() => {
+                setNewScene({
+                  storyboard_id: storyboard.id,
+                  scene_number: storyboard.scenes.length + 1,
+                  location: "",
+                  time_of_day: "Morning",
+                });
+                setShowNewSceneDialog(true);
+              }}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              新建场景
+            </button>
+
+            {storyboard.scenes.map((scene) => (
               <div
                 key={scene.id}
-                className={`border rounded-lg overflow-hidden transition-all ${
-                  selectedScene === scene.id ? 'border-primary shadow-lg' : 'border-border'
-                }`}
-                onClick={() => setSelectedScene(scene.id)}
-                style={{
-                  backgroundColor: scene.color_mood === 'neutral' ? 'transparent' : `${scene.color_mood}10`,
-                }}
+                className={`border rounded p-4 cursor-pointer ${selectedSceneId === scene.id ? "border-blue-500 bg-blue-50" : ""}`}
+                onClick={() => setSelectedSceneId(scene.id)}
               >
-                <div className="px-4 py-3 border-b border-border bg-card/50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-primary">
-                          场景 {scene.scene_number}
-                        </span>
-                        <span className="text-sm text-muted-foreground">{scene.title}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Camera className="w-3 h-3" />
-                        <span>{scene.location}</span>
-                        <span>·</span>
-                        <span>{scene.time_of_day}</span>
-                      </div>
-                    </div>
-
-                    {!readonly && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddShot(scene.id);
-                          }}
-                          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                          title="添加镜头"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteScene(scene.id);
-                          }}
-                          className="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                          title="删除场景"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )}
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-semibold">
+                      场景 {scene.scene_number}: {scene.location}
+                    </h4>
+                    <p className="text-sm text-gray-600">时间: {scene.time_of_day}</p>
+                    <p className="text-sm text-gray-600">镜头数: {scene.shots.length}</p>
                   </div>
-
-                  <p className="mt-2 text-sm text-muted-foreground">{scene.description}</p>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteScene(scene.id);
+                    }}
+                    className="px-2 py-1 text-red-500 hover:bg-red-50 rounded"
+                  >
+                    删除
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : activeTab === "shots" ? (
+          <div className="space-y-4">
+            {selectedScene ? (
+              <>
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">
+                    场景 {selectedScene.scene_number}: {selectedScene.location}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setNewShot({
+                        scene_id: selectedScene.id,
+                        shot_number: selectedScene.shots.length + 1,
+                        shot_type: "MediumShot",
+                        camera_angle: "EyeLevel",
+                        camera_movement: "Static",
+                        subject: "",
+                        action: "",
+                        dialogue: "",
+                        duration: 3.0,
+                        description: "",
+                      });
+                      setShowNewShotDialog(true);
+                    }}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    新建镜头
+                  </button>
                 </div>
 
-                {scene.shots.length > 0 && (
-                  <div className="divide-y divide-border">
-                    {scene.shots.map((shot, index) => (
-                      <div
-                        key={shot.id}
-                        className={`px-4 py-3 hover:bg-muted/50 transition-colors ${
-                          selectedShot === shot.id ? 'bg-muted/50' : ''
-                        }`}
-                        onClick={() => setSelectedShot(shot.id)}
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-muted rounded">
-                                镜头 {shot.shot_number}
-                              </span>
-                              <span className="text-sm font-medium">{shot.description}</span>
-                              <span className="text-sm text-muted-foreground">
-                                ({shot.camera_angle} / {shot.camera_movement})
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {shot.duration}s
-                              </span>
-                            </div>
-
-                            {shot.action && (
-                              <p className="text-sm text-muted-foreground mb-1">
-                                <span className="font-medium">动作:</span> {shot.action}
-                              </p>
-                            )}
-
-                            {shot.dialogue && (
-                              <p className="text-sm text-muted-foreground mb-1">
-                                <span className="font-medium">对话:</span> {shot.dialogue}
-                              </p>
-                            )}
-
-                            {shot.sound && (
-                              <p className="text-sm text-muted-foreground">
-                                <span className="font-medium">音效:</span> {shot.sound}
-                              </p>
-                            )}
-                          </div>
-
-                          {!readonly && (
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleMoveShot(scene.id, shot.id, 'up');
-                                }}
-                                disabled={index === 0}
-                                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="上移"
-                              >
-                                <ChevronLeft className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleMoveShot(scene.id, shot.id, 'down');
-                                }}
-                                disabled={index === scene.shots.length - 1}
-                                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="下移"
-                              >
-                                <ChevronRight className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingShot(shot);
-                                }}
-                                className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
-                                title="编辑"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteShot(scene.id, shot.id);
-                                }}
-                                className="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                                title="删除"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                {selectedScene.shots.map((shot) => (
+                  <div
+                    key={shot.id}
+                    className={`border rounded p-4 ${selectedShotId === shot.id ? "border-blue-500 bg-blue-50" : ""}`}
+                    onClick={() => setSelectedShotId(shot.id)}
+                  >
+                    <div className="grid grid-cols-4 gap-2 text-sm mb-2">
+                      <div>
+                        <span className="font-medium">类型:</span> {shot.shot_type}
                       </div>
-                    ))}
+                      <div>
+                        <span className="font-medium">角度:</span> {shot.camera_angle}
+                      </div>
+                      <div>
+                        <span className="font-medium">运镜:</span> {shot.camera_movement}
+                      </div>
+                      <div>
+                        <span className="font-medium">时长:</span> {shot.duration}s
+                      </div>
+                    </div>
+                    <div className="text-sm mb-2">
+                      <span className="font-medium">主体:</span> {shot.subject}
+                    </div>
+                    <div className="text-sm mb-2">
+                      <span className="font-medium">动作:</span> {shot.action}
+                    </div>
+                    {shot.dialogue && <div className="text-sm mb-2 italic">"{shot.dialogue}"</div>}
+                    {shot.description && (
+                      <div className="text-sm text-gray-600 mb-2">{shot.description}</div>
+                    )}
+                    {(shot.visual_reference ||
+                      shot.video_reference ||
+                      shot.audio_reference ||
+                      shot.notes) && (
+                      <div className="text-sm text-gray-500 mt-2 border-t pt-2">
+                        {shot.visual_reference && <div>视觉参考: {shot.visual_reference}</div>}
+                        {shot.video_reference && <div>视频参考: {shot.video_reference}</div>}
+                        {shot.audio_reference && <div>音频参考: {shot.audio_reference}</div>}
+                        {shot.notes && <div>备注: {shot.notes}</div>}
+                      </div>
+                    )}
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditShot({
+                            id: selectedScene.id,
+                            visual_reference: shot.visual_reference,
+                            video_reference: shot.video_reference,
+                            audio_reference: shot.audio_reference,
+                            notes: shot.notes,
+                          });
+                          setShowEditShotDialog(true);
+                        }}
+                        className="px-2 py-1 text-blue-500 hover:bg-blue-50 rounded text-sm"
+                      >
+                        编辑参考
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteShot(shot.id);
+                        }}
+                        className="px-2 py-1 text-red-500 hover:bg-red-50 rounded text-sm"
+                      >
+                        删除
+                      </button>
+                    </div>
                   </div>
-                )}
-
-                {scene.shots.length === 0 && (
-                  <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    还没有镜头，点击上方 + 添加
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
+                ))}
+              </>
+            ) : (
+              <p className="text-gray-500">请先选择一个场景</p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <button
+                onClick={exportToJSON}
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+              >
+                导出 JSON
+              </button>
+              <button
+                onClick={exportToCSV}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                导出 CSV
+              </button>
+            </div>
+            <div className="bg-gray-50 p-4 rounded">
+              <h4 className="font-semibold mb-2">导出信息</h4>
+              <p className="text-sm text-gray-600">分镜名称: {storyboard.name}</p>
+              <p className="text-sm text-gray-600">场景数: {storyboard.scenes.length}</p>
+              <p className="text-sm text-gray-600">
+                镜头数: {storyboard.scenes.reduce((sum, s) => sum + s.shots.length, 0)}
+              </p>
+              <p className="text-sm text-gray-600">总时长: {totalDuration.toFixed(1)}s</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {!readonly && (
-        <div className="fixed bottom-6 right-6">
-          <button
-            onClick={handleAddScene}
-            className="flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-lg shadow-lg hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            添加场景
-          </button>
+      {showNewSceneDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">新建场景</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">场景编号</label>
+                <input
+                  type="number"
+                  value={newScene.scene_number || 1}
+                  onChange={(e) =>
+                    setNewScene({ ...newScene, scene_number: parseInt(e.target.value) })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">地点</label>
+                <input
+                  type="text"
+                  value={newScene.location || ""}
+                  onChange={(e) => setNewScene({ ...newScene, location: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="例如: 客厅、公园等"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">时间</label>
+                <select
+                  value={newScene.time_of_day || "Morning"}
+                  onChange={(e) =>
+                    setNewScene({ ...newScene, time_of_day: e.target.value as TimeOfDay })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                >
+                  {TIME_OF_DAY.map((tod) => (
+                    <option key={tod} value={tod}>
+                      {tod}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => setShowNewSceneDialog(false)}
+                className="px-4 py-2 border rounded hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleCreateScene}
+                disabled={!newScene.location}
+                className={`px-4 py-2 rounded ${!newScene.location ? "bg-gray-400 cursor-not-allowed" : "bg-blue-500 text-white hover:bg-blue-600"}`}
+              >
+                创建
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNewShotDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg overflow-auto max-h-[90vh]">
+            <h3 className="text-lg font-semibold mb-4">新建镜头</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">镜头编号</label>
+                <input
+                  type="number"
+                  value={newShot.shot_number || 1}
+                  onChange={(e) =>
+                    setNewShot({ ...newShot, shot_number: parseInt(e.target.value) })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">镜头类型</label>
+                <select
+                  value={newShot.shot_type || "MediumShot"}
+                  onChange={(e) =>
+                    setNewShot({ ...newShot, shot_type: e.target.value as ShotType })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                >
+                  {SHOT_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">拍摄角度</label>
+                <select
+                  value={newShot.camera_angle || "EyeLevel"}
+                  onChange={(e) =>
+                    setNewShot({ ...newShot, camera_angle: e.target.value as CameraAngle })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                >
+                  {CAMERA_ANGLES.map((angle) => (
+                    <option key={angle} value={angle}>
+                      {angle}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">运镜方式</label>
+                <select
+                  value={newShot.camera_movement || "Static"}
+                  onChange={(e) =>
+                    setNewShot({ ...newShot, camera_movement: e.target.value as CameraMovement })
+                  }
+                  className="w-full border rounded px-3 py-2"
+                >
+                  {CAMERA_MOVEMENTS.map((movement) => (
+                    <option key={movement} value={movement}>
+                      {movement}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">主体</label>
+                <input
+                  type="text"
+                  value={newShot.subject || ""}
+                  onChange={(e) => setNewShot({ ...newShot, subject: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="例如: 主角、汽车等"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">动作</label>
+                <textarea
+                  value={newShot.action || ""}
+                  onChange={(e) => setNewShot({ ...newShot, action: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  rows={2}
+                  placeholder="描述主体的动作"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">对白 (可选)</label>
+                <input
+                  type="text"
+                  value={newShot.dialogue || ""}
+                  onChange={(e) => setNewShot({ ...newShot, dialogue: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="角色对白"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">时长 (秒)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={newShot.duration || 3.0}
+                  onChange={(e) => setNewShot({ ...newShot, duration: parseFloat(e.target.value) })}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">描述</label>
+                <textarea
+                  value={newShot.description || ""}
+                  onChange={(e) => setNewShot({ ...newShot, description: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  rows={2}
+                  placeholder="镜头的详细描述"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => setShowNewShotDialog(false)}
+                className="px-4 py-2 border rounded hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleCreateShot}
+                disabled={!newShot.subject || !newShot.action}
+                className={`px-4 py-2 rounded ${!newShot.subject || !newShot.action ? "bg-gray-400 cursor-not-allowed" : "bg-blue-500 text-white hover:bg-blue-600"}`}
+              >
+                创建
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEditShotDialog && selectedShot && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">编辑镜头参考</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">视觉参考 URL</label>
+                <input
+                  type="text"
+                  value={editShot.visual_reference || ""}
+                  onChange={(e) => setEditShot({ ...editShot, visual_reference: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">视频参考 URL</label>
+                <input
+                  type="text"
+                  value={editShot.video_reference || ""}
+                  onChange={(e) => setEditShot({ ...editShot, video_reference: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">音频参考 URL</label>
+                <input
+                  type="text"
+                  value={editShot.audio_reference || ""}
+                  onChange={(e) => setEditShot({ ...editShot, audio_reference: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">备注</label>
+                <textarea
+                  value={editShot.notes || ""}
+                  onChange={(e) => setEditShot({ ...editShot, notes: e.target.value })}
+                  className="w-full border rounded px-3 py-2"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => setShowEditShotDialog(false)}
+                className="px-4 py-2 border rounded hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleUpdateShot}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              >
+                保存
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
-};
+}

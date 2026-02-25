@@ -1,4 +1,4 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
@@ -22,7 +22,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
@@ -36,11 +36,9 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="flex items-center justify-center h-full bg-white dark:bg-slate-900">
           <div className="text-center p-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
-              出错了
-            </h2>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">出错了</h2>
             <p className="text-slate-600 dark:text-slate-400 mb-4">
-              {this.state.error?.message || '未知错误'}
+              {this.state.error?.message || "未知错误"}
             </p>
             <button
               onClick={() => this.setState({ hasError: false, error: undefined })}

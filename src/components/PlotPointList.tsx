@@ -1,9 +1,18 @@
-import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, Edit, Trash2, Link, Sparkles, Loader2 } from 'lucide-react';
-import { PlotPointNode, PlotPoint } from '../types';
-import { invoke } from '@tauri-apps/api/core';
-import { AIGenerateDialog } from './AIGenerateDialog';
-import { ConfirmDialog } from './ConfirmDialog';
+import React, { useState } from "react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  Edit,
+  Trash2,
+  Link,
+  Sparkles,
+  Loader2,
+} from "lucide-react";
+import { PlotPointNode, PlotPoint } from "../types";
+import { invoke } from "@tauri-apps/api/core";
+import { AIGenerateDialog } from "./AIGenerateDialog";
+import { ConfirmDialog } from "./ConfirmDialog";
 
 interface PlotPointListProps {
   projectId: string;
@@ -12,7 +21,12 @@ interface PlotPointListProps {
   onAIGeneratePlotPoints?: (data: any) => Promise<void>;
 }
 
-export function PlotPointList({ projectId, onEditPlotPoint, onLinkToChapter, onAIGeneratePlotPoints }: PlotPointListProps) {
+export function PlotPointList({
+  projectId,
+  onEditPlotPoint,
+  onLinkToChapter,
+  onAIGeneratePlotPoints,
+}: PlotPointListProps) {
   const [plotPoints, setPlotPoints] = useState<PlotPointNode[]>([]);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
@@ -25,14 +39,14 @@ export function PlotPointList({ projectId, onEditPlotPoint, onLinkToChapter, onA
   }>({
     isOpen: false,
     nodeId: null,
-    nodeTitle: '',
+    nodeTitle: "",
   });
 
   const loadPlotPoints = async () => {
     setLoading(true);
     setError(null);
     try {
-      const points = await invoke<PlotPoint[]>('get_plot_points', { projectId });
+      const points = await invoke<PlotPoint[]>("get_plot_points", { projectId });
       const tree = buildPlotTree(points);
       setPlotPoints(tree);
     } catch (err) {
@@ -46,11 +60,11 @@ export function PlotPointList({ projectId, onEditPlotPoint, onLinkToChapter, onA
     const nodeMap = new Map<string, PlotPointNode>();
     const rootNodes: PlotPointNode[] = [];
 
-    points.forEach(point => {
+    points.forEach((point) => {
       nodeMap.set(point.id, { ...point, children: [] });
     });
 
-    points.forEach(point => {
+    points.forEach((point) => {
       const node = nodeMap.get(point.id)!;
       if (point.parent_id && nodeMap.has(point.parent_id)) {
         nodeMap.get(point.parent_id)!.children.push(node);
@@ -63,7 +77,7 @@ export function PlotPointList({ projectId, onEditPlotPoint, onLinkToChapter, onA
   };
 
   const toggleExpand = (nodeId: string) => {
-    setExpandedNodes(prev => {
+    setExpandedNodes((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(nodeId)) {
         newSet.delete(nodeId);
@@ -88,16 +102,16 @@ export function PlotPointList({ projectId, onEditPlotPoint, onLinkToChapter, onA
     if (!nodeId) return;
 
     try {
-      await invoke('delete_plot_point', { plotPointId: nodeId });
+      await invoke("delete_plot_point", { plotPointId: nodeId });
       await loadPlotPoints();
     } catch (err) {
       setError(err as string);
     }
-    setDeleteConfirm({ isOpen: false, nodeId: null, nodeTitle: '' });
+    setDeleteConfirm({ isOpen: false, nodeId: null, nodeTitle: "" });
   };
 
   const handleDeleteCancel = () => {
-    setDeleteConfirm({ isOpen: false, nodeId: null, nodeTitle: '' });
+    setDeleteConfirm({ isOpen: false, nodeId: null, nodeTitle: "" });
   };
 
   const handleAIConfirm = async (data: any) => {
@@ -181,9 +195,7 @@ export function PlotPointList({ projectId, onEditPlotPoint, onLinkToChapter, onA
         </div>
 
         {isExpanded && hasChildren && (
-          <div>
-            {node.children.map(child => renderNode(child, level + 1))}
-          </div>
+          <div>{node.children.map((child) => renderNode(child, level + 1))}</div>
         )}
       </div>
     );
@@ -209,21 +221,23 @@ export function PlotPointList({ projectId, onEditPlotPoint, onLinkToChapter, onA
               </button>
             )}
             <button
-              onClick={() => onEditPlotPoint({
-                id: '',
-                project_id: projectId,
-                parent_id: null,
-                title: '',
-                description: null,
-                note: null,
-                chapter_id: null,
-                status: 'draft',
-                sort_order: 0,
-                level: 0,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                children: []
-              })}
+              onClick={() =>
+                onEditPlotPoint({
+                  id: "",
+                  project_id: projectId,
+                  parent_id: null,
+                  title: "",
+                  description: null,
+                  note: null,
+                  chapter_id: null,
+                  status: "draft",
+                  sort_order: 0,
+                  level: 0,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  children: [],
+                })
+              }
               className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium"
             >
               <Plus className="w-4 h-4" />
@@ -240,11 +254,7 @@ export function PlotPointList({ projectId, onEditPlotPoint, onLinkToChapter, onA
             </div>
           )}
 
-          {error && (
-            <div className="p-4 text-red-500 text-sm">
-              {error}
-            </div>
-          )}
+          {error && <div className="p-4 text-red-500 text-sm">{error}</div>}
 
           {!loading && !error && plotPoints.length === 0 && (
             <div className="flex items-center justify-center h-full text-slate-400">
@@ -256,9 +266,7 @@ export function PlotPointList({ projectId, onEditPlotPoint, onLinkToChapter, onA
           )}
 
           {!loading && !error && plotPoints.length > 0 && (
-            <div className="group">
-              {plotPoints.map(node => renderNode(node))}
-            </div>
+            <div className="group">{plotPoints.map((node) => renderNode(node))}</div>
           )}
         </div>
       </div>

@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { X, Sparkles, Loader2, Check, RefreshCw } from 'lucide-react';
-import { aiGeneratorService } from '../services/api';
+import React, { useState, useEffect } from "react";
+import { X, Sparkles, Loader2, Check, RefreshCw } from "lucide-react";
+import { aiGeneratorService } from "../services/api";
 import type {
   GeneratedCharacter,
   GeneratedWorldView,
   GeneratedPlotPoint,
   GeneratedRelation,
-} from '../types';
+} from "../types";
 
-type GenerateType = 'character' | 'worldview' | 'plotpoint' | 'relation';
+type GenerateType = "character" | "worldview" | "plotpoint" | "relation";
 
 interface AIGenerateDialogProps {
   isOpen: boolean;
@@ -20,22 +20,22 @@ interface AIGenerateDialogProps {
 }
 
 const WORLDVIEW_CATEGORIES = [
-  { id: 'geography', name: '地理环境', icon: '🌍' },
-  { id: 'history', name: '历史背景', icon: '📜' },
-  { id: 'culture', name: '文化风俗', icon: '🎭' },
-  { id: 'politics', name: '政治制度', icon: '🏛️' },
-  { id: 'economy', name: '经济体系', icon: '💰' },
-  { id: 'magic', name: '魔法/科技', icon: '✨' },
-  { id: 'religion', name: '宗教信仰', icon: '🕍' },
-  { id: 'races', name: '种族生物', icon: '👥' },
-  { id: 'other', name: '其他', icon: '📝' },
+  { id: "geography", name: "地理环境", icon: "🌍" },
+  { id: "history", name: "历史背景", icon: "📜" },
+  { id: "culture", name: "文化风俗", icon: "🎭" },
+  { id: "politics", name: "政治制度", icon: "🏛️" },
+  { id: "economy", name: "经济体系", icon: "💰" },
+  { id: "magic", name: "魔法/科技", icon: "✨" },
+  { id: "religion", name: "宗教信仰", icon: "🕍" },
+  { id: "races", name: "种族生物", icon: "👥" },
+  { id: "other", name: "其他", icon: "📝" },
 ];
 
 const CHARACTER_TYPES = [
-  { id: 'protagonist', name: '主角' },
-  { id: 'antagonist', name: '反派' },
-  { id: 'supporting', name: '配角' },
-  { id: 'minor', name: '次要角色' },
+  { id: "protagonist", name: "主角" },
+  { id: "antagonist", name: "反派" },
+  { id: "supporting", name: "配角" },
+  { id: "minor", name: "次要角色" },
 ];
 
 export function AIGenerateDialog({
@@ -49,26 +49,26 @@ export function AIGenerateDialog({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // 生成参数
-  const [characterType, setCharacterType] = useState('supporting');
-  const [description, setDescription] = useState('');
-  const [worldViewCategory, setWorldViewCategory] = useState('geography');
-  const [plotContext, setPlotContext] = useState('');
-  const [plotDirection, setPlotDirection] = useState('');
-  
+  const [characterType, setCharacterType] = useState("supporting");
+  const [description, setDescription] = useState("");
+  const [worldViewCategory, setWorldViewCategory] = useState("geography");
+  const [plotContext, setPlotContext] = useState("");
+  const [plotDirection, setPlotDirection] = useState("");
+
   // 生成结果
   const [generatedCharacter, setGeneratedCharacter] = useState<GeneratedCharacter | null>(null);
   const [generatedWorldView, setGeneratedWorldView] = useState<GeneratedWorldView | null>(null);
   const [generatedPlotPoints, setGeneratedPlotPoints] = useState<GeneratedPlotPoint[]>([]);
   const [generatedRelations, setGeneratedRelations] = useState<GeneratedRelation[]>([]);
-  
+
   // 编辑状态
   const [editingCharacter, setEditingCharacter] = useState<GeneratedCharacter | null>(null);
   const [editingWorldView, setEditingWorldView] = useState<GeneratedWorldView | null>(null);
   const [editingPlotIndex, setEditingPlotIndex] = useState<number | null>(null);
   const [editingPlotPoint, setEditingPlotPoint] = useState<GeneratedPlotPoint | null>(null);
-  
+
   // 选中的情节点
   const [selectedPlotIndices, setSelectedPlotIndices] = useState<Set<number>>(new Set());
 
@@ -78,9 +78,9 @@ export function AIGenerateDialog({
       setLoading(false);
       setSaving(false);
       setError(null);
-      setDescription('');
-      setPlotContext('');
-      setPlotDirection('');
+      setDescription("");
+      setPlotContext("");
+      setPlotDirection("");
       setGeneratedCharacter(null);
       setGeneratedWorldView(null);
       setGeneratedPlotPoints([]);
@@ -96,10 +96,10 @@ export function AIGenerateDialog({
   const handleGenerate = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       switch (type) {
-        case 'character':
+        case "character":
           const charResult = await aiGeneratorService.generateCharacter(projectId, {
             type: characterType,
             description: description || undefined,
@@ -107,14 +107,17 @@ export function AIGenerateDialog({
           setGeneratedCharacter(charResult);
           setEditingCharacter(charResult);
           break;
-          
-        case 'worldview':
-          const worldResult = await aiGeneratorService.generateWorldView(projectId, worldViewCategory);
+
+        case "worldview":
+          const worldResult = await aiGeneratorService.generateWorldView(
+            projectId,
+            worldViewCategory
+          );
           setGeneratedWorldView(worldResult);
           setEditingWorldView(worldResult);
           break;
-          
-        case 'plotpoint':
+
+        case "plotpoint":
           const plotResult = await aiGeneratorService.generatePlotPoints(
             projectId,
             plotContext || undefined,
@@ -123,8 +126,8 @@ export function AIGenerateDialog({
           setGeneratedPlotPoints(plotResult);
           setSelectedPlotIndices(new Set(plotResult.map((_, i) => i)));
           break;
-          
-        case 'relation':
+
+        case "relation":
           const relationResult = await aiGeneratorService.generateCharacterRelations(projectId);
           setGeneratedRelations(relationResult);
           break;
@@ -140,10 +143,10 @@ export function AIGenerateDialog({
   const handleConfirm = async () => {
     setSaving(true);
     setError(null);
-    
+
     try {
       switch (type) {
-        case 'character':
+        case "character":
           if (editingCharacter) {
             await onConfirm({
               name: editingCharacter.name,
@@ -165,19 +168,19 @@ export function AIGenerateDialog({
             });
           }
           break;
-          
-        case 'worldview':
+
+        case "worldview":
           if (editingWorldView) {
             await onConfirm({
               category: editingWorldView.category,
               title: editingWorldView.title,
               content: editingWorldView.content,
-              tags: editingWorldView.tags?.join(', '),
+              tags: editingWorldView.tags?.join(", "),
             });
           }
           break;
-          
-        case 'plotpoint':
+
+        case "plotpoint":
           const selectedPoints = generatedPlotPoints.filter((_, i) => selectedPlotIndices.has(i));
           for (const point of selectedPoints) {
             await onConfirm({
@@ -187,8 +190,8 @@ export function AIGenerateDialog({
             });
           }
           break;
-          
-        case 'relation':
+
+        case "relation":
           for (const relation of generatedRelations) {
             await onConfirm(relation);
           }
@@ -204,7 +207,7 @@ export function AIGenerateDialog({
   };
 
   const togglePlotSelection = (index: number) => {
-    setSelectedPlotIndices(prev => {
+    setSelectedPlotIndices((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(index)) {
         newSet.delete(index);
@@ -234,16 +237,20 @@ export function AIGenerateDialog({
 
   const getTitle = () => {
     switch (type) {
-      case 'character': return 'AI 生成角色';
-      case 'worldview': return 'AI 生成世界观';
-      case 'plotpoint': return 'AI 生成情节点';
-      case 'relation': return 'AI 生成关系';
+      case "character":
+        return "AI 生成角色";
+      case "worldview":
+        return "AI 生成世界观";
+      case "plotpoint":
+        return "AI 生成情节点";
+      case "relation":
+        return "AI 生成关系";
     }
   };
 
   const renderGenerateForm = () => {
     switch (type) {
-      case 'character':
+      case "character":
         return (
           <div className="space-y-4">
             <div>
@@ -258,8 +265,8 @@ export function AIGenerateDialog({
                     onClick={() => setCharacterType(t.id)}
                     className={`p-2 rounded-lg text-sm transition-colors ${
                       characterType === t.id
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600'
+                        ? "bg-blue-500 text-white"
+                        : "bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600"
                     }`}
                   >
                     {t.name}
@@ -281,8 +288,8 @@ export function AIGenerateDialog({
             </div>
           </div>
         );
-        
-      case 'worldview':
+
+      case "worldview":
         return (
           <div className="space-y-4">
             <div>
@@ -297,8 +304,8 @@ export function AIGenerateDialog({
                     onClick={() => setWorldViewCategory(cat.id)}
                     className={`p-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-1 ${
                       worldViewCategory === cat.id
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600'
+                        ? "bg-blue-500 text-white"
+                        : "bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600"
                     }`}
                   >
                     <span>{cat.icon}</span>
@@ -309,8 +316,8 @@ export function AIGenerateDialog({
             </div>
           </div>
         );
-        
-      case 'plotpoint':
+
+      case "plotpoint":
         return (
           <div className="space-y-4">
             <div>
@@ -339,17 +346,15 @@ export function AIGenerateDialog({
             </div>
           </div>
         );
-        
-      case 'relation':
+
+      case "relation":
         return (
           <div className="text-center py-4">
             <p className="text-sm text-slate-600 dark:text-slate-400">
               将根据项目中已有的角色自动生成关系建议
             </p>
             {existingCharacters.length < 2 && (
-              <p className="text-sm text-amber-500 mt-2">
-                需要至少 2 个角色才能生成关系
-              </p>
+              <p className="text-sm text-amber-500 mt-2">需要至少 2 个角色才能生成关系</p>
             )}
           </div>
         );
@@ -358,7 +363,7 @@ export function AIGenerateDialog({
 
   const renderResultPreview = () => {
     switch (type) {
-      case 'character':
+      case "character":
         if (!editingCharacter) return null;
         return (
           <div className="space-y-4">
@@ -369,7 +374,9 @@ export function AIGenerateDialog({
                 <input
                   type="text"
                   value={editingCharacter.name}
-                  onChange={(e) => setEditingCharacter({ ...editingCharacter, name: e.target.value })}
+                  onChange={(e) =>
+                    setEditingCharacter({ ...editingCharacter, name: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                 />
               </div>
@@ -377,8 +384,13 @@ export function AIGenerateDialog({
                 <div>
                   <label className="block text-xs text-slate-500 mb-1">身份</label>
                   <select
-                    value={editingCharacter.role_type || ''}
-                    onChange={(e) => setEditingCharacter({ ...editingCharacter, role_type: e.target.value || undefined })}
+                    value={editingCharacter.role_type || ""}
+                    onChange={(e) =>
+                      setEditingCharacter({
+                        ...editingCharacter,
+                        role_type: e.target.value || undefined,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   >
                     <option value="">未设置</option>
@@ -393,8 +405,13 @@ export function AIGenerateDialog({
                   <label className="block text-xs text-slate-500 mb-1">种族</label>
                   <input
                     type="text"
-                    value={editingCharacter.race || ''}
-                    onChange={(e) => setEditingCharacter({ ...editingCharacter, race: e.target.value || undefined })}
+                    value={editingCharacter.race || ""}
+                    onChange={(e) =>
+                      setEditingCharacter({
+                        ...editingCharacter,
+                        race: e.target.value || undefined,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   />
                 </div>
@@ -402,8 +419,13 @@ export function AIGenerateDialog({
                   <label className="block text-xs text-slate-500 mb-1">年龄</label>
                   <input
                     type="number"
-                    value={editingCharacter.age || ''}
-                    onChange={(e) => setEditingCharacter({ ...editingCharacter, age: e.target.value ? parseInt(e.target.value) : undefined })}
+                    value={editingCharacter.age || ""}
+                    onChange={(e) =>
+                      setEditingCharacter({
+                        ...editingCharacter,
+                        age: e.target.value ? parseInt(e.target.value) : undefined,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   />
                 </div>
@@ -413,8 +435,10 @@ export function AIGenerateDialog({
                   <label className="block text-xs text-slate-500 mb-1">性别</label>
                   <input
                     type="text"
-                    value={editingCharacter.gender || ''}
-                    onChange={(e) => setEditingCharacter({ ...editingCharacter, gender: e.target.value })}
+                    value={editingCharacter.gender || ""}
+                    onChange={(e) =>
+                      setEditingCharacter({ ...editingCharacter, gender: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   />
                 </div>
@@ -422,8 +446,13 @@ export function AIGenerateDialog({
                   <label className="block text-xs text-slate-500 mb-1">出生日期</label>
                   <input
                     type="text"
-                    value={editingCharacter.birth_date || ''}
-                    onChange={(e) => setEditingCharacter({ ...editingCharacter, birth_date: e.target.value || undefined })}
+                    value={editingCharacter.birth_date || ""}
+                    onChange={(e) =>
+                      setEditingCharacter({
+                        ...editingCharacter,
+                        birth_date: e.target.value || undefined,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                     placeholder="如：龙历三千年三月初三"
                   />
@@ -432,8 +461,10 @@ export function AIGenerateDialog({
               <div>
                 <label className="block text-xs text-slate-500 mb-1">外貌</label>
                 <textarea
-                  value={editingCharacter.appearance || ''}
-                  onChange={(e) => setEditingCharacter({ ...editingCharacter, appearance: e.target.value })}
+                  value={editingCharacter.appearance || ""}
+                  onChange={(e) =>
+                    setEditingCharacter({ ...editingCharacter, appearance: e.target.value })
+                  }
                   rows={2}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 resize-none"
                 />
@@ -441,8 +472,10 @@ export function AIGenerateDialog({
               <div>
                 <label className="block text-xs text-slate-500 mb-1">性格</label>
                 <textarea
-                  value={editingCharacter.personality || ''}
-                  onChange={(e) => setEditingCharacter({ ...editingCharacter, personality: e.target.value })}
+                  value={editingCharacter.personality || ""}
+                  onChange={(e) =>
+                    setEditingCharacter({ ...editingCharacter, personality: e.target.value })
+                  }
                   rows={2}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 resize-none"
                 />
@@ -450,8 +483,10 @@ export function AIGenerateDialog({
               <div>
                 <label className="block text-xs text-slate-500 mb-1">背景</label>
                 <textarea
-                  value={editingCharacter.background || ''}
-                  onChange={(e) => setEditingCharacter({ ...editingCharacter, background: e.target.value })}
+                  value={editingCharacter.background || ""}
+                  onChange={(e) =>
+                    setEditingCharacter({ ...editingCharacter, background: e.target.value })
+                  }
                   rows={3}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 resize-none"
                 />
@@ -461,8 +496,13 @@ export function AIGenerateDialog({
                   <label className="block text-xs text-slate-500 mb-1">MBTI</label>
                   <input
                     type="text"
-                    value={editingCharacter.mbti || ''}
-                    onChange={(e) => setEditingCharacter({ ...editingCharacter, mbti: e.target.value || undefined })}
+                    value={editingCharacter.mbti || ""}
+                    onChange={(e) =>
+                      setEditingCharacter({
+                        ...editingCharacter,
+                        mbti: e.target.value || undefined,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                     placeholder="如：INTJ"
                   />
@@ -471,8 +511,13 @@ export function AIGenerateDialog({
                   <label className="block text-xs text-slate-500 mb-1">九型人格</label>
                   <input
                     type="text"
-                    value={editingCharacter.enneagram || ''}
-                    onChange={(e) => setEditingCharacter({ ...editingCharacter, enneagram: e.target.value || undefined })}
+                    value={editingCharacter.enneagram || ""}
+                    onChange={(e) =>
+                      setEditingCharacter({
+                        ...editingCharacter,
+                        enneagram: e.target.value || undefined,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                     placeholder="如：3号-成就型"
                   />
@@ -483,8 +528,13 @@ export function AIGenerateDialog({
                   <label className="block text-xs text-slate-500 mb-1">八字</label>
                   <input
                     type="text"
-                    value={editingCharacter.bazi || ''}
-                    onChange={(e) => setEditingCharacter({ ...editingCharacter, bazi: e.target.value || undefined })}
+                    value={editingCharacter.bazi || ""}
+                    onChange={(e) =>
+                      setEditingCharacter({
+                        ...editingCharacter,
+                        bazi: e.target.value || undefined,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   />
                 </div>
@@ -492,8 +542,13 @@ export function AIGenerateDialog({
                   <label className="block text-xs text-slate-500 mb-1">紫微斗数</label>
                   <input
                     type="text"
-                    value={editingCharacter.ziwei || ''}
-                    onChange={(e) => setEditingCharacter({ ...editingCharacter, ziwei: e.target.value || undefined })}
+                    value={editingCharacter.ziwei || ""}
+                    onChange={(e) =>
+                      setEditingCharacter({
+                        ...editingCharacter,
+                        ziwei: e.target.value || undefined,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   />
                 </div>
@@ -501,8 +556,13 @@ export function AIGenerateDialog({
               <div>
                 <label className="block text-xs text-slate-500 mb-1">技能</label>
                 <textarea
-                  value={editingCharacter.skills || ''}
-                  onChange={(e) => setEditingCharacter({ ...editingCharacter, skills: e.target.value || undefined })}
+                  value={editingCharacter.skills || ""}
+                  onChange={(e) =>
+                    setEditingCharacter({
+                      ...editingCharacter,
+                      skills: e.target.value || undefined,
+                    })
+                  }
                   rows={2}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 resize-none"
                   placeholder="用顿号分隔多个技能"
@@ -511,8 +571,13 @@ export function AIGenerateDialog({
               <div>
                 <label className="block text-xs text-slate-500 mb-1">当前状态</label>
                 <textarea
-                  value={editingCharacter.status || ''}
-                  onChange={(e) => setEditingCharacter({ ...editingCharacter, status: e.target.value || undefined })}
+                  value={editingCharacter.status || ""}
+                  onChange={(e) =>
+                    setEditingCharacter({
+                      ...editingCharacter,
+                      status: e.target.value || undefined,
+                    })
+                  }
                   rows={2}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 resize-none"
                 />
@@ -520,8 +585,10 @@ export function AIGenerateDialog({
               <div>
                 <label className="block text-xs text-slate-500 mb-1">随身物品</label>
                 <textarea
-                  value={editingCharacter.items || ''}
-                  onChange={(e) => setEditingCharacter({ ...editingCharacter, items: e.target.value || undefined })}
+                  value={editingCharacter.items || ""}
+                  onChange={(e) =>
+                    setEditingCharacter({ ...editingCharacter, items: e.target.value || undefined })
+                  }
                   rows={2}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 resize-none"
                   placeholder="用顿号分隔多个物品"
@@ -530,8 +597,8 @@ export function AIGenerateDialog({
             </div>
           </div>
         );
-        
-      case 'worldview':
+
+      case "worldview":
         if (!editingWorldView) return null;
         return (
           <div className="space-y-4">
@@ -542,7 +609,9 @@ export function AIGenerateDialog({
                 <input
                   type="text"
                   value={editingWorldView.title}
-                  onChange={(e) => setEditingWorldView({ ...editingWorldView, title: e.target.value })}
+                  onChange={(e) =>
+                    setEditingWorldView({ ...editingWorldView, title: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                 />
               </div>
@@ -550,7 +619,9 @@ export function AIGenerateDialog({
                 <label className="block text-xs text-slate-500 mb-1">内容</label>
                 <textarea
                   value={editingWorldView.content}
-                  onChange={(e) => setEditingWorldView({ ...editingWorldView, content: e.target.value })}
+                  onChange={(e) =>
+                    setEditingWorldView({ ...editingWorldView, content: e.target.value })
+                  }
                   rows={6}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 resize-none"
                 />
@@ -559,8 +630,16 @@ export function AIGenerateDialog({
                 <label className="block text-xs text-slate-500 mb-1">标签</label>
                 <input
                   type="text"
-                  value={editingWorldView.tags?.join(', ') || ''}
-                  onChange={(e) => setEditingWorldView({ ...editingWorldView, tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) })}
+                  value={editingWorldView.tags?.join(", ") || ""}
+                  onChange={(e) =>
+                    setEditingWorldView({
+                      ...editingWorldView,
+                      tags: e.target.value
+                        .split(",")
+                        .map((t) => t.trim())
+                        .filter(Boolean),
+                    })
+                  }
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   placeholder="用逗号分隔多个标签"
                 />
@@ -568,13 +647,13 @@ export function AIGenerateDialog({
             </div>
           </div>
         );
-        
-      case 'plotpoint':
+
+      case "plotpoint":
         if (generatedPlotPoints.length === 0) return null;
         return (
           <div className="space-y-4">
             <h4 className="font-medium text-slate-900 dark:text-slate-100">
-              生成结果预览 
+              生成结果预览
               <span className="text-sm font-normal text-slate-500 ml-2">
                 (已选择 {selectedPlotIndices.size}/{generatedPlotPoints.length} 个)
               </span>
@@ -585,8 +664,8 @@ export function AIGenerateDialog({
                   key={index}
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                     selectedPlotIndices.has(index)
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
                   }`}
                   onClick={() => togglePlotSelection(index)}
                 >
@@ -594,13 +673,17 @@ export function AIGenerateDialog({
                     <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="text"
-                        value={editingPlotPoint?.title || ''}
-                        onChange={(e) => setEditingPlotPoint({ ...editingPlotPoint!, title: e.target.value })}
+                        value={editingPlotPoint?.title || ""}
+                        onChange={(e) =>
+                          setEditingPlotPoint({ ...editingPlotPoint!, title: e.target.value })
+                        }
                         className="w-full px-2 py-1 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-sm"
                       />
                       <textarea
-                        value={editingPlotPoint?.description || ''}
-                        onChange={(e) => setEditingPlotPoint({ ...editingPlotPoint!, description: e.target.value })}
+                        value={editingPlotPoint?.description || ""}
+                        onChange={(e) =>
+                          setEditingPlotPoint({ ...editingPlotPoint!, description: e.target.value })
+                        }
                         rows={2}
                         className="w-full px-2 py-1 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 text-sm resize-none"
                       />
@@ -612,7 +695,10 @@ export function AIGenerateDialog({
                           保存
                         </button>
                         <button
-                          onClick={() => { setEditingPlotIndex(null); setEditingPlotPoint(null); }}
+                          onClick={() => {
+                            setEditingPlotIndex(null);
+                            setEditingPlotPoint(null);
+                          }}
                           className="px-2 py-1 bg-slate-200 dark:bg-slate-600 rounded text-xs"
                         >
                           取消
@@ -621,11 +707,13 @@ export function AIGenerateDialog({
                     </div>
                   ) : (
                     <div className="flex items-start gap-2">
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                        selectedPlotIndices.has(index)
-                          ? 'bg-blue-500 border-blue-500 text-white'
-                          : 'border-slate-300 dark:border-slate-600'
-                      }`}>
+                      <div
+                        className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                          selectedPlotIndices.has(index)
+                            ? "bg-blue-500 border-blue-500 text-white"
+                            : "border-slate-300 dark:border-slate-600"
+                        }`}
+                      >
                         {selectedPlotIndices.has(index) && <Check className="w-3 h-3" />}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -634,12 +722,20 @@ export function AIGenerateDialog({
                             {point.title}
                           </span>
                           {point.priority && (
-                            <span className={`px-1.5 py-0.5 rounded text-xs ${
-                              point.priority === 'high' ? 'bg-red-100 text-red-600' :
-                              point.priority === 'medium' ? 'bg-yellow-100 text-yellow-600' :
-                              'bg-slate-100 text-slate-600'
-                            }`}>
-                              {point.priority === 'high' ? '高' : point.priority === 'medium' ? '中' : '低'}
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-xs ${
+                                point.priority === "high"
+                                  ? "bg-red-100 text-red-600"
+                                  : point.priority === "medium"
+                                    ? "bg-yellow-100 text-yellow-600"
+                                    : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {point.priority === "high"
+                                ? "高"
+                                : point.priority === "medium"
+                                  ? "中"
+                                  : "低"}
                             </span>
                           )}
                         </div>
@@ -650,10 +746,19 @@ export function AIGenerateDialog({
                         )}
                       </div>
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleEditPlotPoint(index); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditPlotPoint(index);
+                        }}
                         className="p-1 hover:bg-slate-200 dark:hover:bg-slate-600 rounded"
                       >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg
+                          className="w-4 h-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
                           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                         </svg>
@@ -665,8 +770,8 @@ export function AIGenerateDialog({
             </div>
           </div>
         );
-        
-      case 'relation':
+
+      case "relation":
         if (generatedRelations.length === 0) return null;
         return (
           <div className="space-y-4">
@@ -706,19 +811,27 @@ export function AIGenerateDialog({
 
   const hasResult = () => {
     switch (type) {
-      case 'character': return !!generatedCharacter;
-      case 'worldview': return !!generatedWorldView;
-      case 'plotpoint': return generatedPlotPoints.length > 0;
-      case 'relation': return generatedRelations.length > 0;
+      case "character":
+        return !!generatedCharacter;
+      case "worldview":
+        return !!generatedWorldView;
+      case "plotpoint":
+        return generatedPlotPoints.length > 0;
+      case "relation":
+        return generatedRelations.length > 0;
     }
   };
 
   const canConfirm = () => {
     switch (type) {
-      case 'character': return !!editingCharacter?.name;
-      case 'worldview': return !!editingWorldView?.title && !!editingWorldView?.content;
-      case 'plotpoint': return selectedPlotIndices.size > 0;
-      case 'relation': return generatedRelations.length > 0;
+      case "character":
+        return !!editingCharacter?.name;
+      case "worldview":
+        return !!editingWorldView?.title && !!editingWorldView?.content;
+      case "plotpoint":
+        return selectedPlotIndices.size > 0;
+      case "relation":
+        return generatedRelations.length > 0;
     }
   };
 
@@ -744,7 +857,7 @@ export function AIGenerateDialog({
               {error}
             </div>
           )}
-          
+
           {!hasResult() && renderGenerateForm()}
           {hasResult() && renderResultPreview()}
         </div>
@@ -754,7 +867,7 @@ export function AIGenerateDialog({
             {!hasResult() ? (
               <button
                 onClick={handleGenerate}
-                disabled={loading || (type === 'relation' && existingCharacters.length < 2)}
+                disabled={loading || (type === "relation" && existingCharacters.length < 2)}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
@@ -787,7 +900,7 @@ export function AIGenerateDialog({
               </button>
             )}
           </div>
-          
+
           <div className="flex gap-2">
             <button
               onClick={onClose}

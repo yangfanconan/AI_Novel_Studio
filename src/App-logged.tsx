@@ -1,19 +1,19 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { TextEditor } from './components/TextEditor';
-import { ProjectList } from './components/ProjectList';
-import { ChapterList } from './components/ChapterList';
-import { CharacterList } from './components/CharacterList';
-import { CreateProjectDialog } from './components/CreateProjectDialog';
-import { InputDialog } from './components/InputDialog';
-import { CharacterDialog } from './components/CharacterDialog';
-import { useToast, ToastContainer } from './components/Toast';
-import { useProjectStore } from './stores/projectStore';
-import { projectService, chapterService, characterService } from './services/api-logged';
-import { logger } from './utils/logger';
-import type { CreateProjectRequest, SaveChapterRequest, Character } from './types';
+import React, { useEffect, useState, useRef } from "react";
+import { TextEditor } from "./components/TextEditor";
+import { ProjectList } from "./components/ProjectList";
+import { ChapterList } from "./components/ChapterList";
+import { CharacterList } from "./components/CharacterList";
+import { CreateProjectDialog } from "./components/CreateProjectDialog";
+import { InputDialog } from "./components/InputDialog";
+import { CharacterDialog } from "./components/CharacterDialog";
+import { useToast, ToastContainer } from "./components/Toast";
+import { useProjectStore } from "./stores/projectStore";
+import { projectService, chapterService, characterService } from "./services/api-logged";
+import { logger } from "./utils/logger";
+import type { CreateProjectRequest, SaveChapterRequest, Character } from "./types";
 
 function App() {
-  logger.info('App component mounting', { feature: 'app' });
+  logger.info("App component mounting", { feature: "app" });
 
   const {
     projects,
@@ -45,18 +45,18 @@ function App() {
   const [isCharacterDialogOpen, setIsCharacterDialogOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | undefined>();
 
-  const [editorContent, setEditorContent] = useState('');
+  const [editorContent, setEditorContent] = useState("");
 
   useEffect(() => {
-    logger.info('Loading projects on mount', { feature: 'app' });
+    logger.info("Loading projects on mount", { feature: "app" });
     loadProjects();
   }, []);
 
   useEffect(() => {
     if (currentProject) {
-      logger.info('Project selected, loading chapters and characters', { 
-        feature: 'app', 
-        projectId: currentProject.id 
+      logger.info("Project selected, loading chapters and characters", {
+        feature: "app",
+        projectId: currentProject.id,
       });
       loadChapters(currentProject.id);
       loadCharacters(currentProject.id);
@@ -68,20 +68,24 @@ function App() {
   }, [currentProject?.id]);
 
   const loadProjects = async () => {
-    const track = logger.trackAction('loadProjects');
-    logger.info('Starting to load projects', { feature: 'app' });
+    const track = logger.trackAction("loadProjects");
+    logger.info("Starting to load projects", { feature: "app" });
 
     setIsLoading(true);
     try {
       const result = await projectService.getProjects();
       setProjects(result);
-      logger.info(`Loaded ${result.length} projects`, { feature: 'app' });
+      logger.info(`Loaded ${result.length} projects`, { feature: "app" });
     } catch (error) {
-      logger.error('Failed to load projects', error instanceof Error ? error : new Error(String(error)), {
-        feature: 'app',
-        action: 'loadProjects',
-      });
-      showToast('加载项目失败', 'error');
+      logger.error(
+        "Failed to load projects",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          feature: "app",
+          action: "loadProjects",
+        }
+      );
+      showToast("加载项目失败", "error");
     } finally {
       setIsLoading(false);
       track();
@@ -89,34 +93,42 @@ function App() {
   };
 
   const loadChapters = async (projectId: string) => {
-    logger.info(`Loading chapters for project: ${projectId}`, { feature: 'app', projectId });
+    logger.info(`Loading chapters for project: ${projectId}`, { feature: "app", projectId });
     try {
       const result = await chapterService.getChapters(projectId);
       setChapters(result);
-      logger.info(`Loaded ${result.length} chapters`, { feature: 'app', projectId });
+      logger.info(`Loaded ${result.length} chapters`, { feature: "app", projectId });
     } catch (error) {
-      logger.error('Failed to load chapters', error instanceof Error ? error : new Error(String(error)), {
-        feature: 'app',
-        action: 'loadChapters',
-        projectId,
-      });
-      showToast('加载章节失败', 'error');
+      logger.error(
+        "Failed to load chapters",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          feature: "app",
+          action: "loadChapters",
+          projectId,
+        }
+      );
+      showToast("加载章节失败", "error");
     }
   };
 
   const loadCharacters = async (projectId: string) => {
-    logger.info(`Loading characters for project: ${projectId}`, { feature: 'app', projectId });
+    logger.info(`Loading characters for project: ${projectId}`, { feature: "app", projectId });
     try {
       const result = await characterService.getCharacters(projectId);
       setCharacters(result);
-      logger.info(`Loaded ${result.length} characters`, { feature: 'app', projectId });
+      logger.info(`Loaded ${result.length} characters`, { feature: "app", projectId });
     } catch (error) {
-      logger.error('Failed to load characters', error instanceof Error ? error : new Error(String(error)), {
-        feature: 'app',
-        action: 'loadCharacters',
-        projectId,
-      });
-      showToast('加载角色失败', 'error');
+      logger.error(
+        "Failed to load characters",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          feature: "app",
+          action: "loadCharacters",
+          projectId,
+        }
+      );
+      showToast("加载角色失败", "error");
     }
   };
 
@@ -125,7 +137,7 @@ function App() {
     description?: string;
     genre?: string;
   }) => {
-    logger.info('Creating new project', { feature: 'app', data });
+    logger.info("Creating new project", { feature: "app", data });
     try {
       const request: CreateProjectRequest = {
         name: data.name,
@@ -136,70 +148,79 @@ function App() {
       addProject(newProject);
       setCurrentProject(newProject);
       setIsCreateProjectDialogOpen(false);
-      showToast('项目创建成功', 'success');
+      showToast("项目创建成功", "success");
     } catch (error) {
-      logger.error('Failed to create project', error instanceof Error ? error : new Error(String(error)), {
-        feature: 'app',
-        action: 'handleCreateProject',
-        data,
-      });
-      showToast('创建项目失败，请重试', 'error');
+      logger.error(
+        "Failed to create project",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          feature: "app",
+          action: "handleCreateProject",
+          data,
+        }
+      );
+      showToast("创建项目失败，请重试", "error");
     }
   };
 
   const handleDeleteProject = async (projectId: string) => {
-    logger.info(`Deleting project: ${projectId}`, { feature: 'app', projectId });
+    logger.info(`Deleting project: ${projectId}`, { feature: "app", projectId });
     try {
       await projectService.deleteProject(projectId);
       if (currentProject?.id === projectId) {
         setCurrentProject(null);
       }
       await loadProjects();
-      showToast('项目删除成功', 'success');
+      showToast("项目删除成功", "success");
     } catch (error) {
-      logger.error('Failed to delete project', error instanceof Error ? error : new Error(String(error)), {
-        feature: 'app',
-        action: 'handleDeleteProject',
-        projectId,
-      });
-      showToast('删除项目失败', 'error');
+      logger.error(
+        "Failed to delete project",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          feature: "app",
+          action: "handleDeleteProject",
+          projectId,
+        }
+      );
+      showToast("删除项目失败", "error");
     }
   };
 
   const handleRenameProject = async (newName: string) => {
     if (!currentProject) return;
 
-    logger.info(`Renaming project: ${currentProject.id} to ${newName}`, { 
-      feature: 'app', 
+    logger.info(`Renaming project: ${currentProject.id} to ${newName}`, {
+      feature: "app",
       projectId: currentProject.id,
-      newName 
+      newName,
     });
     try {
-      const updatedProject = await projectService.updateProject(
-        currentProject.id,
-        newName
-      );
+      const updatedProject = await projectService.updateProject(currentProject.id, newName);
       await loadProjects();
       if (currentProject?.id === updatedProject.id) {
         setCurrentProject(updatedProject);
       }
       setIsProjectRenameDialogOpen(false);
-      showToast('项目重命名成功', 'success');
+      showToast("项目重命名成功", "success");
     } catch (error) {
-      logger.error('Failed to rename project', error instanceof Error ? error : new Error(String(error)), {
-        feature: 'app',
-        action: 'handleRenameProject',
-        projectId: currentProject?.id,
-        newName,
-      });
-      showToast('重命名失败', 'error');
+      logger.error(
+        "Failed to rename project",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          feature: "app",
+          action: "handleRenameProject",
+          projectId: currentProject?.id,
+          newName,
+        }
+      );
+      showToast("重命名失败", "error");
     }
   };
 
   const handleSelectChapter = (chapter: typeof currentChapter) => {
-    logger.info(`Chapter selected: ${chapter?.id}`, { 
-      feature: 'app', 
-      chapterId: chapter?.id 
+    logger.info(`Chapter selected: ${chapter?.id}`, {
+      feature: "app",
+      chapterId: chapter?.id,
     });
     if (chapter) {
       setCurrentChapter(chapter);
@@ -208,88 +229,97 @@ function App() {
   };
 
   const handleCreateChapter = () => {
-    logger.info('Opening chapter creation dialog', { feature: 'app' });
+    logger.info("Opening chapter creation dialog", { feature: "app" });
     setIsChapterNameDialogOpen(true);
   };
 
   const handleChapterNameSubmit = async (title: string) => {
     if (!currentProject) return;
 
-    logger.info(`Creating chapter: ${title}`, { 
-      feature: 'app', 
+    logger.info(`Creating chapter: ${title}`, {
+      feature: "app",
       projectId: currentProject.id,
-      title 
+      title,
     });
     try {
       const request: SaveChapterRequest = {
         project_id: currentProject.id,
         title,
-        content: '',
+        content: "",
         sort_order: chapters.length,
       };
       const newChapter = await chapterService.saveChapter(request);
       addChapter(newChapter);
       setCurrentChapter(newChapter);
-      setEditorContent('');
+      setEditorContent("");
       setIsChapterNameDialogOpen(false);
-      showToast('章节创建成功', 'success');
+      showToast("章节创建成功", "success");
     } catch (error) {
-      logger.error('Failed to create chapter', error instanceof Error ? error : new Error(String(error)), {
-        feature: 'app',
-        action: 'handleChapterNameSubmit',
-        projectId: currentProject?.id,
-        title,
-      });
-      showToast('创建章节失败', 'error');
+      logger.error(
+        "Failed to create chapter",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          feature: "app",
+          action: "handleChapterNameSubmit",
+          projectId: currentProject?.id,
+          title,
+        }
+      );
+      showToast("创建章节失败", "error");
     }
   };
 
   const handleDeleteChapter = async (chapterId: string) => {
-    logger.info(`Deleting chapter: ${chapterId}`, { feature: 'app', chapterId });
+    logger.info(`Deleting chapter: ${chapterId}`, { feature: "app", chapterId });
     try {
       await chapterService.deleteChapter(chapterId);
       if (currentChapter?.id === chapterId) {
         setCurrentChapter(null);
-        setEditorContent('');
+        setEditorContent("");
       }
       await loadChapters(currentProject!.id);
       removeChapter(chapterId);
-      showToast('章节删除成功', 'success');
+      showToast("章节删除成功", "success");
     } catch (error) {
-      logger.error('Failed to delete chapter', error instanceof Error ? error : new Error(String(error)), {
-        feature: 'app',
-        action: 'handleDeleteChapter',
-        chapterId,
-      });
-      showToast('删除章节失败', 'error');
+      logger.error(
+        "Failed to delete chapter",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          feature: "app",
+          action: "handleDeleteChapter",
+          chapterId,
+        }
+      );
+      showToast("删除章节失败", "error");
     }
   };
 
   const handleRenameChapter = async (newTitle: string) => {
     if (!currentChapter) return;
 
-    logger.info(`Renaming chapter: ${currentChapter.id} to ${newTitle}`, { 
-      feature: 'app', 
+    logger.info(`Renaming chapter: ${currentChapter.id} to ${newTitle}`, {
+      feature: "app",
       chapterId: currentChapter.id,
-      newTitle 
+      newTitle,
     });
     try {
-      const updatedChapter = await chapterService.updateChapter(
-        currentChapter.id,
-        newTitle
-      );
+      const updatedChapter = await chapterService.updateChapter(currentChapter.id, newTitle);
       await loadChapters(currentProject!.id);
       setCurrentChapter(updatedChapter);
       setIsChapterRenameDialogOpen(false);
-      showToast('章节重命名成功', 'success');
+      showToast("章节重命名成功", "success");
     } catch (error) {
-      logger.error('Failed to rename chapter', error instanceof Error ? error : new Error(String(error)), {
-        feature: 'app',
-        action: 'handleRenameChapter',
-        chapterId: currentChapter?.id,
-        newTitle,
-      });
-      showToast('重命名失败', 'error');
+      logger.error(
+        "Failed to rename chapter",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          feature: "app",
+          action: "handleRenameChapter",
+          chapterId: currentChapter?.id,
+          newTitle,
+        }
+      );
+      showToast("重命名失败", "error");
     }
   };
 
@@ -297,11 +327,11 @@ function App() {
     setEditorContent(content);
     if (currentChapter) {
       updateChapter(currentChapter.id, content);
-      
+
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
       }
-      
+
       autoSaveTimerRef.current = setTimeout(async () => {
         await autoSave();
       }, 3000);
@@ -311,9 +341,9 @@ function App() {
   const autoSave = async () => {
     if (!currentChapter || !currentProject || isSaving) return;
 
-    logger.info(`Auto-saving chapter: ${currentChapter.id}`, { 
-      feature: 'app', 
-      chapterId: currentChapter.id 
+    logger.info(`Auto-saving chapter: ${currentChapter.id}`, {
+      feature: "app",
+      chapterId: currentChapter.id,
     });
     setIsSaving(true);
     try {
@@ -325,18 +355,22 @@ function App() {
       };
       const updatedChapter = await chapterService.saveChapter(request);
       setCurrentChapter(updatedChapter);
-      logger.info('Auto-save completed', { 
-        feature: 'app', 
+      logger.info("Auto-save completed", {
+        feature: "app",
         chapterId: currentChapter.id,
-        wordCount: editorContent.length 
+        wordCount: editorContent.length,
       });
     } catch (error) {
-      logger.error('Failed to auto save chapter', error instanceof Error ? error : new Error(String(error)), {
-        feature: 'app',
-        action: 'autoSave',
-        chapterId: currentChapter?.id,
-      });
-      showToast('自动保存失败', 'error');
+      logger.error(
+        "Failed to auto save chapter",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          feature: "app",
+          action: "autoSave",
+          chapterId: currentChapter?.id,
+        }
+      );
+      showToast("自动保存失败", "error");
     } finally {
       setIsSaving(false);
     }
@@ -345,9 +379,9 @@ function App() {
   const handleSaveChapter = async () => {
     if (!currentChapter || !currentProject) return;
 
-    logger.info(`Manual save chapter: ${currentChapter.id}`, { 
-      feature: 'app', 
-      chapterId: currentChapter.id 
+    logger.info(`Manual save chapter: ${currentChapter.id}`, {
+      feature: "app",
+      chapterId: currentChapter.id,
     });
     try {
       const request: SaveChapterRequest = {
@@ -358,45 +392,53 @@ function App() {
       };
       const updatedChapter = await chapterService.saveChapter(request);
       setCurrentChapter(updatedChapter);
-      showToast('保存成功', 'success');
+      showToast("保存成功", "success");
     } catch (error) {
-      logger.error('Failed to save chapter', error instanceof Error ? error : new Error(String(error)), {
-        feature: 'app',
-        action: 'handleSaveChapter',
-        chapterId: currentChapter?.id,
-      });
-      showToast('保存失败，请重试', 'error');
+      logger.error(
+        "Failed to save chapter",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          feature: "app",
+          action: "handleSaveChapter",
+          chapterId: currentChapter?.id,
+        }
+      );
+      showToast("保存失败，请重试", "error");
     }
   };
 
   const handleCreateCharacter = () => {
-    logger.info('Opening character creation dialog', { feature: 'app' });
+    logger.info("Opening character creation dialog", { feature: "app" });
     setEditingCharacter(undefined);
     setIsCharacterDialogOpen(true);
   };
 
   const handleEditCharacter = (character: Character) => {
-    logger.info(`Opening character edit dialog: ${character.id}`, { 
-      feature: 'app', 
-      characterId: character.id 
+    logger.info(`Opening character edit dialog: ${character.id}`, {
+      feature: "app",
+      characterId: character.id,
     });
     setEditingCharacter(character);
     setIsCharacterDialogOpen(true);
   };
 
   const handleDeleteCharacter = async (characterId: string) => {
-    logger.info(`Deleting character: ${characterId}`, { feature: 'app', characterId });
+    logger.info(`Deleting character: ${characterId}`, { feature: "app", characterId });
     try {
       await characterService.deleteCharacter(characterId);
       await loadCharacters(currentProject!.id);
-      showToast('角色删除成功', 'success');
+      showToast("角色删除成功", "success");
     } catch (error) {
-      logger.error('Failed to delete character', error instanceof Error ? error : new Error(String(error)), {
-        feature: 'app',
-        action: 'handleDeleteCharacter',
-        characterId,
-      });
-      showToast('删除角色失败', 'error');
+      logger.error(
+        "Failed to delete character",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          feature: "app",
+          action: "handleDeleteCharacter",
+          characterId,
+        }
+      );
+      showToast("删除角色失败", "error");
     }
   };
 
@@ -408,9 +450,9 @@ function App() {
     personality?: string;
     background?: string;
   }) => {
-    logger.info(`Saving character: ${data.name}`, { 
-      feature: 'app', 
-      data 
+    logger.info(`Saving character: ${data.name}`, {
+      feature: "app",
+      data,
     });
     try {
       const request = {
@@ -420,21 +462,25 @@ function App() {
 
       if (editingCharacter) {
         await characterService.updateCharacter(editingCharacter.id, data);
-        showToast('角色更新成功', 'success');
+        showToast("角色更新成功", "success");
       } else {
         await characterService.createCharacter(request as any);
-        showToast('角色创建成功', 'success');
+        showToast("角色创建成功", "success");
       }
 
       await loadCharacters(currentProject!.id);
       setIsCharacterDialogOpen(false);
     } catch (error) {
-      logger.error('Failed to save character', error instanceof Error ? error : new Error(String(error)), {
-        feature: 'app',
-        action: 'handleCharacterSubmit',
-        data,
-      });
-      showToast(editingCharacter ? '更新角色失败' : '创建角色失败', 'error');
+      logger.error(
+        "Failed to save character",
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          feature: "app",
+          action: "handleCharacterSubmit",
+          data,
+        }
+      );
+      showToast(editingCharacter ? "更新角色失败" : "创建角色失败", "error");
     }
   };
 

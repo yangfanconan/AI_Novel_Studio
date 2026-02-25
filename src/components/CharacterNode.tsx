@@ -1,18 +1,14 @@
-import React from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
-import { User } from 'lucide-react';
-import type { Character } from '../types';
+import React from "react";
+import { Handle, Position, NodeProps } from "reactflow";
+import { User } from "lucide-react";
+import type { Character } from "../types";
 
 export function CharacterNode({ data }: NodeProps) {
   const character = data.character as Character | undefined;
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border-2 border-slate-200 dark:border-slate-700 min-w-[120px]">
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="w-3 h-3 !bg-slate-400"
-      />
+      <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-slate-400" />
 
       <div className="p-3">
         {data.avatar ? (
@@ -32,17 +28,13 @@ export function CharacterNode({ data }: NodeProps) {
           </div>
           {character && (
             <div className="text-xs text-slate-500 dark:text-slate-400 truncate mt-1">
-              {character.gender || ''} {character.age ? `· ${character.age}岁` : ''}
+              {character.gender || ""} {character.age ? `· ${character.age}岁` : ""}
             </div>
           )}
         </div>
       </div>
 
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="w-3 h-3 !bg-slate-400"
-      />
+      <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-slate-400" />
     </div>
   );
 }

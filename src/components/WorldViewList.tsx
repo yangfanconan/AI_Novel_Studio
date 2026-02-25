@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Tag, Calendar, Sparkles, Loader2 } from 'lucide-react';
-import { WorldView } from '../types';
-import { invoke } from '@tauri-apps/api/core';
-import { AIGenerateDialog } from './AIGenerateDialog';
+import React, { useState } from "react";
+import { Plus, Edit, Trash2, Tag, Calendar, Sparkles, Loader2 } from "lucide-react";
+import { WorldView } from "../types";
+import { invoke } from "@tauri-apps/api/core";
+import { AIGenerateDialog } from "./AIGenerateDialog";
 
 interface WorldViewListProps {
   projectId: string;
@@ -11,20 +11,24 @@ interface WorldViewListProps {
 }
 
 const CATEGORIES = [
-  { id: 'geography', name: '地理环境', icon: '🌍' },
-  { id: 'history', name: '历史背景', icon: '📜' },
-  { id: 'culture', name: '文化风俗', icon: '🎭' },
-  { id: 'politics', name: '政治制度', icon: '🏛️' },
-  { id: 'economy', name: '经济体系', icon: '💰' },
-  { id: 'magic', name: '魔法/科技', icon: '✨' },
-  { id: 'religion', name: '宗教信仰', icon: '🕍️' },
-  { id: 'races', name: '种族生物', icon: '👥' },
-  { id: 'other', name: '其他', icon: '📝' },
+  { id: "geography", name: "地理环境", icon: "🌍" },
+  { id: "history", name: "历史背景", icon: "📜" },
+  { id: "culture", name: "文化风俗", icon: "🎭" },
+  { id: "politics", name: "政治制度", icon: "🏛️" },
+  { id: "economy", name: "经济体系", icon: "💰" },
+  { id: "magic", name: "魔法/科技", icon: "✨" },
+  { id: "religion", name: "宗教信仰", icon: "🕍️" },
+  { id: "races", name: "种族生物", icon: "👥" },
+  { id: "other", name: "其他", icon: "📝" },
 ];
 
-export function WorldViewList({ projectId, onEditWorldView, onAIGenerateWorldView }: WorldViewListProps) {
+export function WorldViewList({
+  projectId,
+  onEditWorldView,
+  onAIGenerateWorldView,
+}: WorldViewListProps) {
   const [worldViews, setWorldViews] = useState<WorldView[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
@@ -33,7 +37,7 @@ export function WorldViewList({ projectId, onEditWorldView, onAIGenerateWorldVie
     setLoading(true);
     setError(null);
     try {
-      const views = await invoke<WorldView[]>('get_world_views', {
+      const views = await invoke<WorldView[]>("get_world_views", {
         projectId,
         category,
       });
@@ -47,17 +51,17 @@ export function WorldViewList({ projectId, onEditWorldView, onAIGenerateWorldVie
 
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId);
-    loadWorldViews(categoryId === '' ? undefined : categoryId);
+    loadWorldViews(categoryId === "" ? undefined : categoryId);
   };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm('确定要删除这个世界观设定吗？')) {
+    if (!confirm("确定要删除这个世界观设定吗？")) {
       return;
     }
     try {
-      await invoke('delete_world_view', { id });
-      await loadWorldViews(selectedCategory === '' ? undefined : selectedCategory);
+      await invoke("delete_world_view", { id });
+      await loadWorldViews(selectedCategory === "" ? undefined : selectedCategory);
     } catch (err) {
       setError(err as string);
     }
@@ -67,16 +71,16 @@ export function WorldViewList({ projectId, onEditWorldView, onAIGenerateWorldVie
     if (onAIGenerateWorldView) {
       await onAIGenerateWorldView(data);
     }
-    await loadWorldViews(selectedCategory === '' ? undefined : selectedCategory);
+    await loadWorldViews(selectedCategory === "" ? undefined : selectedCategory);
     setIsAIDialogOpen(false);
   };
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
+    return date.toLocaleDateString("zh-CN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
     });
   };
 
@@ -100,17 +104,19 @@ export function WorldViewList({ projectId, onEditWorldView, onAIGenerateWorldVie
               </button>
             )}
             <button
-              onClick={() => onEditWorldView({
-                id: '',
-                project_id: projectId,
-                category: selectedCategory || 'geography',
-                title: '',
-                content: '',
-                tags: null,
-                status: 'draft',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              })}
+              onClick={() =>
+                onEditWorldView({
+                  id: "",
+                  project_id: projectId,
+                  category: selectedCategory || "geography",
+                  title: "",
+                  content: "",
+                  tags: null,
+                  status: "draft",
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                })
+              }
               className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium"
             >
               <Plus className="w-4 h-4" />
@@ -122,11 +128,11 @@ export function WorldViewList({ projectId, onEditWorldView, onAIGenerateWorldVie
         <div className="p-4 border-b border-slate-200 dark:border-slate-700">
           <div className="flex gap-2 overflow-x-auto pb-2">
             <button
-              onClick={() => handleCategoryChange('')}
+              onClick={() => handleCategoryChange("")}
               className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                selectedCategory === ''
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                selectedCategory === ""
+                  ? "bg-blue-500 text-white"
+                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
               }`}
             >
               全部
@@ -137,8 +143,8 @@ export function WorldViewList({ projectId, onEditWorldView, onAIGenerateWorldVie
                 onClick={() => handleCategoryChange(cat.id)}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                   selectedCategory === cat.id
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    ? "bg-blue-500 text-white"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
                 }`}
               >
                 {cat.icon} {cat.name}
@@ -155,11 +161,7 @@ export function WorldViewList({ projectId, onEditWorldView, onAIGenerateWorldVie
             </div>
           )}
 
-          {error && (
-            <div className="p-4 text-red-500 text-sm">
-              {error}
-            </div>
-          )}
+          {error && <div className="p-4 text-red-500 text-sm">{error}</div>}
 
           {!loading && !error && worldViews.length === 0 && (
             <div className="flex items-center justify-center h-full text-slate-400">
@@ -181,7 +183,7 @@ export function WorldViewList({ projectId, onEditWorldView, onAIGenerateWorldVie
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-lg">
-                          {CATEGORIES.find(c => c.id === view.category)?.icon || '📝'}
+                          {CATEGORIES.find((c) => c.id === view.category)?.icon || "📝"}
                         </span>
                         <h4 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
                           {view.title}
@@ -201,12 +203,20 @@ export function WorldViewList({ projectId, onEditWorldView, onAIGenerateWorldVie
                           <Calendar className="w-3 h-3" />
                           {formatDate(view.created_at)}
                         </span>
-                        <span className={`px-2 py-0.5 rounded ${
-                          view.status === 'draft' ? 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400' :
-                          view.status === 'in_progress' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' :
-                          'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                        }`}>
-                          {view.status === 'draft' ? '草稿' : view.status === 'in_progress' ? '进行中' : '已完成'}
+                        <span
+                          className={`px-2 py-0.5 rounded ${
+                            view.status === "draft"
+                              ? "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
+                              : view.status === "in_progress"
+                                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                                : "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+                          }`}
+                        >
+                          {view.status === "draft"
+                            ? "草稿"
+                            : view.status === "in_progress"
+                              ? "进行中"
+                              : "已完成"}
                         </span>
                       </div>
                     </div>

@@ -1,31 +1,68 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Settings, Layers, Globe, Network, Database, Download, Puzzle } from 'lucide-react';
-import { TextEditor } from './components/TextEditor';
-import { ProjectList } from './components/ProjectList';
-import { ChapterList } from './components/ChapterList';
-import { CharacterList } from './components/CharacterList';
-import { CreateProjectDialog } from './components/CreateProjectDialog';
-import { InputDialog } from './components/InputDialog';
-import { CharacterDialog } from './components/CharacterDialog';
-import { ModelSettingsDialog } from './components/ModelSettingsDialog';
-import { ExportDialog } from './components/ExportDialog';
-import PluginManager from './components/PluginManager';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { uiLogger } from './utils/uiLogger';
-import { PlotPointList } from './components/PlotPointList';
-import { PlotPointEditor } from './components/PlotPointEditor';
-import { WorldViewList } from './components/WorldViewList';
-import { WorldViewEditor } from './components/WorldViewEditor';
-import { CharacterRelationGraph } from './components/CharacterRelationGraph';
-import { KnowledgeBase } from './components/KnowledgeBase';
-import { SmartDebugPanel } from './components/SmartDebugPanel';
-import { ResizableLayout } from './components/ResizableLayout';
-import { useToast, ToastContainer } from './components/Toast';
-import { useProjectStore } from './stores/projectStore';
-import { projectService, chapterService, characterService, worldViewService, plotPointService } from './services/api';
-import { debugLogger } from './utils/debugLogger';
-import type { CreateProjectRequest, SaveChapterRequest, CreateCharacterRequest, UpdateCharacterRequest, Character, PlotPointNode, WorldView } from './types';
-import { invoke } from '@tauri-apps/api/core';
+import React, { useEffect, useState, useRef } from "react";
+import {
+  Settings,
+  Layers,
+  Globe,
+  Network,
+  Database,
+  Download,
+  Puzzle,
+  Film,
+  User,
+} from "lucide-react";
+import { TextEditor } from "./components/TextEditor";
+import { ProjectList } from "./components/ProjectList";
+import { ChapterList } from "./components/ChapterList";
+import { CharacterList } from "./components/CharacterList";
+import { CreateProjectDialog } from "./components/CreateProjectDialog";
+import { InputDialog } from "./components/InputDialog";
+import { CharacterDialog } from "./components/CharacterDialog";
+import { ModelSettingsDialog } from "./components/ModelSettingsDialog";
+import { ExportDialog } from "./components/ExportDialog";
+import ImportDialog from "./components/ImportDialog";
+import PluginManager from "./components/PluginManager";
+import PromptTemplateDialog from "./components/PromptTemplateDialog";
+import MultimediaSettingsDialog from "./components/MultimediaSettingsDialog";
+import OutlinePanel from "./components/OutlinePanel";
+import BatchGenerator from "./components/BatchGenerator";
+import ReverseAnalysisDialog from "./components/ReverseAnalysisDialog";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { uiLogger } from "./utils/uiLogger";
+import { PlotPointList } from "./components/PlotPointList";
+import { PlotPointEditor } from "./components/PlotPointEditor";
+import { WorldViewList } from "./components/WorldViewList";
+import { WorldViewEditor } from "./components/WorldViewEditor";
+import { CharacterRelationGraph } from "./components/CharacterRelationGraph";
+import { KnowledgeBase } from "./components/KnowledgeBase";
+import { SmartDebugPanel } from "./components/SmartDebugPanel";
+import { ResizableLayout } from "./components/ResizableLayout";
+import { useToast, ToastContainer } from "./components/Toast";
+import CharacterBiblePanel from "./components/CharacterBiblePanel";
+import BatchProductionPanel from "./components/BatchProductionPanel";
+import SceneEditor from "./components/SceneEditor";
+import ComfyUIPanel from "./components/ComfyUIPanel";
+import WorkflowTemplateEditor from "./components/WorkflowTemplateEditor";
+import SeedancePanel from "./components/SeedancePanel";
+import StoryboardEditor from "./components/StoryboardEditor";
+import { useProjectStore } from "./stores/projectStore";
+import {
+  projectService,
+  chapterService,
+  characterService,
+  worldViewService,
+  plotPointService,
+} from "./services/api";
+import { debugLogger } from "./utils/debugLogger";
+import type {
+  CreateProjectRequest,
+  SaveChapterRequest,
+  CreateCharacterRequest,
+  UpdateCharacterRequest,
+  Character,
+  PlotPointNode,
+  WorldView,
+} from "./types";
+import { invoke } from "@tauri-apps/api/core";
 
 function App() {
   const {
@@ -58,22 +95,38 @@ function App() {
   const [isCharacterDialogOpen, setIsCharacterDialogOpen] = useState(false);
   const [isModelSettingsDialogOpen, setIsModelSettingsDialogOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isPluginManagerOpen, setIsPluginManagerOpen] = useState(false);
+  const [isPromptTemplateOpen, setIsPromptTemplateOpen] = useState(false);
+  const [isMultimediaSettingsOpen, setIsMultimediaSettingsOpen] = useState(false);
+  const [isOutlineOpen, setIsOutlineOpen] = useState(false);
+  const [isBatchGeneratorOpen, setIsBatchGeneratorOpen] = useState(false);
+  const [isReverseAnalysisOpen, setIsReverseAnalysisOpen] = useState(false);
+  const [isCharacterBibleOpen, setIsCharacterBibleOpen] = useState(false);
+  const [isBatchProductionOpen, setIsBatchProductionOpen] = useState(false);
+  const [isSceneEditorOpen, setIsSceneEditorOpen] = useState(false);
+  const [isComfyUIPanelOpen, setIsComfyUIPanelOpen] = useState(false);
+  const [isWorkflowEditorOpen, setIsWorkflowEditorOpen] = useState(false);
+  const [isSeedancePanelOpen, setIsSeedancePanelOpen] = useState(false);
+  const [isStoryboardEditorOpen, setIsStoryboardEditorOpen] = useState(false);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | undefined>();
+  const [editingScene, setEditingScene] = useState<any>(null);
   const [exportProjectId, setExportProjectId] = useState<string | null>(null);
   const [exportChapterId, setExportChapterId] = useState<string | null>(null);
 
   useEffect(() => {
-    uiLogger.mount('App');
-    return () => uiLogger.unmount('App');
-
-    console.log('isModelSettingsDialogOpen changed to:', isModelSettingsDialogOpen);
+    uiLogger.mount("App");
+    console.log("isModelSettingsDialogOpen changed to:", isModelSettingsDialogOpen);
+    return () => uiLogger.unmount("App");
   }, [isModelSettingsDialogOpen]);
   const [editingCharacter, setEditingCharacter] = useState<Character | undefined>();
-  const [initialCharacterName, setInitialCharacterName] = useState<string>('');
-  const [initialWorldViewTitle, setInitialWorldViewTitle] = useState<string>('');
+  const [initialCharacterName, setInitialCharacterName] = useState<string>("");
+  const [initialWorldViewTitle, setInitialWorldViewTitle] = useState<string>("");
 
-  const [editorContent, setEditorContent] = useState('');
-  const [rightPanelTab, setRightPanelTab] = useState<'chapters' | 'plot' | 'worldview' | 'relations' | 'knowledge'>('chapters');
+  const [editorContent, setEditorContent] = useState("");
+  const [rightPanelTab, setRightPanelTab] = useState<
+    "chapters" | "plot" | "worldview" | "relations" | "knowledge" | "moyin"
+  >("chapters");
   const [isPlotPointEditorOpen, setIsPlotPointEditorOpen] = useState(false);
   const [editingPlotPoint, setEditingPlotPoint] = useState<PlotPointNode | null>(null);
   const [isWorldViewEditorOpen, setIsWorldViewEditorOpen] = useState(false);
@@ -100,8 +153,8 @@ function App() {
       const result = await projectService.getProjects();
       setProjects(result);
     } catch (error) {
-      console.error('Failed to load projects:', error);
-      showToast('加载项目失败', 'error');
+      console.error("Failed to load projects:", error);
+      showToast("加载项目失败", "error");
     } finally {
       setIsLoading(false);
     }
@@ -109,27 +162,51 @@ function App() {
 
   const loadChapters = async (projectId: string) => {
     try {
-      debugLogger.info('Loading chapters', { projectId, component: 'App', feature: 'chapter-list' });
+      debugLogger.info("Loading chapters", {
+        projectId,
+        component: "App",
+        feature: "chapter-list",
+      });
       const result = await chapterService.getChapters(projectId);
       setChapters(result);
-      debugLogger.info('Chapters loaded successfully', { count: result.length, component: 'App', feature: 'chapter-list' });
+      debugLogger.info("Chapters loaded successfully", {
+        count: result.length,
+        component: "App",
+        feature: "chapter-list",
+      });
     } catch (error) {
-      console.error('Failed to load chapters:', error);
-      debugLogger.error('Failed to load chapters', error as Error, { projectId, component: 'App', feature: 'chapter-list' });
-      showToast('加载章节失败', 'error');
+      console.error("Failed to load chapters:", error);
+      debugLogger.error("Failed to load chapters", error as Error, {
+        projectId,
+        component: "App",
+        feature: "chapter-list",
+      });
+      showToast("加载章节失败", "error");
     }
   };
 
   const loadCharacters = async (projectId: string) => {
     try {
-      debugLogger.info('Loading characters', { projectId, component: 'App', feature: 'character-list' });
+      debugLogger.info("Loading characters", {
+        projectId,
+        component: "App",
+        feature: "character-list",
+      });
       const result = await characterService.getCharacters(projectId);
       setCharacters(result);
-      debugLogger.info('Characters loaded successfully', { count: result.length, component: 'App', feature: 'character-list' });
+      debugLogger.info("Characters loaded successfully", {
+        count: result.length,
+        component: "App",
+        feature: "character-list",
+      });
     } catch (error) {
-      console.error('Failed to load characters:', error);
-      debugLogger.error('Failed to load characters', error as Error, { projectId, component: 'App', feature: 'character-list' });
-      showToast('加载角色失败', 'error');
+      console.error("Failed to load characters:", error);
+      debugLogger.error("Failed to load characters", error as Error, {
+        projectId,
+        component: "App",
+        feature: "character-list",
+      });
+      showToast("加载角色失败", "error");
     }
   };
 
@@ -147,29 +224,29 @@ function App() {
       const newProject = await projectService.createProject(request);
       addProject(newProject);
       setCurrentProject(newProject);
-      localStorage.setItem('current-project-id', newProject.id);
+      localStorage.setItem("current-project-id", newProject.id);
       setIsCreateProjectDialogOpen(false);
-      showToast('项目创建成功', 'success');
+      showToast("项目创建成功", "success");
     } catch (error) {
-      console.error('Failed to create project:', error);
-      showToast('创建项目失败，请重试', 'error');
+      console.error("Failed to create project:", error);
+      showToast("创建项目失败，请重试", "error");
     }
   };
 
   const handleDeleteProject = async (projectId: string) => {
-    console.log('[App] handleDeleteProject called with:', projectId);
+    console.log("[App] handleDeleteProject called with:", projectId);
     try {
-      console.log('[App] Calling projectService.deleteProject...');
+      console.log("[App] Calling projectService.deleteProject...");
       await projectService.deleteProject(projectId);
-      console.log('[App] deleteProject API call succeeded');
+      console.log("[App] deleteProject API call succeeded");
       if (currentProject?.id === projectId) {
         setCurrentProject(null);
       }
       await loadProjects();
-      showToast('项目删除成功', 'success');
+      showToast("项目删除成功", "success");
     } catch (error) {
-      console.error('[App] Failed to delete project:', error);
-      showToast('删除项目失败: ' + (error as Error).message, 'error');
+      console.error("[App] Failed to delete project:", error);
+      showToast("删除项目失败: " + (error as Error).message, "error");
     }
   };
 
@@ -177,19 +254,16 @@ function App() {
     if (!currentProject) return;
 
     try {
-      const updatedProject = await projectService.updateProject(
-        currentProject.id,
-        newName
-      );
+      const updatedProject = await projectService.updateProject(currentProject.id, newName);
       await loadProjects();
       if (currentProject?.id === updatedProject.id) {
         setCurrentProject(updatedProject);
       }
       setIsProjectRenameDialogOpen(false);
-      showToast('项目重命名成功', 'success');
+      showToast("项目重命名成功", "success");
     } catch (error) {
-      console.error('Failed to rename project:', error);
-      showToast('重命名失败', 'error');
+      console.error("Failed to rename project:", error);
+      showToast("重命名失败", "error");
     }
   };
 
@@ -198,12 +272,12 @@ function App() {
 
     try {
       setCurrentProject(project);
-      localStorage.setItem('current-project-id', project.id);
+      localStorage.setItem("current-project-id", project.id);
       await loadChapters(project.id);
       await loadCharacters(project.id);
     } catch (error) {
-      console.error('Failed to load project data:', error);
-      showToast('加载项目失败', 'error');
+      console.error("Failed to load project data:", error);
+      showToast("加载项目失败", "error");
     }
   };
 
@@ -225,60 +299,57 @@ function App() {
       const request: SaveChapterRequest = {
         project_id: currentProject.id,
         title,
-        content: '',
+        content: "",
         sort_order: chapters.length,
       };
       const newChapter = await chapterService.saveChapter(request);
       addChapter(newChapter);
       setCurrentChapter(newChapter);
-      setEditorContent('');
+      setEditorContent("");
       setIsChapterNameDialogOpen(false);
-      showToast('章节创建成功', 'success');
+      showToast("章节创建成功", "success");
     } catch (error) {
-      console.error('Failed to create chapter:', error);
-      showToast('创建章节失败', 'error');
+      console.error("Failed to create chapter:", error);
+      showToast("创建章节失败", "error");
     }
   };
 
   const handleDeleteChapter = async (chapterId: string) => {
-    console.log('handleDeleteChapter called with:', chapterId);
+    console.log("handleDeleteChapter called with:", chapterId);
     try {
       await chapterService.deleteChapter(chapterId);
-      console.log('Chapter deleted from backend:', chapterId);
+      console.log("Chapter deleted from backend:", chapterId);
       if (currentChapter?.id === chapterId) {
         setCurrentChapter(null);
-        setEditorContent('');
+        setEditorContent("");
       }
       await loadChapters(currentProject!.id);
       removeChapter(chapterId);
-      showToast('章节删除成功', 'success');
+      showToast("章节删除成功", "success");
     } catch (error) {
-      console.error('Failed to delete chapter:', error);
-      showToast('删除章节失败', 'error');
+      console.error("Failed to delete chapter:", error);
+      showToast("删除章节失败", "error");
     }
   };
 
   const handleRenameChapter = async (newTitle: string) => {
-    console.log('handleRenameChapter called with:', newTitle, 'currentChapter:', currentChapter);
+    console.log("handleRenameChapter called with:", newTitle, "currentChapter:", currentChapter);
     if (!currentChapter) {
-      console.warn('No current chapter selected');
+      console.warn("No current chapter selected");
       return;
     }
 
     try {
-      console.log('Updating chapter:', currentChapter.id, 'to:', newTitle);
-      const updatedChapter = await chapterService.updateChapter(
-        currentChapter.id,
-        newTitle
-      );
-      console.log('Chapter updated:', updatedChapter);
+      console.log("Updating chapter:", currentChapter.id, "to:", newTitle);
+      const updatedChapter = await chapterService.updateChapter(currentChapter.id, newTitle);
+      console.log("Chapter updated:", updatedChapter);
       await loadChapters(currentProject!.id);
       setCurrentChapter(updatedChapter);
       setIsChapterRenameDialogOpen(false);
-      showToast('章节重命名成功', 'success');
+      showToast("章节重命名成功", "success");
     } catch (error) {
-      console.error('Failed to rename chapter:', error);
-      showToast('重命名失败', 'error');
+      console.error("Failed to rename chapter:", error);
+      showToast("重命名失败", "error");
     }
   };
 
@@ -299,10 +370,10 @@ function App() {
         editorContent
       );
       setCurrentChapter(updatedChapter);
-      showToast('保存成功', 'success');
+      showToast("保存成功", "success");
     } catch (error) {
-      console.error('Failed to save chapter:', error);
-      showToast('保存失败，请重试', 'error');
+      console.error("Failed to save chapter:", error);
+      showToast("保存失败，请重试", "error");
     }
   };
 
@@ -320,10 +391,10 @@ function App() {
     try {
       await characterService.deleteCharacter(characterId);
       await loadCharacters(currentProject!.id);
-      showToast('角色删除成功', 'success');
+      showToast("角色删除成功", "success");
     } catch (error) {
-      console.error('Failed to delete character:', error);
-      showToast('删除角色失败', 'error');
+      console.error("Failed to delete character:", error);
+      showToast("删除角色失败", "error");
     }
   };
 
@@ -343,17 +414,17 @@ function App() {
 
       if (editingCharacter) {
         await characterService.updateCharacter(editingCharacter.id, data);
-        showToast('角色更新成功', 'success');
+        showToast("角色更新成功", "success");
       } else {
         await characterService.createCharacter(request);
-        showToast('角色创建成功', 'success');
+        showToast("角色创建成功", "success");
       }
 
       await loadCharacters(currentProject!.id);
       setIsCharacterDialogOpen(false);
     } catch (error) {
-      console.error('Failed to save character:', error);
-      showToast(editingCharacter ? '更新角色失败' : '创建角色失败', 'error');
+      console.error("Failed to save character:", error);
+      showToast(editingCharacter ? "更新角色失败" : "创建角色失败", "error");
     }
   };
 
@@ -383,19 +454,19 @@ function App() {
 
   const handlePlotPointSaved = async () => {
     handlePlotPointEditorClose();
-    showToast('情节点保存成功', 'success');
+    showToast("情节点保存成功", "success");
   };
 
   const handleLinkToChapter = async (plotPoint: PlotPointNode) => {
     try {
-      const updatedChapter = chapters.find(c => c.id === plotPoint.chapter_id);
+      const updatedChapter = chapters.find((c) => c.id === plotPoint.chapter_id);
       if (updatedChapter) {
         setCurrentChapter(updatedChapter);
         setEditorContent(updatedChapter.content);
       }
     } catch (error) {
-      console.error('Failed to navigate to chapter:', error);
-      showToast('跳转到章节失败', 'error');
+      console.error("Failed to navigate to chapter:", error);
+      showToast("跳转到章节失败", "error");
     }
   };
 
@@ -411,7 +482,7 @@ function App() {
 
   const handleWorldViewSaved = () => {
     handleWorldViewEditorClose();
-    showToast('世界观保存成功', 'success');
+    showToast("世界观保存成功", "success");
   };
 
   // AI 生成角色
@@ -423,10 +494,10 @@ function App() {
       };
       await characterService.createCharacter(request);
       await loadCharacters(currentProject!.id);
-      showToast('AI 生成角色成功', 'success');
+      showToast("AI 生成角色成功", "success");
     } catch (error) {
-      console.error('Failed to create AI character:', error);
-      showToast('AI 生成角色失败', 'error');
+      console.error("Failed to create AI character:", error);
+      showToast("AI 生成角色失败", "error");
       throw error;
     }
   };
@@ -438,10 +509,10 @@ function App() {
         project_id: currentProject!.id,
         ...data,
       });
-      showToast('AI 生成世界观成功', 'success');
+      showToast("AI 生成世界观成功", "success");
     } catch (error) {
-      console.error('Failed to create AI worldview:', error);
-      showToast('AI 生成世界观失败', 'error');
+      console.error("Failed to create AI worldview:", error);
+      showToast("AI 生成世界观失败", "error");
       throw error;
     }
   };
@@ -453,10 +524,10 @@ function App() {
         project_id: currentProject!.id,
         ...data,
       });
-      showToast('AI 生成情节点成功', 'success');
+      showToast("AI 生成情节点成功", "success");
     } catch (error) {
-      console.error('Failed to create AI plot point:', error);
-      showToast('AI 生成情节点失败', 'error');
+      console.error("Failed to create AI plot point:", error);
+      showToast("AI 生成情节点失败", "error");
       throw error;
     }
   };
@@ -479,6 +550,20 @@ function App() {
     setExportChapterId(null);
   };
 
+  const handleImportSuccess = async (result: any) => {
+    if (currentProject && result.chapters && result.chapters.length > 0) {
+      for (const chapter of result.chapters) {
+        await chapterService.saveChapter({
+          project_id: currentProject.id,
+          title: chapter.title,
+          content: chapter.content,
+        });
+      }
+      await loadChapters(currentProject.id);
+      showToast(`成功导入 ${result.chapter_count} 个章节`, "success");
+    }
+  };
+
   return (
     <ResizableLayout
       leftPanel={
@@ -488,7 +573,7 @@ function App() {
             currentProject={currentProject}
             onSelectProject={handleSelectProject}
             onCreateProject={() => {
-              console.log('handleCreateProject called from App');
+              console.log("handleCreateProject called from App");
               setIsCreateProjectDialogOpen(true);
             }}
             onDeleteProject={handleDeleteProject}
@@ -496,12 +581,30 @@ function App() {
             onOpenPluginManager={() => {
               setIsPluginManagerOpen(true);
             }}
+            onOpenImportDialog={() => {
+              setIsImportDialogOpen(true);
+            }}
+            onOpenPromptTemplates={() => {
+              setIsPromptTemplateOpen(true);
+            }}
+            onOpenMultimediaSettings={() => {
+              setIsMultimediaSettingsOpen(true);
+            }}
+            onOpenOutline={() => {
+              setIsOutlineOpen(true);
+            }}
+            onOpenBatchGenerator={() => {
+              setIsBatchGeneratorOpen(true);
+            }}
+            onOpenReverseAnalysis={() => {
+              setIsReverseAnalysisOpen(true);
+            }}
             onOpenSettings={() => {
-              console.log('onOpenSettings called from App');
+              console.log("onOpenSettings called from App");
               setIsModelSettingsDialogOpen(true);
             }}
             onRefresh={() => {
-              console.log('handleRefresh called from App');
+              console.log("handleRefresh called from App");
               window.location.reload();
             }}
             onExportProject={handleExportProject}
@@ -545,149 +648,223 @@ function App() {
       }
       rightPanel={
         <>
-        <div className="flex border-b border-border">
-          <button
-            onClick={() => setRightPanelTab('chapters')}
-            className={`flex-1 py-2 px-3 text-sm font-medium transition-colors ${
-              rightPanelTab === 'chapters'
-                ? 'border-b-2 border-blue-500 text-blue-500'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            章节
-          </button>
-          <button
-            onClick={() => setRightPanelTab('plot')}
-            className={`flex-1 py-2 px-3 text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
-              rightPanelTab === 'plot'
-                ? 'border-b-2 border-blue-500 text-blue-500'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            情节点
-          </button>
-          <button
-            onClick={() => setRightPanelTab('worldview')}
-            className={`flex-1 py-2 px-3 text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
-              rightPanelTab === 'worldview'
-                ? 'border-b-2 border-blue-500 text-blue-500'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <Globe className="w-4 h-4" />
-            世界观
-          </button>
-          <button
-            onClick={() => setRightPanelTab('relations')}
-            className={`flex-1 py-2 px-3 text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
-              rightPanelTab === 'relations'
-                ? 'border-b-2 border-blue-500 text-blue-500'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <Network className="w-4 h-4" />
-            关系
-          </button>
-          <button
-            onClick={() => setRightPanelTab('knowledge')}
-            className={`flex-1 py-2 px-3 text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
-              rightPanelTab === 'knowledge'
-                ? 'border-b-2 border-blue-500 text-blue-500'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <Database className="w-4 h-4" />
-            知识库
-          </button>
-        </div>
+          <div className="flex border-b border-border">
+            <button
+              onClick={() => setRightPanelTab("chapters")}
+              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors ${
+                rightPanelTab === "chapters"
+                  ? "border-b-2 border-blue-500 text-blue-500"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+            >
+              章节
+            </button>
+            <button
+              onClick={() => setRightPanelTab("plot")}
+              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                rightPanelTab === "plot"
+                  ? "border-b-2 border-blue-500 text-blue-500"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+            >
+              <Layers className="w-4 h-4" />
+              情节点
+            </button>
+            <button
+              onClick={() => setRightPanelTab("worldview")}
+              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                rightPanelTab === "worldview"
+                  ? "border-b-2 border-blue-500 text-blue-500"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+            >
+              <Globe className="w-4 h-4" />
+              世界观
+            </button>
+            <button
+              onClick={() => setRightPanelTab("relations")}
+              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                rightPanelTab === "relations"
+                  ? "border-b-2 border-blue-500 text-blue-500"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+            >
+              <Network className="w-4 h-4" />
+              关系
+            </button>
+            <button
+              onClick={() => setRightPanelTab("knowledge")}
+              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                rightPanelTab === "knowledge"
+                  ? "border-b-2 border-blue-500 text-blue-500"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+            >
+              <Database className="w-4 h-4" />
+              知识库
+            </button>
+            <button
+              onClick={() => setRightPanelTab("moyin")}
+              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                rightPanelTab === "moyin"
+                  ? "border-b-2 border-blue-500 text-blue-500"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+            >
+              <Film className="w-4 h-4" />
+              影视
+            </button>
+          </div>
 
-        {rightPanelTab === 'chapters' ? (
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-hidden">
-              <ChapterList
-                chapters={chapters}
-                currentChapter={currentChapter}
-                onSelectChapter={handleSelectChapter}
-                onCreateChapter={handleCreateChapter}
-                onDeleteChapter={handleDeleteChapter}
-                onRenameChapter={() => setIsChapterRenameDialogOpen(true)}
-                onExportChapter={handleExportChapter}
-              />
+          {rightPanelTab === "chapters" ? (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="flex-1 overflow-hidden">
+                <ChapterList
+                  chapters={chapters}
+                  currentChapter={currentChapter}
+                  onSelectChapter={handleSelectChapter}
+                  onCreateChapter={handleCreateChapter}
+                  onDeleteChapter={handleDeleteChapter}
+                  onRenameChapter={() => setIsChapterRenameDialogOpen(true)}
+                  onExportChapter={handleExportChapter}
+                />
+              </div>
+              <div className="h-64 border-t border-border">
+                <CharacterList
+                  characters={characters}
+                  projectId={currentProject?.id}
+                  onCreateCharacter={handleCreateCharacter}
+                  onEditCharacter={handleEditCharacter}
+                  onDeleteCharacter={handleDeleteCharacter}
+                  onAIGenerateCharacter={handleAIGenerateCharacter}
+                />
+              </div>
             </div>
-            <div className="h-64 border-t border-border">
-              <CharacterList
-                characters={characters}
-                projectId={currentProject?.id}
-                onCreateCharacter={handleCreateCharacter}
-                onEditCharacter={handleEditCharacter}
-                onDeleteCharacter={handleDeleteCharacter}
-                onAIGenerateCharacter={handleAIGenerateCharacter}
-              />
+          ) : rightPanelTab === "plot" ? (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {currentProject ? (
+                <PlotPointList
+                  projectId={currentProject.id}
+                  onEditPlotPoint={handleEditPlotPoint}
+                  onLinkToChapter={handleLinkToChapter}
+                  onAIGeneratePlotPoints={handleAIGeneratePlotPoints}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <p className="text-sm">请先选择一个项目</p>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        ) : rightPanelTab === 'plot' ? (
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {currentProject ? (
-              <PlotPointList
-                projectId={currentProject.id}
-                onEditPlotPoint={handleEditPlotPoint}
-                onLinkToChapter={handleLinkToChapter}
-                onAIGeneratePlotPoints={handleAIGeneratePlotPoints}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <div className="text-center">
-                  <p className="text-sm">请先选择一个项目</p>
+          ) : rightPanelTab === "worldview" ? (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {currentProject ? (
+                <WorldViewList
+                  projectId={currentProject.id}
+                  onEditWorldView={handleEditWorldView}
+                  onAIGenerateWorldView={handleAIGenerateWorldView}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <p className="text-lg">请先选择一个项目</p>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ) : rightPanelTab === 'worldview' ? (
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {currentProject ? (
-              <WorldViewList
-                projectId={currentProject.id}
-                onEditWorldView={handleEditWorldView}
-                onAIGenerateWorldView={handleAIGenerateWorldView}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <div className="text-center">
-                  <p className="text-lg">请先选择一个项目</p>
+              )}
+            </div>
+          ) : rightPanelTab === "knowledge" ? (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {currentProject ? (
+                <KnowledgeBase projectId={currentProject.id} />
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <p className="text-lg">请先选择一个项目</p>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ) : rightPanelTab === 'knowledge' ? (
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {currentProject ? (
-              <KnowledgeBase projectId={currentProject.id} />
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <div className="text-center">
-                  <p className="text-lg">请先选择一个项目</p>
+              )}
+            </div>
+          ) : rightPanelTab === "moyin" ? (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {currentProject ? (
+                <div className="flex flex-col h-full">
+                  <div className="flex border-b">
+                    <button
+                      onClick={() => setIsCharacterBibleOpen(true)}
+                      className="px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-1"
+                    >
+                      <User className="w-4 h-4" />
+                      角色圣经
+                    </button>
+                    <button
+                      onClick={() => setIsBatchProductionOpen(true)}
+                      className="px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-1"
+                    >
+                      <Film className="w-4 h-4" />
+                      批量生产
+                    </button>
+                    <button
+                      onClick={() => setIsComfyUIPanelOpen(true)}
+                      className="px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-1"
+                    >
+                      <Network className="w-4 h-4" />
+                      ComfyUI
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingTemplateId(undefined);
+                        setIsWorkflowEditorOpen(true);
+                      }}
+                      className="px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-1"
+                    >
+                      <Puzzle className="w-4 h-4" />
+                      模板编辑器
+                    </button>
+                    <button
+                      onClick={() => setIsSeedancePanelOpen(true)}
+                      className="px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-1"
+                    >
+                      <Film className="w-4 h-4" />
+                      Seedance 2.0
+                    </button>
+                    <button
+                      onClick={() => setIsStoryboardEditorOpen(true)}
+                      className="px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-1"
+                    >
+                      <Layers className="w-4 h-4" />
+                      分镜编辑器
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <CharacterBiblePanel
+                      projectId={currentProject.id}
+                      onSelectCharacter={(char) => console.log("Selected character:", char)}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {currentProject ? (
-              <CharacterRelationGraph
-                projectId={currentProject.id}
-                characters={characters}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <div className="text-center">
-                  <p className="text-sm">请先选择一个项目</p>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <p className="text-lg">请先选择一个项目</p>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-          </>
+              )}
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {currentProject ? (
+                <CharacterRelationGraph projectId={currentProject.id} characters={characters} />
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <p className="text-sm">请先选择一个项目</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       }
     >
       <CreateProjectDialog
@@ -730,7 +907,7 @@ function App() {
         onSubmit={handleCharacterSubmit}
         onCancel={() => {
           setIsCharacterDialogOpen(false);
-          setInitialCharacterName('');
+          setInitialCharacterName("");
         }}
       />
 
@@ -747,6 +924,149 @@ function App() {
         projectName={currentProject?.name}
       />
 
+      <ImportDialog
+        isOpen={isImportDialogOpen}
+        onClose={() => setIsImportDialogOpen(false)}
+        projectId={currentProject?.id}
+        onImportSuccess={handleImportSuccess}
+      />
+
+      <PromptTemplateDialog
+        isOpen={isPromptTemplateOpen}
+        onClose={() => setIsPromptTemplateOpen(false)}
+      />
+
+      <MultimediaSettingsDialog
+        isOpen={isMultimediaSettingsOpen}
+        onClose={() => setIsMultimediaSettingsOpen(false)}
+      />
+
+      {currentProject && (
+        <OutlinePanel
+          projectId={currentProject.id}
+          isOpen={isOutlineOpen}
+          onClose={() => setIsOutlineOpen(false)}
+        />
+      )}
+
+      {currentProject && (
+        <BatchGenerator
+          isOpen={isBatchGeneratorOpen}
+          onClose={() => setIsBatchGeneratorOpen(false)}
+          projectId={currentProject.id}
+        />
+      )}
+
+      <ReverseAnalysisDialog
+        isOpen={isReverseAnalysisOpen}
+        onClose={() => setIsReverseAnalysisOpen(false)}
+        onImportResults={(result) => {
+          console.log("Reverse analysis results:", result);
+          showToast("逆向分析结果已导入", "success");
+        }}
+      />
+
+      {isBatchProductionOpen && currentProject && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh] overflow-hidden">
+            <BatchProductionPanel
+              projectId={currentProject.id}
+              dbPath={`~/Library/Application Support/com.infinitenote/app.db`}
+              onSceneSelect={(scene) => {
+                setEditingScene(scene);
+                setIsSceneEditorOpen(true);
+              }}
+            />
+            <div className="absolute top-2 right-2">
+              <button
+                onClick={() => setIsBatchProductionOpen(false)}
+                className="p-2 bg-white rounded-full shadow hover:bg-gray-100"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isSceneEditorOpen && editingScene && currentProject && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl h-[85vh] overflow-hidden">
+            <SceneEditor
+              scene={editingScene}
+              dbPath={`~/Library/Application Support/com.infinitenote/app.db`}
+              projectId={currentProject.id}
+              characters={[]}
+              onClose={() => {
+                setIsSceneEditorOpen(false);
+                setEditingScene(null);
+              }}
+              onSaved={(scene) => {
+                console.log("Scene saved:", scene);
+                showToast("场景保存成功", "success");
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {isComfyUIPanelOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl h-[90vh] overflow-hidden">
+            <ComfyUIPanel />
+            <button
+              onClick={() => setIsComfyUIPanelOpen(false)}
+              className="absolute top-4 right-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isWorkflowEditorOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[90vh] overflow-hidden">
+            <WorkflowTemplateEditor
+              templateId={editingTemplateId}
+              onSave={(template) => {
+                showToast("模板保存成功", "success");
+                setIsWorkflowEditorOpen(false);
+              }}
+              onCancel={() => setIsWorkflowEditorOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {isSeedancePanelOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl h-[90vh] overflow-hidden">
+            <button
+              onClick={() => setIsSeedancePanelOpen(false)}
+              className="absolute top-4 right-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+            >
+              Close
+            </button>
+            <SeedancePanel />
+          </div>
+        </div>
+      )}
+
+      {isStoryboardEditorOpen && currentProject && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[90vh] overflow-hidden relative">
+            <button
+              onClick={() => setIsStoryboardEditorOpen(false)}
+              className="absolute top-4 right-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 z-10"
+            >
+              关闭
+            </button>
+            <StoryboardEditor />
+          </div>
+        </div>
+      )}
+
       {isPluginManagerOpen && (
         <div className="fixed inset-0 bg-background z-50">
           <ErrorBoundary>
@@ -758,7 +1078,7 @@ function App() {
       {isPlotPointEditorOpen && (
         <PlotPointEditor
           plotPoint={editingPlotPoint}
-          availableChapters={chapters.map(c => ({ id: c.id, title: c.title }))}
+          availableChapters={chapters.map((c) => ({ id: c.id, title: c.title }))}
           availableParentPoints={[]}
           onClose={handlePlotPointEditorClose}
           onSave={handlePlotPointSaved}
@@ -768,15 +1088,15 @@ function App() {
       {isWorldViewEditorOpen && (
         <WorldViewEditor
           worldView={editingWorldView}
-          projectId={currentProject?.id || ''}
+          projectId={currentProject?.id || ""}
           initialTitle={initialWorldViewTitle}
           onClose={() => {
             handleWorldViewEditorClose();
-            setInitialWorldViewTitle('');
+            setInitialWorldViewTitle("");
           }}
           onSave={() => {
             handleWorldViewSaved();
-            setInitialWorldViewTitle('');
+            setInitialWorldViewTitle("");
           }}
         />
       )}

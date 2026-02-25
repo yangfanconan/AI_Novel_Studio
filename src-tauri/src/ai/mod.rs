@@ -6,6 +6,17 @@ pub mod bigmodel_adapter;
 pub mod prompt_manager;
 pub mod service;
 pub mod generators;
+pub mod prompt_compiler;
+pub mod character_bible;
+pub mod task_poller;
+pub mod task_queue;
+pub mod script_parser;
+pub mod scene_manager;
+pub mod batch_production;
+pub mod comfyui_client;
+pub mod workflow_templates;
+pub mod seedance_2_0;
+pub mod storyboard_system;
 
 use std::collections::HashMap;
 use std::sync::Arc;

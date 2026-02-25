@@ -1,9 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Folder, Trash2, Edit2, MoreHorizontal, RotateCcw, Settings, Download, Puzzle } from 'lucide-react';
-import { projectService } from '../services/api';
-import { uiLogger } from '../utils/uiLogger';
-import { ConfirmDialog } from './ConfirmDialog';
-import { Project } from '../types';
+import React, { useState, useEffect } from "react";
+import {
+  Plus,
+  Folder,
+  Trash2,
+  Edit2,
+  MoreHorizontal,
+  RotateCcw,
+  Settings,
+  Download,
+  Puzzle,
+  Upload,
+  FileText,
+  Image,
+  List,
+  Layers,
+  SearchCode,
+} from "lucide-react";
+import { projectService } from "../services/api";
+import { uiLogger } from "../utils/uiLogger";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { Project } from "../types";
 
 interface ProjectListProps {
   projects: Project[];
@@ -13,6 +29,12 @@ interface ProjectListProps {
   onRefresh?: () => void;
   onOpenSettings?: () => void;
   onOpenPluginManager?: () => void;
+  onOpenImportDialog?: () => void;
+  onOpenPromptTemplates?: () => void;
+  onOpenMultimediaSettings?: () => void;
+  onOpenOutline?: () => void;
+  onOpenBatchGenerator?: () => void;
+  onOpenReverseAnalysis?: () => void;
   onDeleteProject?: (projectId: string) => void;
   onRenameProject?: () => void;
   onExportProject?: (projectId: string) => void;
@@ -26,6 +48,12 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   onRefresh,
   onOpenSettings,
   onOpenPluginManager,
+  onOpenImportDialog,
+  onOpenPromptTemplates,
+  onOpenMultimediaSettings,
+  onOpenOutline,
+  onOpenBatchGenerator,
+  onOpenReverseAnalysis,
   onDeleteProject,
   onRenameProject,
   onExportProject,
@@ -38,17 +66,17 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   }>({
     isOpen: false,
     projectId: null,
-    projectName: '',
+    projectName: "",
   });
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (activeMenuId && !(e.target as HTMLElement).closest('[data-menu]')) {
+      if (activeMenuId && !(e.target as HTMLElement).closest("[data-menu]")) {
         setActiveMenuId(null);
       }
     };
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
   }, [activeMenuId]);
 
   const handleMenuClick = (e: React.MouseEvent, projectId: string) => {
@@ -58,15 +86,15 @@ export const ProjectList: React.FC<ProjectListProps> = ({
 
   const handleRename = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const newName = prompt('请输入新的项目名称:');
+    const newName = prompt("请输入新的项目名称:");
     if (newName && activeMenuId) {
       try {
         await projectService.updateProject(activeMenuId, newName);
         if (onRefresh) onRefresh();
         setActiveMenuId(null);
       } catch (error) {
-        console.error('Failed to rename project:', error);
-        alert('重命名失败');
+        console.error("Failed to rename project:", error);
+        alert("重命名失败");
       }
     }
   };
@@ -94,23 +122,23 @@ export const ProjectList: React.FC<ProjectListProps> = ({
         if (onRefresh) onRefresh();
       }
     } catch (error) {
-      console.error('[ProjectList] Failed to delete project:', error);
-      alert('删除失败: ' + (error as Error).message);
+      console.error("[ProjectList] Failed to delete project:", error);
+      alert("删除失败: " + (error as Error).message);
     }
-    setDeleteConfirm({ isOpen: false, projectId: null, projectName: '' });
+    setDeleteConfirm({ isOpen: false, projectId: null, projectName: "" });
   };
 
   const handleDeleteCancel = () => {
-    setDeleteConfirm({ isOpen: false, projectId: null, projectName: '' });
+    setDeleteConfirm({ isOpen: false, projectId: null, projectName: "" });
   };
 
   const genreMap: Record<string, string> = {
-    fantasy: '奇幻',
-    scifi: '科幻',
-    romance: '言情',
-    mystery: '悬疑',
-    horror: '恐怖',
-    adventure: '冒险',
+    fantasy: "奇幻",
+    scifi: "科幻",
+    romance: "言情",
+    mystery: "悬疑",
+    horror: "恐怖",
+    adventure: "冒险",
   };
 
   return (
@@ -132,7 +160,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
             onClick={() => {
               if (onOpenPluginManager) {
                 onOpenPluginManager();
-                uiLogger.click('ProjectList', 'open_plugin_manager');
+                uiLogger.click("ProjectList", "open_plugin_manager");
               }
             }}
             className="p-2 hover:bg-accent rounded-md transition-colors"
@@ -142,9 +170,81 @@ export const ProjectList: React.FC<ProjectListProps> = ({
           </button>
           <button
             onClick={() => {
+              if (onOpenImportDialog) {
+                onOpenImportDialog();
+                uiLogger.click("ProjectList", "open_import_dialog");
+              }
+            }}
+            className="p-2 hover:bg-accent rounded-md transition-colors"
+            title="导入文件"
+          >
+            <Upload className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
+              if (onOpenPromptTemplates) {
+                onOpenPromptTemplates();
+                uiLogger.click("ProjectList", "open_prompt_templates");
+              }
+            }}
+            className="p-2 hover:bg-accent rounded-md transition-colors"
+            title="提示词管理"
+          >
+            <FileText className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
+              if (onOpenMultimediaSettings) {
+                onOpenMultimediaSettings();
+                uiLogger.click("ProjectList", "open_multimedia_settings");
+              }
+            }}
+            className="p-2 hover:bg-accent rounded-md transition-colors"
+            title="多媒体设置"
+          >
+            <Image className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
+              if (onOpenOutline) {
+                onOpenOutline();
+                uiLogger.click("ProjectList", "open_outline");
+              }
+            }}
+            className="p-2 hover:bg-accent rounded-md transition-colors"
+            title="大纲管理"
+          >
+            <List className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
+              if (onOpenBatchGenerator) {
+                onOpenBatchGenerator();
+                uiLogger.click("ProjectList", "open_batch_generator");
+              }
+            }}
+            className="p-2 hover:bg-accent rounded-md transition-colors"
+            title="批量生成"
+          >
+            <Layers className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
+              if (onOpenReverseAnalysis) {
+                onOpenReverseAnalysis();
+                uiLogger.click("ProjectList", "open_reverse_analysis");
+              }
+            }}
+            className="p-2 hover:bg-accent rounded-md transition-colors"
+            title="逆向分析"
+          >
+            <SearchCode className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
               if (onOpenSettings) {
                 onOpenSettings();
-                uiLogger.click('ProjectList', 'open_settings');
+                uiLogger.click("ProjectList", "open_settings");
               }
             }}
             className="p-2 hover:bg-accent rounded-md transition-colors"
@@ -155,7 +255,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
           <button
             onClick={() => {
               onCreateProject();
-              uiLogger.click('ProjectList', 'create_project');
+              uiLogger.click("ProjectList", "create_project");
             }}
             className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
           >
@@ -180,17 +280,15 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                   onClick={() => onSelectProject(project)}
                   className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
                     currentProject?.id === project.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-accent hover:text-accent-foreground'
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-accent hover:text-accent-foreground"
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{project.name}</p>
                       {project.description && (
-                        <p className="text-xs mt-1 opacity-80 truncate">
-                          {project.description}
-                        </p>
+                        <p className="text-xs mt-1 opacity-80 truncate">{project.description}</p>
                       )}
                     </div>
                   </div>
@@ -213,7 +311,10 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                   <MoreHorizontal className="w-4 h-4" />
                 </button>
                 {activeMenuId === project.id && (
-                  <div data-menu className="absolute right-2 top-10 z-10 bg-popover border border-border rounded-md shadow-lg py-1 min-w-[100px]">
+                  <div
+                    data-menu
+                    className="absolute right-2 top-10 z-10 bg-popover border border-border rounded-md shadow-lg py-1 min-w-[100px]"
+                  >
                     <button
                       onClick={(e) => handleRename(e)}
                       className="w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center gap-2"
@@ -226,7 +327,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                         e.stopPropagation();
                         if (onExportProject) {
                           onExportProject(project.id);
-                          uiLogger.click('ProjectList', 'export_project');
+                          uiLogger.click("ProjectList", "export_project");
                         }
                         setActiveMenuId(null);
                       }}

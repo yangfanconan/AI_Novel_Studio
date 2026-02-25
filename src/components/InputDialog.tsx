@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 
 interface InputDialogProps {
   isOpen: boolean;
@@ -14,8 +14,8 @@ export function InputDialog({
   isOpen,
   title,
   message,
-  defaultValue = '',
-  placeholder = '',
+  defaultValue = "",
+  placeholder = "",
   onSubmit,
   onCancel,
 }: InputDialogProps) {

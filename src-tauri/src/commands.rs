@@ -15,6 +15,7 @@ use crate::ai::{
     GeneratedWorldView, GeneratedPlotPoint, GeneratedStoryboard,
 };
 use crate::export::{ExportFormat, ExportMetadata, ExportContent};
+use crate::import::{ImportFormat, ImportResult, import_from_txt, import_from_markdown, import_from_docx};
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Serialize, Deserialize};
@@ -4862,4 +4863,80 @@ fn sanitize_filename(filename: &str) -> String {
             _ => c,
         })
         .collect()
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ImportFileRequest {
+    pub file_path: String,
+    pub format: String,
+}
+
+#[tauri::command]
+pub async fn import_file(
+    request: ImportFileRequest,
+) -> Result<ImportResult, String> {
+    let logger = Logger::new().with_feature("import");
+    log_command_start(&logger, "import_file", &format!("path: {}, format: {}", request.file_path, request.format));
+
+    let format = match request.format.to_lowercase().as_str() {
+        "txt" => ImportFormat::Txt,
+        "md" | "markdown" => ImportFormat::Md,
+        "docx" => ImportFormat::Docx,
+        _ => return Err(format!("不支持的导入格式: {}", request.format)),
+    };
+
+    let path = std::path::Path::new(&request.file_path);
+    if !path.exists() {
+        return Err(format!("文件不存在: {}", request.file_path));
+    }
+
+    let result: ImportResult = match format {
+        ImportFormat::Txt => import_from_txt(path).map_err(|e: anyhow::Error| e.to_string())?,
+        ImportFormat::Md => import_from_markdown(path).map_err(|e: anyhow::Error| e.to_string())?,
+        ImportFormat::Docx => import_from_docx(path).map_err(|e: anyhow::Error| e.to_string())?,
+    };
+
+    log_command_success(&logger, "import_file", &format!("{} chapters, {} words", result.chapter_count, result.word_count));
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn import_to_project(
+    app: AppHandle,
+    request: ImportFileRequest,
+    project_id: String,
+) -> Result<ImportResult, String> {
+    let logger = Logger::new().with_feature("import");
+    log_command_start(&logger, "import_to_project", &format!("project: {}, path: {}", project_id, request.file_path));
+
+    let import_result = import_file(request).await?;
+    
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+
+    for (index, chapter) in import_result.chapters.iter().enumerate() {
+        let chapter_id = Uuid::new_v4().to_string();
+        let sort_order = (index + 1) as i32;
+        
+        conn.execute(
+            "INSERT INTO chapters (id, project_id, title, content, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            params![
+                &chapter_id,
+                &project_id,
+                &chapter.title,
+                &chapter.content,
+                sort_order,
+                Utc::now().to_rfc3339(),
+                Utc::now().to_rfc3339()
+            ],
+        ).map_err(|e| format!("创建章节失败: {}", e))?;
+    }
+
+    conn.execute(
+        "UPDATE projects SET updated_at = ? WHERE id = ?",
+        params![Utc::now().to_rfc3339(), &project_id],
+    ).map_err(|e| format!("更新项目时间失败: {}", e))?;
+
+    log_command_success(&logger, "import_to_project", &format!("imported {} chapters", import_result.chapter_count));
+    Ok(import_result)
 }

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
-import { Character, CharacterTimelineEvent, CreateCharacterTimelineEventRequest } from '../types';
+import React, { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { Character, CharacterTimelineEvent, CreateCharacterTimelineEventRequest } from "../types";
 
 interface CharacterDialogProps {
   isOpen: boolean;
@@ -11,35 +11,54 @@ interface CharacterDialogProps {
 }
 
 const ROLE_TYPES = [
-  { value: 'protagonist', label: '主角' },
-  { value: 'deuteragonist', label: '第二主角' },
-  { value: 'antagonist', label: '反派' },
-  { value: 'supporting', label: '配角' },
-  { value: 'minor', label: '小角色' },
+  { value: "protagonist", label: "主角" },
+  { value: "deuteragonist", label: "第二主角" },
+  { value: "antagonist", label: "反派" },
+  { value: "supporting", label: "配角" },
+  { value: "minor", label: "小角色" },
 ];
 
 const MBTI_TYPES = [
-  'INTJ', 'INTP', 'ENTJ', 'ENTP',
-  'INFJ', 'INFP', 'ENFJ', 'ENFP',
-  'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
-  'ISTP', 'ISFP', 'ESTP', 'ESFP',
+  "INTJ",
+  "INTP",
+  "ENTJ",
+  "ENTP",
+  "INFJ",
+  "INFP",
+  "ENFJ",
+  "ENFP",
+  "ISTJ",
+  "ISFJ",
+  "ESTJ",
+  "ESFJ",
+  "ISTP",
+  "ISFP",
+  "ESTP",
+  "ESFP",
 ];
 
 const ENNEAGRAM_TYPES = [
-  '1号-完美型', '2号-助人型', '3号-成就型', '4号-自我型',
-  '5号-理智型', '6号-疑惑型', '7号-活跃型', '8号-领袖型', '9号-和平型',
+  "1号-完美型",
+  "2号-助人型",
+  "3号-成就型",
+  "4号-自我型",
+  "5号-理智型",
+  "6号-疑惑型",
+  "7号-活跃型",
+  "8号-领袖型",
+  "9号-和平型",
 ];
 
 const EVENT_TYPES = [
-  { value: 'birth', label: '出生', icon: '🎂' },
-  { value: 'milestone', label: '里程碑', icon: '🏁' },
-  { value: 'relationship', label: '关系变化', icon: '💔' },
-  { value: 'ability', label: '能力获得', icon: '⚡' },
-  { value: 'item', label: '物品获取', icon: '🎁' },
-  { value: 'trauma', label: '创伤事件', icon: '💢' },
-  { value: 'achievement', label: '成就达成', icon: '🏆' },
-  { value: 'death', label: '死亡', icon: '💀' },
-  { value: 'other', label: '其他', icon: '📝' },
+  { value: "birth", label: "出生", icon: "🎂" },
+  { value: "milestone", label: "里程碑", icon: "🏁" },
+  { value: "relationship", label: "关系变化", icon: "💔" },
+  { value: "ability", label: "能力获得", icon: "⚡" },
+  { value: "item", label: "物品获取", icon: "🎁" },
+  { value: "trauma", label: "创伤事件", icon: "💢" },
+  { value: "achievement", label: "成就达成", icon: "🏆" },
+  { value: "death", label: "死亡", icon: "💀" },
+  { value: "other", label: "其他", icon: "📝" },
 ];
 
 export function CharacterDialog({
@@ -49,77 +68,79 @@ export function CharacterDialog({
   onSubmit,
   onCancel,
 }: CharacterDialogProps) {
-  const [activeTab, setActiveTab] = useState<'basic' | 'personality' | 'ability' | 'timeline'>('basic');
-  const [name, setName] = useState('');
-  const [roleType, setRoleType] = useState('');
-  const [race, setRace] = useState('');
+  const [activeTab, setActiveTab] = useState<"basic" | "personality" | "ability" | "timeline">(
+    "basic"
+  );
+  const [name, setName] = useState("");
+  const [roleType, setRoleType] = useState("");
+  const [race, setRace] = useState("");
   const [age, setAge] = useState<number | undefined>();
-  const [gender, setGender] = useState('');
-  const [birthDate, setBirthDate] = useState('');
-  const [appearance, setAppearance] = useState('');
-  const [personality, setPersonality] = useState('');
-  const [background, setBackground] = useState('');
-  const [skills, setSkills] = useState('');
-  const [status, setStatus] = useState('');
-  const [bazi, setBazi] = useState('');
-  const [ziwei, setZiwei] = useState('');
-  const [mbti, setMbti] = useState('');
-  const [enneagram, setEnneagram] = useState('');
-  const [items, setItems] = useState('');
+  const [gender, setGender] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [appearance, setAppearance] = useState("");
+  const [personality, setPersonality] = useState("");
+  const [background, setBackground] = useState("");
+  const [skills, setSkills] = useState("");
+  const [status, setStatus] = useState("");
+  const [bazi, setBazi] = useState("");
+  const [ziwei, setZiwei] = useState("");
+  const [mbti, setMbti] = useState("");
+  const [enneagram, setEnneagram] = useState("");
+  const [items, setItems] = useState("");
 
   const [timelineEvents, setTimelineEvents] = useState<CharacterTimelineEvent[]>([]);
   const [isLoadingTimeline, setIsLoadingTimeline] = useState(false);
   const [showEventForm, setShowEventForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CharacterTimelineEvent | null>(null);
   const [eventForm, setEventForm] = useState({
-    event_type: 'milestone',
-    event_title: '',
-    event_description: '',
-    story_time: '',
-    emotional_state: '',
-    state_changes: '',
+    event_type: "milestone",
+    event_title: "",
+    event_description: "",
+    story_time: "",
+    emotional_state: "",
+    state_changes: "",
   });
 
   useEffect(() => {
     if (isOpen) {
       if (character) {
         setName(character.name);
-        setRoleType(character.role_type || '');
-        setRace(character.race || '');
+        setRoleType(character.role_type || "");
+        setRace(character.race || "");
         setAge(character.age);
-        setGender(character.gender || '');
-        setBirthDate(character.birth_date || '');
-        setAppearance(character.appearance || '');
-        setPersonality(character.personality || '');
-        setBackground(character.background || '');
-        setSkills(character.skills || '');
-        setStatus(character.status || '');
-        setBazi(character.bazi || '');
-        setZiwei(character.ziwei || '');
-        setMbti(character.mbti || '');
-        setEnneagram(character.enneagram || '');
-        setItems(character.items || '');
+        setGender(character.gender || "");
+        setBirthDate(character.birth_date || "");
+        setAppearance(character.appearance || "");
+        setPersonality(character.personality || "");
+        setBackground(character.background || "");
+        setSkills(character.skills || "");
+        setStatus(character.status || "");
+        setBazi(character.bazi || "");
+        setZiwei(character.ziwei || "");
+        setMbti(character.mbti || "");
+        setEnneagram(character.enneagram || "");
+        setItems(character.items || "");
         loadTimelineEvents(character.id);
       } else {
-        setName(initialName || '');
-        setRoleType('');
-        setRace('');
+        setName(initialName || "");
+        setRoleType("");
+        setRace("");
         setAge(undefined);
-        setGender('');
-        setBirthDate('');
-        setAppearance('');
-        setPersonality('');
-        setBackground('');
-        setSkills('');
-        setStatus('');
-        setBazi('');
-        setZiwei('');
-        setMbti('');
-        setEnneagram('');
-        setItems('');
+        setGender("");
+        setBirthDate("");
+        setAppearance("");
+        setPersonality("");
+        setBackground("");
+        setSkills("");
+        setStatus("");
+        setBazi("");
+        setZiwei("");
+        setMbti("");
+        setEnneagram("");
+        setItems("");
         setTimelineEvents([]);
       }
-      setActiveTab('basic');
+      setActiveTab("basic");
       setShowEventForm(false);
       setEditingEvent(null);
     }
@@ -128,12 +149,12 @@ export function CharacterDialog({
   const loadTimelineEvents = async (characterId: string) => {
     setIsLoadingTimeline(true);
     try {
-      const events = await invoke<CharacterTimelineEvent[]>('get_character_timeline', {
+      const events = await invoke<CharacterTimelineEvent[]>("get_character_timeline", {
         characterId,
       });
       setTimelineEvents(events);
     } catch (error) {
-      console.error('Failed to load timeline events:', error);
+      console.error("Failed to load timeline events:", error);
       setTimelineEvents([]);
     } finally {
       setIsLoadingTimeline(false);
@@ -155,13 +176,13 @@ export function CharacterDialog({
         sort_order: timelineEvents.length,
       };
 
-      const newEvent = await invoke<CharacterTimelineEvent>('create_character_timeline_event', {
+      const newEvent = await invoke<CharacterTimelineEvent>("create_character_timeline_event", {
         request,
       });
       setTimelineEvents([...timelineEvents, newEvent]);
       resetEventForm();
     } catch (error) {
-      console.error('Failed to create event:', error);
+      console.error("Failed to create event:", error);
     }
   };
 
@@ -169,37 +190,32 @@ export function CharacterDialog({
     if (!editingEvent) return;
 
     try {
-      const updatedEvent = await invoke<CharacterTimelineEvent>(
-        'update_character_timeline_event',
-        {
-          eventId: editingEvent.id,
-          request: {
-            event_type: eventForm.event_type,
-            event_title: eventForm.event_title,
-            event_description: eventForm.event_description,
-            story_time: eventForm.story_time || null,
-            emotional_state: eventForm.emotional_state || null,
-            state_changes: eventForm.state_changes || null,
-          },
-        }
-      );
-      setTimelineEvents(
-        timelineEvents.map((e) => (e.id === updatedEvent.id ? updatedEvent : e))
-      );
+      const updatedEvent = await invoke<CharacterTimelineEvent>("update_character_timeline_event", {
+        eventId: editingEvent.id,
+        request: {
+          event_type: eventForm.event_type,
+          event_title: eventForm.event_title,
+          event_description: eventForm.event_description,
+          story_time: eventForm.story_time || null,
+          emotional_state: eventForm.emotional_state || null,
+          state_changes: eventForm.state_changes || null,
+        },
+      });
+      setTimelineEvents(timelineEvents.map((e) => (e.id === updatedEvent.id ? updatedEvent : e)));
       resetEventForm();
     } catch (error) {
-      console.error('Failed to update event:', error);
+      console.error("Failed to update event:", error);
     }
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (!confirm('确定要删除这个事件吗？')) return;
+    if (!confirm("确定要删除这个事件吗？")) return;
 
     try {
-      await invoke('delete_character_timeline_event', { eventId });
+      await invoke("delete_character_timeline_event", { eventId });
       setTimelineEvents(timelineEvents.filter((e) => e.id !== eventId));
     } catch (error) {
-      console.error('Failed to delete event:', error);
+      console.error("Failed to delete event:", error);
     }
   };
 
@@ -207,12 +223,12 @@ export function CharacterDialog({
     setShowEventForm(false);
     setEditingEvent(null);
     setEventForm({
-      event_type: 'milestone',
-      event_title: '',
-      event_description: '',
-      story_time: '',
-      emotional_state: '',
-      state_changes: '',
+      event_type: "milestone",
+      event_title: "",
+      event_description: "",
+      story_time: "",
+      emotional_state: "",
+      state_changes: "",
     });
   };
 
@@ -222,9 +238,9 @@ export function CharacterDialog({
       event_type: event.event_type,
       event_title: event.event_title,
       event_description: event.event_description,
-      story_time: event.story_time || '',
-      emotional_state: event.emotional_state || '',
-      state_changes: event.state_changes || '',
+      story_time: event.story_time || "",
+      emotional_state: event.emotional_state || "",
+      state_changes: event.state_changes || "",
     });
     setShowEventForm(true);
   };
@@ -262,16 +278,14 @@ export function CharacterDialog({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-background rounded-lg shadow-lg w-full max-w-4xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
-        <h2 className="text-lg font-semibold mb-4">
-          {character ? '编辑角色' : '新建角色'}
-        </h2>
+        <h2 className="text-lg font-semibold mb-4">{character ? "编辑角色" : "新建角色"}</h2>
 
         <div className="flex border-b border-gray-200 mb-4">
           {[
-            { id: 'basic', label: '基本信息', icon: '👤' },
-            { id: 'personality', label: '性格分析', icon: '🧠' },
-            { id: 'ability', label: '能力装备', icon: '⚔️' },
-            { id: 'timeline', label: '事件时间线', icon: '📅' },
+            { id: "basic", label: "基本信息", icon: "👤" },
+            { id: "personality", label: "性格分析", icon: "🧠" },
+            { id: "ability", label: "能力装备", icon: "⚔️" },
+            { id: "timeline", label: "事件时间线", icon: "📅" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -279,8 +293,8 @@ export function CharacterDialog({
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
               {tab.icon} {tab.label}
@@ -289,7 +303,7 @@ export function CharacterDialog({
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-          {activeTab === 'basic' && (
+          {activeTab === "basic" && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -334,7 +348,7 @@ export function CharacterDialog({
                   <label className="block text-sm font-medium mb-1">年龄</label>
                   <input
                     type="number"
-                    value={age || ''}
+                    value={age || ""}
                     onChange={(e) => setAge(e.target.value ? parseInt(e.target.value) : undefined)}
                     className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   />
@@ -397,7 +411,7 @@ export function CharacterDialog({
             </div>
           )}
 
-          {activeTab === 'personality' && (
+          {activeTab === "personality" && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -456,7 +470,7 @@ export function CharacterDialog({
             </div>
           )}
 
-          {activeTab === 'ability' && (
+          {activeTab === "ability" && (
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">技能列表</label>
@@ -493,7 +507,7 @@ export function CharacterDialog({
             </div>
           )}
 
-          {activeTab === 'timeline' && (
+          {activeTab === "timeline" && (
             <div className="space-y-4">
               {!character ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -615,7 +629,7 @@ export function CharacterDialog({
                           disabled={!eventForm.event_title.trim()}
                           className="px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
                         >
-                          {editingEvent ? '更新' : '添加'}
+                          {editingEvent ? "更新" : "添加"}
                         </button>
                       </div>
                     </div>
@@ -715,7 +729,7 @@ export function CharacterDialog({
               disabled={!name.trim()}
               className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {character ? '更新' : '创建'}
+              {character ? "更新" : "创建"}
             </button>
           </div>
         </form>
