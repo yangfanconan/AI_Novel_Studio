@@ -236,8 +236,11 @@ await invoke('save_chapter', {
 
 // AI 续写
 const result = await invoke('ai_continue_novel', {
-  content: '前文内容...',
-  model: 'default'
+  request: {
+    model_id: 'default',
+    context: '前文内容...',
+    instruction: '请继续写下去'
+  }
 });`}
                   </code>
                 </pre>

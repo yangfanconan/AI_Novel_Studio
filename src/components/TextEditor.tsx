@@ -17,6 +17,7 @@ interface TextEditorProps {
   characters?: Character[];
   onCreateCharacter?: (name: string) => void;
   onCreateWorldView?: (title: string) => void;
+  chapterMissionId?: string;
 }
 
 export const TextEditor: React.FC<TextEditorProps> = ({
@@ -31,6 +32,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
   characters = [],
   onCreateCharacter,
   onCreateWorldView,
+  chapterMissionId,
 }) => {
   const [localContent, setLocalContent] = useState(content);
   const [showAssistant, setShowAssistant] = useState(false);
@@ -132,6 +134,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
             chapters={chapters}
             currentChapterId={currentChapterId}
             characters={characters}
+            chapterMissionId={chapterMissionId}
           />
 
           {/* Editor */}

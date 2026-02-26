@@ -42,6 +42,24 @@
 - **多模型支持** - OpenAI、Ollama 本地模型适配
 - **提示词管理** - 自定义 AI 提示词模板
 
+### 🎭 智能写作引擎（L1-L3 三层架构）
+- **L1 规划层（蓝图系统）**
+  - 项目蓝图管理 - 定义整体创作方向和风格
+  - 角色关系图谱 - 可视化角色关系网络
+  - 世界观设定 - 构建完整的世界规则体系
+- **L2 导演层（章节导演）**
+  - 章节导演脚本 - 为每章定义创作目标、基调、节奏
+  - 宏观/微观节拍 - 精细控制章节情节点
+  - 跨章节拍选择 - 从大纲关联节拍到章节
+  - 后置护栏检查 - 自动检查内容合规性（长度、禁止角色/话题）
+- **L3 写作层（智能执行）**
+  - 导演脚本注入 - AI写作时自动加载章节导演指令
+  - 信息可见性过滤 - 自动过滤禁止角色，防止信息泄露
+  - 向量检索（RAG）- 语义搜索相关章节内容作为上下文
+  - 章节向量化 - 自动将章节分块存储到向量数据库
+  - 自动摘要生成 - AI 自动生成章节摘要
+  - AI 多版本评审 - 生成多版本内容并自动评估
+
 ### 🎬 影视化创作工具 (moyin-creator 集成)
 - **Seedance 2.0** - 多模态参考（图片/视频/音频）构建 AI 提示词
 - **分镜系统** - 专业分镜编辑器，支持 12 种镜头类型、6 种拍摄角度、16 种运镜方式
@@ -156,6 +174,10 @@ npm run tauri build
 | 情节大纲 | 树状结构/情节点 | ✅ |
 | AI 续写 | 流式输出/多模型 | ✅ |
 | AI 改写 | 风格调整/内容优化 | ✅ |
+| **智能写作引擎** | **L1-L3 三层架构** | ✅ |
+| ├─ L1 规划层 | 蓝图/角色关系/世界观 | ✅ |
+| ├─ L2 导演层 | 章节导演脚本/节拍/护栏 | ✅ |
+| └─ L3 写作层 | RAG检索/向量化/摘要 | ✅ |
 | 多媒体生成 | 分镜/剧本/插画 | ✅ |
 | ComfyUI | 工作流管理 | ✅ |
 | Seedance | 多模态提示词 | ✅ |
@@ -282,7 +304,25 @@ A professional, full-featured AI novel creation studio integrating intelligent w
 - **Multi-Model Support** - OpenAI, Ollama local model adapters
 - **Prompt Management** - Custom AI prompt templates
 
-### 🎬 Cinematic Creation Tools (moyin-creator Integration)
+### � Intelligent Writing Engine (L1-L3 Three-Layer Architecture)
+- **L1 Planning Layer (Blueprint System)**
+  - Project Blueprint Management - Define overall creative direction and style
+  - Character Relationship Graph - Visualize character relationship networks
+  - World View Settings - Build complete world rule systems
+- **L2 Director Layer (Chapter Director)**
+  - Chapter Director Script - Define creative goals, tone, and pace for each chapter
+  - Macro/Micro Beats - Fine-grained control of chapter plot points
+  - Cross-Chapter Beat Selection - Associate beats from outline to chapters
+  - Post Guardrails Check - Automatic content compliance checking (length, forbidden characters/topics)
+- **L3 Writing Layer (Intelligent Execution)**
+  - Director Script Injection - Automatically load chapter director instructions during AI writing
+  - Information Visibility Filtering - Automatically filter forbidden characters to prevent info leakage
+  - Vector Retrieval (RAG) - Semantic search for relevant chapter content as context
+  - Chapter Vectorization - Automatically chunk and store chapters in vector database
+  - Auto Summary Generation - AI automatically generates chapter summaries
+  - AI Multi-Version Review - Generate multiple versions and automatically evaluate
+
+### �� Cinematic Creation Tools (moyin-creator Integration)
 - **Seedance 2.0** - Multi-modal reference (image/video/audio) for AI prompt building
 - **Storyboard System** - Professional storyboard editor with 12 shot types, 6 camera angles, 16 movements
 - **ComfyUI Integration** - AI image generation workflow support
@@ -396,6 +436,10 @@ Build artifacts are located in `src-tauri/target/release/bundle/`
 | Plot Outlining | Tree Structure/Plot Points | ✅ |
 | AI Continuation | Streaming/Multi-Model | ✅ |
 | AI Rewriting | Style Adjustment/Optimization | ✅ |
+| **Intelligent Writing Engine** | **L1-L3 Three-Layer Architecture** | ✅ |
+| ├─ L1 Planning Layer | Blueprint/Relations/World View | ✅ |
+| ├─ L2 Director Layer | Chapter Director/Beats/Guardrails | ✅ |
+| └─ L3 Writing Layer | RAG/Vectorization/Summary | ✅ |
 | Multimedia Generation | Storyboard/Script/Illustration | ✅ |
 | ComfyUI | Workflow Management | ✅ |
 | Seedance | Multi-modal Prompts | ✅ |

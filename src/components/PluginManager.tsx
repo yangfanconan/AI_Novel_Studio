@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Plugin, PluginCommand, PermissionStatus } from "../types/plugin";
 import { PluginDevGuideDialog } from "./PluginDevGuideDialog";
+import InstallPluginDialog from "./InstallPluginDialog";
 
 interface PluginManagerProps {
   onClose?: () => void;
@@ -640,74 +641,6 @@ function PermissionsPanel({ pluginId, permissions, onRefresh }: PermissionsPanel
           </div>
         ))
       )}
-    </div>
-  );
-}
-
-function InstallPluginDialog({
-  onClose,
-  onInstall,
-}: {
-  onClose: () => void;
-  onInstall: () => void;
-}) {
-  const [pluginPath, setPluginPath] = useState("");
-  const [installing, setInstalling] = useState(false);
-
-  const handleInstall = async () => {
-    if (!pluginPath.trim()) {
-      alert("请输入插件路径");
-      return;
-    }
-
-    setInstalling(true);
-    try {
-      await invoke("plugin_install", { pluginPath });
-      await onInstall();
-    } catch (error) {
-      console.error("Failed to install plugin:", error);
-      alert(`安装失败: ${error}`);
-    } finally {
-      setInstalling(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-background rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-semibold mb-4">安装插件</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">插件路径</label>
-            <input
-              type="text"
-              value={pluginPath}
-              onChange={(e) => setPluginPath(e.target.value)}
-              placeholder="输入插件目录或 plugin.json 文件路径"
-              className="w-full px-4 py-2 border border-border rounded-lg bg-background"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              支持插件目录或包含 plugin.json 的目录
-            </p>
-          </div>
-        </div>
-        <div className="flex justify-end gap-2 mt-6">
-          <button
-            onClick={onClose}
-            disabled={installing}
-            className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/80 disabled:opacity-50"
-          >
-            取消
-          </button>
-          <button
-            onClick={handleInstall}
-            disabled={installing}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50"
-          >
-            {installing ? "安装中..." : "安装"}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

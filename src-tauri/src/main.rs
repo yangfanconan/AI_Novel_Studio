@@ -40,6 +40,7 @@ use cloud_sync_commands::CloudSyncState;
 use multimedia_generation_commands::MultimediaState;
 use collaboration_commands::CollaborationState;
 use rusqlite::params;
+use uuid::Uuid;
 
 fn load_api_key_from_db(db_path: &std::path::PathBuf, provider: &str) -> Option<String> {
     let conn = database::get_connection(db_path).ok()?;
@@ -398,6 +399,39 @@ fn main() {
             ai::seedance_2_0::seedance_create_grid,
             ai::seedance_2_0::seedance_validate_grid,
             ai::seedance_2_0::seedance_prepare_narrative_video,
+            // 章节版本和评估命令
+            commands::generate_chapter_versions,
+            commands::select_chapter_version,
+            commands::evaluate_chapter,
+            // 伏笔追踪命令
+            commands::create_foreshadowing,
+            commands::get_foreshadowings,
+            commands::resolve_foreshadowing,
+            commands::get_foreshadowing_stats,
+            // 情感曲线命令
+            commands::calculate_emotion_curve,
+            // 优化器命令
+            commands::optimize_chapter,
+            // 蓝图命令（L1规划层）
+            commands::create_blueprint,
+            commands::get_blueprint,
+            commands::update_blueprint,
+            // 导演脚本命令（L2导演层）
+            commands::create_chapter_mission,
+            commands::get_chapter_mission,
+            commands::update_chapter_mission,
+            commands::generate_chapter_mission_with_ai,
+            commands::get_story_beats,
+            // 后置护栏命令（L2导演层）
+            commands::create_chapter_guardrails,
+            commands::get_chapter_guardrails,
+            commands::update_chapter_guardrails,
+            commands::check_content_against_guardrails,
+            // 向量存储命令（L3写作层）
+            commands::vectorize_chapter,
+            commands::search_chunks,
+            // 自动摘要命令（L3写作层）
+            commands::generate_chapter_summary,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

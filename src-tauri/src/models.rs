@@ -45,6 +45,55 @@ pub struct Chapter {
     pub status: String,
     pub created_at: String,
     pub updated_at: String,
+    #[serde(default)]
+    pub versions: Option<Vec<ChapterVersion>>,
+    #[serde(default)]
+    pub evaluation: Option<ChapterEvaluation>,
+    #[serde(default)]
+    pub generation_status: Option<String>,
+    #[serde(default)]
+    pub summary: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ChapterVersion {
+    pub content: String,
+    pub style: String,
+    pub created_at: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ChapterEvaluation {
+    pub score: f32,
+    pub coherence: f32,
+    pub style_consistency: f32,
+    pub character_consistency: f32,
+    pub plot_advancement: f32,
+    pub summary: String,
+    pub suggestions: Vec<String>,
+    pub evaluated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GenerateChapterVersionsRequest {
+    pub project_id: String,
+    pub chapter_id: String,
+    pub context: String,
+    pub num_versions: Option<i32>,
+    pub style: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EvaluateChapterRequest {
+    pub project_id: String,
+    pub chapter_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SelectChapterVersionRequest {
+    pub project_id: String,
+    pub chapter_id: String,
+    pub version_index: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -555,4 +604,325 @@ pub struct SearchKnowledgeRequest {
     pub query: String,
     pub entry_types: Option<Vec<String>>,
     pub limit: Option<i32>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Foreshadowing {
+    pub id: String,
+    pub project_id: String,
+    pub chapter_id: String,
+    pub chapter_number: i32,
+    pub chapter_title: String,
+    pub description: String,
+    pub foreshadowing_type: String,
+    pub keywords: Vec<String>,
+    pub status: Option<String>,
+    pub importance: Option<String>,
+    pub expected_payoff_chapter: Option<i32>,
+    pub actual_payoff_chapter: Option<i32>,
+    pub author_note: Option<String>,
+    pub ai_confidence: Option<f32>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateForeshadowingRequest {
+    pub project_id: String,
+    pub chapter_id: String,
+    pub chapter_number: i32,
+    pub chapter_title: String,
+    pub description: String,
+    pub foreshadowing_type: String,
+    pub keywords: Option<Vec<String>>,
+    pub importance: Option<String>,
+    pub expected_payoff_chapter: Option<i32>,
+    pub author_note: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateForeshadowingRequest {
+    pub description: Option<String>,
+    pub status: Option<String>,
+    pub expected_payoff_chapter: Option<i32>,
+    pub actual_payoff_chapter: Option<i32>,
+    pub author_note: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ResolveForeshadowingRequest {
+    pub foreshadowing_id: String,
+    pub actual_payoff_chapter: i32,
+    pub resolution_text: String,
+    pub quality_score: Option<i32>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ForeshadowingStats {
+    pub total_foreshadowings: i32,
+    pub planted_count: i32,
+    pub paid_off_count: i32,
+    pub overdue_count: i32,
+    pub unresolved_count: i32,
+    pub abandoned_count: i32,
+    pub avg_resolution_distance: f32,
+    pub recommendations: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EmotionCurveRequest {
+    pub project_id: String,
+    pub arc_type: String,
+    pub total_chapters: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct EmotionCurveData {
+    pub chapter_number: i32,
+    pub chapter_title: String,
+    pub position: f32,
+    pub phase_name: String,
+    pub emotion_target: f32,
+    pub emotion_range: (i32, i32),
+    pub pacing: String,
+    pub thrill_density: f32,
+    pub dialogue_ratio: f32,
+    pub recommendations: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EmotionCurveResponse {
+    pub arc_type: String,
+    pub total_chapters: i32,
+    pub curve_data: Vec<EmotionCurveData>,
+    pub overall_stats: EmotionCurveStats,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct EmotionCurveStats {
+    pub avg_emotion: f32,
+    pub emotion_variance: f32,
+    pub climax_chapters: Vec<i32>,
+    pub pacing_balance: f32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct OptimizeChapterRequest {
+    pub project_id: String,
+    pub chapter_id: String,
+    pub dimension: String,
+    pub additional_notes: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct OptimizeChapterResponse {
+    pub optimized_content: String,
+    pub optimization_notes: String,
+    pub dimension: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Blueprint {
+    pub id: String,
+    pub project_id: String,
+    pub title: String,
+    pub genre: Option<String>,
+    pub target_length: Option<i32>,
+    pub characters: Vec<BlueprintCharacter>,
+    pub relationships: Vec<BlueprintRelationship>,
+    pub settings: Vec<BlueprintSetting>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BlueprintCharacter {
+    pub name: String,
+    pub role: Option<String>,
+    pub personality: Option<String>,
+    pub background: Option<String>,
+    pub arc_type: Option<String>,
+    pub is_main_character: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BlueprintRelationship {
+    pub from: String,
+    pub to: String,
+    pub relationship_type: String,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BlueprintSetting {
+    pub category: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub details: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateBlueprintRequest {
+    pub project_id: String,
+    pub title: String,
+    pub genre: Option<String>,
+    pub target_length: Option<i32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateBlueprintRequest {
+    pub blueprint_id: String,
+    pub title: Option<String>,
+    pub genre: Option<String>,
+    pub target_length: Option<i32>,
+    pub characters: Option<Vec<BlueprintCharacter>>,
+    pub relationships: Option<Vec<BlueprintRelationship>>,
+    pub settings: Option<Vec<BlueprintSetting>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ChapterMission {
+    pub id: String,
+    pub chapter_id: String,
+    pub chapter_number: i32,
+    pub macro_beat: String,
+    pub micro_beats: Vec<String>,
+    pub pov: Option<String>,
+    pub tone: Option<String>,
+    pub pacing: Option<String>,
+    pub allowed_new_characters: Vec<String>,
+    pub forbidden_characters: Vec<String>,
+    pub beat_id: Option<String>,
+    pub created_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateChapterMissionRequest {
+    pub chapter_id: String,
+    pub chapter_number: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateChapterMissionRequest {
+    pub mission_id: String,
+    pub macro_beat: Option<String>,
+    pub micro_beats: Option<Vec<String>>,
+    pub pov: Option<String>,
+    pub tone: Option<String>,
+    pub pacing: Option<String>,
+    pub allowed_new_characters: Option<Vec<String>>,
+    pub forbidden_characters: Option<Vec<String>>,
+    pub beat_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct StoryBeat {
+    pub id: String,
+    pub outline_node_id: String,
+    pub title: String,
+    pub description: String,
+    pub chapter_number: i32,
+    pub beat_type: String,
+    pub status: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ChapterGuardrails {
+    pub id: String,
+    pub chapter_id: String,
+    pub chapter_number: i32,
+    pub forbidden_characters: Vec<String>,
+    pub forbidden_topics: Vec<String>,
+    pub forbidden_emojis: Vec<String>,
+    pub min_length: i32,
+    pub max_length: i32,
+    pub required_beat_completion: bool,
+    pub created_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateChapterGuardrailsRequest {
+    pub chapter_id: String,
+    pub chapter_number: i32,
+    pub forbidden_characters: Option<Vec<String>>,
+    pub forbidden_topics: Option<Vec<String>>,
+    pub forbidden_emojis: Option<Vec<String>>,
+    pub min_length: Option<i32>,
+    pub max_length: Option<i32>,
+    pub required_beat_completion: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateChapterGuardrailsRequest {
+    pub guardrails_id: String,
+    pub forbidden_characters: Option<Vec<String>>,
+    pub forbidden_topics: Option<Vec<String>>,
+    pub forbidden_emojis: Option<Vec<String>>,
+    pub min_length: Option<i32>,
+    pub max_length: Option<i32>,
+    pub required_beat_completion: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CheckContentAgainstGuardrailsRequest {
+    pub chapter_id: String,
+    pub content: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GuardrailViolation {
+    #[serde(rename = "type")]
+    pub violation_type: String,
+    pub message: String,
+    pub severity: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CheckContentAgainstGuardrailsResponse {
+    pub passed: bool,
+    pub violations: Vec<GuardrailViolation>,
+    pub suggestions: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct VectorChunk {
+    pub id: String,
+    pub chapter_id: String,
+    pub chunk_index: i32,
+    pub content: String,
+    pub metadata: String,
+    pub created_at: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct VectorizeChapterRequest {
+    pub chapter_id: String,
+    pub chunk_size: Option<i32>,
+    pub overlap: Option<i32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct VectorizeChapterResponse {
+    pub chunks_created: i32,
+    pub chapter_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SearchChunksRequest {
+    pub query: String,
+    pub chapter_id: Option<String>,
+    pub project_id: Option<String>,
+    pub top_k: Option<i32>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ChunkSearchResult {
+    pub chunk: VectorChunk,
+    pub similarity: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SearchChunksResponse {
+    pub results: Vec<ChunkSearchResult>,
+    pub query: String,
 }

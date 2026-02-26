@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   Settings,
   Layers,
@@ -9,6 +9,9 @@ import {
   Puzzle,
   Film,
   User,
+  BookOpen,
+  Sparkles,
+  TrendingUp,
 } from "lucide-react";
 import { TextEditor } from "./components/TextEditor";
 import { ProjectList } from "./components/ProjectList";
@@ -45,6 +48,12 @@ import ComfyUIPanel from "./components/ComfyUIPanel";
 import WorkflowTemplateEditor from "./components/WorkflowTemplateEditor";
 import SeedancePanel from "./components/SeedancePanel";
 import StoryboardEditor from "./components/StoryboardEditor";
+import ChapterVersionPanel from "./components/ChapterVersionPanel";
+import ForeshadowingPanel from "./components/ForeshadowingPanel";
+import { EmotionCurvePanel } from "./components/EmotionCurvePanel";
+import { ChapterOptimizerPanel } from "./components/ChapterOptimizerPanel";
+import { BlueprintEditor } from "./components/BlueprintEditor";
+import { ChapterMissionPanel } from "./components/ChapterMissionPanel";
 import { useProjectStore } from "./stores/projectStore";
 import {
   projectService,
@@ -61,8 +70,10 @@ import type {
   Character,
   PlotPointNode,
   WorldView,
+  Chapter,
 } from "./types";
 import { invoke } from "@tauri-apps/api/core";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 
 function App() {
   const {
@@ -109,10 +120,16 @@ function App() {
   const [isWorkflowEditorOpen, setIsWorkflowEditorOpen] = useState(false);
   const [isSeedancePanelOpen, setIsSeedancePanelOpen] = useState(false);
   const [isStoryboardEditorOpen, setIsStoryboardEditorOpen] = useState(false);
+  const [isChapterVersionPanelOpen, setIsChapterVersionPanelOpen] = useState(false);
+  const [isChapterOptimizerOpen, setIsChapterOptimizerOpen] = useState(false);
+  const [isBlueprintEditorOpen, setIsBlueprintEditorOpen] = useState(false);
+  const [isChapterMissionPanelOpen, setIsChapterMissionPanelOpen] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | undefined>();
   const [editingScene, setEditingScene] = useState<any>(null);
   const [exportProjectId, setExportProjectId] = useState<string | null>(null);
   const [exportChapterId, setExportChapterId] = useState<string | null>(null);
+  const [blueprint, setBlueprint] = useState<any>(null);
+  const [currentChapterMissionId, setCurrentChapterMissionId] = useState<string | null>(null);
 
   useEffect(() => {
     uiLogger.mount("App");
@@ -124,7 +141,7 @@ function App() {
 
   const [editorContent, setEditorContent] = useState("");
   const [rightPanelTab, setRightPanelTab] = useState<
-    "chapters" | "plot" | "worldview" | "relations" | "knowledge" | "moyin"
+    "chapters" | "plot" | "worldview" | "relations" | "knowledge" | "foreshadowing" | "emotion" | "moyin"
   >("chapters");
   const [isPlotPointEditorOpen, setIsPlotPointEditorOpen] = useState(false);
   const [editingPlotPoint, setEditingPlotPoint] = useState<PlotPointNode | null>(null);
@@ -282,10 +299,19 @@ function App() {
     }
   };
 
-  const handleSelectChapter = (chapter: typeof currentChapter) => {
+  const handleSelectChapter = async (chapter: typeof currentChapter) => {
     if (chapter) {
       setCurrentChapter(chapter);
       setEditorContent(chapter.content);
+      
+      try {
+        const mission = await invoke<any>("get_chapter_mission", {
+          chapterId: chapter.id,
+        });
+        setCurrentChapterMissionId(mission?.id || null);
+      } catch (error) {
+        setCurrentChapterMissionId(null);
+      }
     }
   };
 
@@ -372,6 +398,37 @@ function App() {
       showToast("保存失败，请重试", "error");
     }
   };
+
+  const cycleRightPanelTab = useCallback(() => {
+    const tabs: Array<typeof rightPanelTab> = ["chapters", "plot", "worldview", "relations", "knowledge", "foreshadowing", "emotion", "moyin"];
+    const currentIndex = tabs.indexOf(rightPanelTab);
+    const nextIndex = (currentIndex + 1) % tabs.length;
+    setRightPanelTab(tabs[nextIndex]);
+  }, [rightPanelTab]);
+
+  const closeAllDialogs = useCallback(() => {
+    if (isCreateProjectDialogOpen) setIsCreateProjectDialogOpen(false);
+    if (isChapterNameDialogOpen) setIsChapterNameDialogOpen(false);
+    if (isCharacterDialogOpen) setIsCharacterDialogOpen(false);
+    if (isModelSettingsDialogOpen) setIsModelSettingsDialogOpen(false);
+    if (isExportDialogOpen) setIsExportDialogOpen(false);
+    if (isImportDialogOpen) setIsImportDialogOpen(false);
+    if (isPlotPointEditorOpen) setIsPlotPointEditorOpen(false);
+    if (isWorldViewEditorOpen) setIsWorldViewEditorOpen(false);
+  }, [isCreateProjectDialogOpen, isChapterNameDialogOpen, isCharacterDialogOpen, 
+      isModelSettingsDialogOpen, isExportDialogOpen, isImportDialogOpen, 
+      isPlotPointEditorOpen, isWorldViewEditorOpen]);
+
+  const shortcuts = [
+    { key: "s", ctrl: true, action: handleSaveChapter, description: "保存当前章节" },
+    { key: "n", ctrl: true, action: () => setIsCreateProjectDialogOpen(true), description: "新建项目" },
+    { key: "e", ctrl: true, action: () => currentProject && setIsExportDialogOpen(true), description: "导出" },
+    { key: ",", ctrl: true, action: () => setIsModelSettingsDialogOpen(true), description: "设置" },
+    { key: "]", ctrl: true, action: cycleRightPanelTab, description: "切换右侧面板" },
+    { key: "Escape", action: closeAllDialogs, description: "关闭对话框" },
+  ];
+
+  useKeyboardShortcuts(shortcuts, true);
 
   const handleCreateCharacter = () => {
     setEditingCharacter(undefined);
@@ -540,6 +597,18 @@ function App() {
     setIsExportDialogOpen(true);
   };
 
+  const handleOpenMission = async (chapter: Chapter) => {
+    setIsChapterMissionPanelOpen(true);
+    try {
+      const bp = await invoke<any>("get_blueprint", {
+        request: { project_id: currentProject!.id },
+      });
+      setBlueprint(bp);
+    } catch (error) {
+      console.error("Failed to load blueprint:", error);
+    }
+  };
+
   const handleCloseExportDialog = () => {
     setIsExportDialogOpen(false);
     setExportProjectId(null);
@@ -594,6 +663,9 @@ function App() {
             onOpenReverseAnalysis={() => {
               setIsReverseAnalysisOpen(true);
             }}
+            onOpenBlueprint={() => {
+              setIsBlueprintEditorOpen(true);
+            }}
             onOpenSettings={() => {
               setIsModelSettingsDialogOpen(true);
             }}
@@ -621,6 +693,7 @@ function App() {
               characters={characters}
               onCreateCharacter={handleQuickCreateCharacter}
               onCreateWorldView={handleQuickCreateWorldView}
+              chapterMissionId={currentChapterMissionId}
             />
           ) : currentProject ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -641,71 +714,90 @@ function App() {
       }
       rightPanel={
         <>
-          <div className="flex border-b border-border">
+          <div className="flex border-b border-border bg-muted/30">
             <button
               onClick={() => setRightPanelTab("chapters")}
-              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors ${
+              title="章节管理"
+              className={`flex-1 py-2.5 px-2 text-xs font-medium transition-all duration-200 flex flex-col items-center justify-center gap-0.5 rounded-t-lg mx-0.5 mt-1 ${
                 rightPanelTab === "chapters"
-                  ? "border-b-2 border-blue-500 text-blue-500"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  ? "bg-background text-primary shadow-sm border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               }`}
             >
-              章节
+              <BookOpen className="w-4 h-4" />
+              <span className="text-[10px]">章节</span>
             </button>
             <button
               onClick={() => setRightPanelTab("plot")}
-              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+              title="情节点管理"
+              className={`flex-1 py-2.5 px-2 text-xs font-medium transition-all duration-200 flex flex-col items-center justify-center gap-0.5 rounded-t-lg mx-0.5 mt-1 ${
                 rightPanelTab === "plot"
-                  ? "border-b-2 border-blue-500 text-blue-500"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  ? "bg-background text-primary shadow-sm border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               }`}
             >
               <Layers className="w-4 h-4" />
-              情节点
+              <span className="text-[10px]">情节</span>
             </button>
             <button
               onClick={() => setRightPanelTab("worldview")}
-              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+              title="世界观设定"
+              className={`flex-1 py-2.5 px-2 text-xs font-medium transition-all duration-200 flex flex-col items-center justify-center gap-0.5 rounded-t-lg mx-0.5 mt-1 ${
                 rightPanelTab === "worldview"
-                  ? "border-b-2 border-blue-500 text-blue-500"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  ? "bg-background text-primary shadow-sm border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               }`}
             >
               <Globe className="w-4 h-4" />
-              世界观
+              <span className="text-[10px]">世界观</span>
             </button>
             <button
               onClick={() => setRightPanelTab("relations")}
-              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+              title="角色关系图"
+              className={`flex-1 py-2.5 px-2 text-xs font-medium transition-all duration-200 flex flex-col items-center justify-center gap-0.5 rounded-t-lg mx-0.5 mt-1 ${
                 rightPanelTab === "relations"
-                  ? "border-b-2 border-blue-500 text-blue-500"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  ? "bg-background text-primary shadow-sm border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               }`}
             >
               <Network className="w-4 h-4" />
-              关系
+              <span className="text-[10px]">关系</span>
             </button>
             <button
               onClick={() => setRightPanelTab("knowledge")}
-              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+              title="知识库"
+              className={`flex-1 py-2.5 px-2 text-xs font-medium transition-all duration-200 flex flex-col items-center justify-center gap-0.5 rounded-t-lg mx-0.5 mt-1 ${
                 rightPanelTab === "knowledge"
-                  ? "border-b-2 border-blue-500 text-blue-500"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  ? "bg-background text-primary shadow-sm border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               }`}
             >
               <Database className="w-4 h-4" />
-              知识库
+              <span className="text-[10px]">知识</span>
+            </button>
+            <button
+              onClick={() => setRightPanelTab("foreshadowing")}
+              title="伏笔追踪"
+              className={`flex-1 py-2.5 px-2 text-xs font-medium transition-all duration-200 flex flex-col items-center justify-center gap-0.5 rounded-t-lg mx-0.5 mt-1 ${
+                rightPanelTab === "foreshadowing"
+                  ? "bg-background text-primary shadow-sm border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="text-[10px]">伏笔</span>
             </button>
             <button
               onClick={() => setRightPanelTab("moyin")}
-              className={`flex-1 py-2 px-3 text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+              title="影视制作工具"
+              className={`flex-1 py-2.5 px-2 text-xs font-medium transition-all duration-200 flex flex-col items-center justify-center gap-0.5 rounded-t-lg mx-0.5 mt-1 ${
                 rightPanelTab === "moyin"
-                  ? "border-b-2 border-blue-500 text-blue-500"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+                  ? "bg-background text-primary shadow-sm border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               }`}
             >
               <Film className="w-4 h-4" />
-              影视
+              <span className="text-[10px]">影视</span>
             </button>
           </div>
 
@@ -720,6 +812,9 @@ function App() {
                   onDeleteChapter={handleDeleteChapter}
                   onRenameChapter={() => setIsChapterRenameDialogOpen(true)}
                   onExportChapter={handleExportChapter}
+                  onOpenVersions={currentChapter ? () => setIsChapterVersionPanelOpen(true) : undefined}
+                  onOpenOptimizer={currentChapter ? () => setIsChapterOptimizerOpen(true) : undefined}
+                  onOpenMission={currentChapter ? handleOpenMission : undefined}
                 />
               </div>
               <div className="h-64 border-t border-border">
@@ -778,30 +873,50 @@ function App() {
                 </div>
               )}
             </div>
+          ) : rightPanelTab === "foreshadowing" ? (
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {currentProject ? (
+                <ForeshadowingPanel
+                  projectId={currentProject.id}
+                  chapterId={currentChapter?.id}
+                  chapterNumber={currentChapter ? chapters.indexOf(currentChapter) + 1 : undefined}
+                  chapterTitle={currentChapter?.title}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  <div className="text-center">
+                    <p className="text-lg">请先选择一个项目</p>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : rightPanelTab === "moyin" ? (
             <div className="flex-1 flex flex-col overflow-hidden">
               {currentProject ? (
                 <div className="flex flex-col h-full">
-                  <div className="flex border-b">
+                  <div className="flex flex-wrap gap-1 p-2 border-b bg-muted/20">
                     <button
                       onClick={() => setIsCharacterBibleOpen(true)}
-                      className="px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-1"
+                      title="角色圣经 - 管理角色深度设定"
+                      className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
                     >
-                      <User className="w-4 h-4" />
+                      <User className="w-3.5 h-3.5" />
                       角色圣经
                     </button>
                     <button
                       onClick={() => setIsBatchProductionOpen(true)}
-                      className="px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-1"
+                      title="批量生产 - 批量生成场景内容"
+                      className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
                     >
-                      <Film className="w-4 h-4" />
+                      <Film className="w-3.5 h-3.5" />
                       批量生产
                     </button>
                     <button
                       onClick={() => setIsComfyUIPanelOpen(true)}
-                      className="px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-1"
+                      title="ComfyUI - AI图像生成工作流"
+                      className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
                     >
-                      <Network className="w-4 h-4" />
+                      <Network className="w-3.5 h-3.5" />
                       ComfyUI
                     </button>
                     <button
@@ -809,24 +924,27 @@ function App() {
                         setEditingTemplateId(undefined);
                         setIsWorkflowEditorOpen(true);
                       }}
-                      className="px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-1"
+                      title="模板编辑器 - 创建工作流模板"
+                      className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
                     >
-                      <Puzzle className="w-4 h-4" />
-                      模板编辑器
+                      <Puzzle className="w-3.5 h-3.5" />
+                      模板
                     </button>
                     <button
                       onClick={() => setIsSeedancePanelOpen(true)}
-                      className="px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-1"
+                      title="Seedance 2.0 - AI视频生成"
+                      className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
                     >
-                      <Film className="w-4 h-4" />
-                      Seedance 2.0
+                      <Film className="w-3.5 h-3.5" />
+                      Seedance
                     </button>
                     <button
                       onClick={() => setIsStoryboardEditorOpen(true)}
-                      className="px-3 py-2 text-sm hover:bg-gray-100 flex items-center gap-1"
+                      title="分镜编辑器 - 可视化分镜管理"
+                      className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
                     >
-                      <Layers className="w-4 h-4" />
-                      分镜编辑器
+                      <Layers className="w-3.5 h-3.5" />
+                      分镜
                     </button>
                   </div>
                   <div className="flex-1 overflow-hidden">
@@ -1057,6 +1175,35 @@ function App() {
         </div>
       )}
 
+      {isChapterVersionPanelOpen && currentProject && currentChapter && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-background dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-4xl h-[80vh] overflow-hidden relative">
+            <button
+              onClick={() => setIsChapterVersionPanelOpen(false)}
+              className="absolute top-4 right-4 px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-md z-10 text-sm transition-colors"
+            >
+              关闭
+            </button>
+            <ChapterVersionPanel
+              chapter={currentChapter}
+              projectId={currentProject.id}
+              onUpdateChapter={(updatedChapter) => {
+                const index = chapters.findIndex(ch => ch.id === updatedChapter.id);
+                if (index >= 0) {
+                  const newChapters = [...chapters];
+                  newChapters[index] = updatedChapter;
+                  setChapters(newChapters);
+                  if (currentChapter?.id === updatedChapter.id) {
+                    setCurrentChapter(updatedChapter);
+                  }
+                }
+              }}
+              onClose={() => setIsChapterVersionPanelOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
       {isPluginManagerOpen && (
         <div className="fixed inset-0 bg-background z-50">
           <ErrorBoundary>
@@ -1089,6 +1236,75 @@ function App() {
             setInitialWorldViewTitle("");
           }}
         />
+      )}
+
+      {isChapterOptimizerOpen && currentProject && currentChapter && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-background dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-3xl h-[90vh] overflow-hidden relative">
+            <button
+              onClick={() => setIsChapterOptimizerOpen(false)}
+              className="absolute top-4 right-4 px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-md z-10 text-sm transition-colors"
+            >
+              关闭
+            </button>
+            <ChapterOptimizerPanel
+              chapterId={currentChapter.id}
+              projectId={currentProject.id}
+              chapterTitle={currentChapter.title}
+              onOptimizationApplied={(content) => {
+                const index = chapters.findIndex(ch => ch.id === currentChapter.id);
+                if (index >= 0) {
+                  const newChapters = [...chapters];
+                  newChapters[index] = { ...currentChapter, content };
+                  setChapters(newChapters);
+                  setCurrentChapter({ ...currentChapter, content });
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {isBlueprintEditorOpen && currentProject && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-background dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-5xl h-[90vh] overflow-hidden relative">
+            <button
+              onClick={() => setIsBlueprintEditorOpen(false)}
+              className="absolute top-4 right-4 px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-md z-10 text-sm transition-colors"
+            >
+              关闭
+            </button>
+            <BlueprintEditor
+              projectId={currentProject.id}
+              onClose={() => setIsBlueprintEditorOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {isChapterMissionPanelOpen && currentProject && currentChapter && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-background dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-4xl h-[85vh] overflow-hidden relative">
+            <button
+              onClick={() => setIsChapterMissionPanelOpen(false)}
+              className="absolute top-4 right-4 px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-md z-10 text-sm transition-colors"
+            >
+              关闭
+            </button>
+            <ChapterMissionPanel
+              projectId={currentProject.id}
+              chapterId={currentChapter.id}
+              chapterNumber={chapters.findIndex(ch => ch.id === currentChapter.id) + 1}
+              chapterTitle={currentChapter.title}
+              chapterOutline={undefined}
+              blueprint={blueprint}
+              onMissionUpdated={(mission) => {
+                console.log("Mission updated:", mission);
+                setCurrentChapterMissionId(mission.id);
+              }}
+            />
+          </div>
+        </div>
       )}
     </ResizableLayout>
   );

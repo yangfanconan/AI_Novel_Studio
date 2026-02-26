@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Plus,
   Folder,
@@ -15,6 +15,9 @@ import {
   List,
   Layers,
   SearchCode,
+  ChevronDown,
+  Wrench,
+  Sparkles,
 } from "lucide-react";
 import { projectService } from "../services/api";
 import { uiLogger } from "../utils/uiLogger";
@@ -35,10 +38,58 @@ interface ProjectListProps {
   onOpenOutline?: () => void;
   onOpenBatchGenerator?: () => void;
   onOpenReverseAnalysis?: () => void;
+  onOpenBlueprint?: () => void;
   onDeleteProject?: (projectId: string) => void;
   onRenameProject?: () => void;
   onExportProject?: (projectId: string) => void;
 }
+
+const DropdownMenu: React.FC<{
+  trigger: React.ReactNode;
+  children: React.ReactNode;
+  isOpen: boolean;
+  onToggle: () => void;
+}> = ({ trigger, children, isOpen, onToggle }) => {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        if (isOpen) onToggle();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen, onToggle]);
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <div onClick={onToggle}>{trigger}</div>
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-1 z-20 bg-popover border border-border rounded-lg shadow-lg py-1 min-w-[160px]">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const MenuItem: React.FC<{
+  icon?: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  variant?: "default" | "danger";
+}> = ({ icon, label, onClick, variant = "default" }) => (
+  <button
+    onClick={onClick}
+    className={`w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center gap-2 ${
+      variant === "danger" ? "text-destructive" : ""
+    }`}
+  >
+    {icon && <span className="w-4 h-4">{icon}</span>}
+    {label}
+  </button>
+);
 
 export const ProjectList: React.FC<ProjectListProps> = ({
   projects,
@@ -54,11 +105,13 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   onOpenOutline,
   onOpenBatchGenerator,
   onOpenReverseAnalysis,
+  onOpenBlueprint,
   onDeleteProject,
   onRenameProject,
   onExportProject,
 }) => {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [toolsMenuOpen, setToolsMenuOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{
     isOpen: boolean;
     projectId: string | null;
@@ -143,161 +196,179 @@ export const ProjectList: React.FC<ProjectListProps> = ({
 
   return (
     <div className="w-full h-full flex flex-col">
-      <div className="flex items-center justify-between px-2 py-3 border-b border-border gap-2">
-        <div className="flex items-center gap-2 min-w-0 shrink-0">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border gap-2 bg-gray-50/50">
+        <div className="flex items-center gap-2 min-w-0">
           <Folder className="w-5 h-5 text-primary shrink-0" />
-          <h2 className="text-lg font-semibold truncate">项目列表</h2>
+          <h2 className="text-base font-semibold truncate">项目列表</h2>
+          <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+            {projects.length}
+          </span>
         </div>
-        <div className="flex items-center gap-1 overflow-x-auto shrink-0">
+        <div className="flex items-center gap-1">
           <button
             onClick={onRefresh}
             className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
-            title="刷新项目列表"
+            title="刷新 (R)"
           >
             <RotateCcw className="w-4 h-4" />
           </button>
-          <button
-            onClick={() => {
-              if (onOpenPluginManager) {
-                onOpenPluginManager();
-                uiLogger.click("ProjectList", "open_plugin_manager");
-              }
-            }}
-            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
-            title="插件管理"
+
+          <DropdownMenu
+            isOpen={toolsMenuOpen}
+            onToggle={() => setToolsMenuOpen(!toolsMenuOpen)}
+            trigger={
+              <button
+                className="flex items-center gap-1 px-2 py-1.5 hover:bg-accent rounded-md transition-colors text-sm"
+                title="工具菜单"
+              >
+                <Wrench className="w-4 h-4" />
+                <ChevronDown className="w-3 h-3" />
+              </button>
+            }
           >
-            <Puzzle className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => {
-              if (onOpenImportDialog) {
-                onOpenImportDialog();
-                uiLogger.click("ProjectList", "open_import_dialog");
-              }
-            }}
-            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
-            title="导入文件"
-          >
-            <Upload className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => {
-              if (onOpenPromptTemplates) {
-                onOpenPromptTemplates();
-                uiLogger.click("ProjectList", "open_prompt_templates");
-              }
-            }}
-            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
-            title="提示词管理"
-          >
-            <FileText className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => {
-              if (onOpenMultimediaSettings) {
-                onOpenMultimediaSettings();
-                uiLogger.click("ProjectList", "open_multimedia_settings");
-              }
-            }}
-            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
-            title="多媒体设置"
-          >
-            <Image className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => {
-              if (onOpenOutline) {
-                onOpenOutline();
-                uiLogger.click("ProjectList", "open_outline");
-              }
-            }}
-            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
-            title="大纲管理"
-          >
-            <List className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => {
-              if (onOpenBatchGenerator) {
-                onOpenBatchGenerator();
-                uiLogger.click("ProjectList", "open_batch_generator");
-              }
-            }}
-            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
-            title="批量生成"
-          >
-            <Layers className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => {
-              if (onOpenReverseAnalysis) {
-                onOpenReverseAnalysis();
-                uiLogger.click("ProjectList", "open_reverse_analysis");
-              }
-            }}
-            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
-            title="逆向分析"
-          >
-            <SearchCode className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => {
-              if (onOpenSettings) {
-                onOpenSettings();
-                uiLogger.click("ProjectList", "open_settings");
-              }
-            }}
-            className="p-1.5 hover:bg-accent rounded-md transition-colors shrink-0"
-            title="设置"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
+            <div className="px-3 py-1.5 text-xs text-muted-foreground border-b border-border">
+              创作工具
+            </div>
+            <MenuItem
+              icon={<List className="w-4 h-4" />}
+              label="大纲管理"
+              onClick={() => {
+                onOpenOutline?.();
+                setToolsMenuOpen(false);
+              }}
+            />
+            <MenuItem
+              icon={<Layers className="w-4 h-4" />}
+              label="批量生成"
+              onClick={() => {
+                onOpenBatchGenerator?.();
+                setToolsMenuOpen(false);
+              }}
+            />
+            <MenuItem
+              icon={<SearchCode className="w-4 h-4" />}
+              label="逆向分析"
+              onClick={() => {
+                onOpenReverseAnalysis?.();
+                setToolsMenuOpen(false);
+              }}
+            />
+            <MenuItem
+              icon={<Layers className="w-4 h-4" />}
+              label="项目蓝图"
+              onClick={() => {
+                onOpenBlueprint?.();
+                setToolsMenuOpen(false);
+              }}
+            />
+            <div className="px-3 py-1.5 text-xs text-muted-foreground border-t border-b border-border">
+              系统设置
+            </div>
+            <MenuItem
+              icon={<FileText className="w-4 h-4" />}
+              label="提示词管理"
+              onClick={() => {
+                onOpenPromptTemplates?.();
+                setToolsMenuOpen(false);
+              }}
+            />
+            <MenuItem
+              icon={<Image className="w-4 h-4" />}
+              label="多媒体设置"
+              onClick={() => {
+                onOpenMultimediaSettings?.();
+                setToolsMenuOpen(false);
+              }}
+            />
+            <MenuItem
+              icon={<Puzzle className="w-4 h-4" />}
+              label="插件管理"
+              onClick={() => {
+                onOpenPluginManager?.();
+                setToolsMenuOpen(false);
+              }}
+            />
+            <MenuItem
+              icon={<Settings className="w-4 h-4" />}
+              label="模型设置"
+              onClick={() => {
+                onOpenSettings?.();
+                setToolsMenuOpen(false);
+              }}
+            />
+            <div className="px-3 py-1.5 text-xs text-muted-foreground border-t border-border">
+              数据操作
+            </div>
+            <MenuItem
+              icon={<Upload className="w-4 h-4" />}
+              label="导入文件"
+              onClick={() => {
+                onOpenImportDialog?.();
+                setToolsMenuOpen(false);
+              }}
+            />
+          </DropdownMenu>
+
           <button
             onClick={() => {
               onCreateProject();
               uiLogger.click("ProjectList", "create_project");
             }}
-            className="flex items-center gap-1 px-2 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors shrink-0 whitespace-nowrap"
+            className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors shrink-0 text-sm font-medium"
           >
             <Plus className="w-4 h-4 shrink-0" />
-            <span className="text-sm">新建项目</span>
+            <span className="hidden sm:inline">新建</span>
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-auto p-2">
+
+      <div className="flex-1 overflow-auto">
         {projects.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <Folder className="w-16 h-16 mb-4 text-muted-foreground opacity-50" />
+          <div className="flex flex-col items-center justify-center h-full text-center p-6">
+            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
+              <Folder className="w-10 h-10 text-muted-foreground" />
+            </div>
             <h3 className="text-lg font-semibold mb-2">暂无项目</h3>
-            <p className="text-sm text-muted-foreground mb-4">点击"新建项目"开始创作</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              点击"新建"按钮开始你的创作之旅
+            </p>
+            <button
+              onClick={onCreateProject}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              <Sparkles className="w-4 h-4" />
+              创建第一个项目
+            </button>
           </div>
         ) : (
           <div className="p-2 space-y-1">
             {projects.map((project) => (
-              <div key={project.id} className="relative">
+              <div key={project.id} className="relative group">
                 <button
                   onClick={() => onSelectProject(project)}
-                  className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
+                  className={`w-full text-left px-3 py-2.5 rounded-lg transition-all ${
                     currentProject?.id === project.id
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-accent hover:text-accent-foreground"
+                      ? "bg-primary/10 border-2 border-primary shadow-sm"
+                      : "hover:bg-accent border-2 border-transparent"
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{project.name}</p>
+                      <p className="font-medium truncate text-sm">{project.name}</p>
                       {project.description && (
-                        <p className="text-xs mt-1 opacity-80 truncate">{project.description}</p>
+                        <p className="text-xs mt-0.5 text-muted-foreground line-clamp-2">
+                          {project.description}
+                        </p>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-2 mt-1.5">
                     {project.genre && (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-background/20">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                         {genreMap[project.genre] || project.genre}
                       </span>
                     )}
-                    <span className="text-xs opacity-60">
+                    <span className="text-xs text-muted-foreground">
                       {new Date(project.updated_at).toLocaleDateString()}
                     </span>
                   </div>
@@ -305,14 +376,18 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                 <button
                   data-testid="more-button"
                   onClick={(e) => handleMenuClick(e, project.id)}
-                  className="absolute top-2 right-2 ml-2 opacity-60 hover:opacity-100 p-1 hover:bg-accent rounded transition-colors"
+                  className={`absolute top-2 right-2 p-1.5 rounded-md transition-all ${
+                    currentProject?.id === project.id || activeMenuId === project.id
+                      ? "opacity-100 bg-background shadow-sm"
+                      : "opacity-0 group-hover:opacity-100 hover:bg-background"
+                  }`}
                 >
                   <MoreHorizontal className="w-4 h-4" />
                 </button>
                 {activeMenuId === project.id && (
                   <div
                     data-menu
-                    className="absolute right-2 top-10 z-10 bg-popover border border-border rounded-md shadow-lg py-1 min-w-[100px]"
+                    className="absolute right-2 top-10 z-10 bg-popover border border-border rounded-lg shadow-lg py-1 min-w-[120px]"
                   >
                     <button
                       onClick={(e) => handleRename(e)}
@@ -335,6 +410,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
                       <Download className="w-4 h-4" />
                       导出
                     </button>
+                    <div className="border-t border-border my-1" />
                     <button
                       onClick={(e) => handleDeleteClick(e, project.id, project.name)}
                       className="w-full px-3 py-2 text-left text-sm hover:bg-accent text-destructive flex items-center gap-2"

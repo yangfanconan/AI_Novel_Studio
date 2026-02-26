@@ -31,6 +31,7 @@ interface AIToolbarProps {
   currentChapterId?: string;
   characters?: Character[];
   selectedText?: string;
+  chapterMissionId?: string;
 }
 
 export const AIToolbar: React.FC<AIToolbarProps> = ({
@@ -43,6 +44,7 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
   currentChapterId,
   characters = [],
   selectedText,
+  chapterMissionId,
 }) => {
   const [models, setModels] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>("");
@@ -143,8 +145,11 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
       const generated = await aiService.continueNovel({
         model_id: selectedModel,
         context: content,
-        instruction: "请续写下一段内容，保持文风和故事连贯性。",
+        instruction: chapterMissionId 
+          ? "根据导演脚本继续写作，严格遵守视角、基调、节奏等要求。"
+          : "请续写下一段内容，保持文风和故事连贯性。",
         project_id: projectId,
+        chapter_mission_id: chapterMissionId,
       });
 
       debugLogger.info("AI continuation result received", {

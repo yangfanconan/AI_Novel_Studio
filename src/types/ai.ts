@@ -26,6 +26,7 @@ export interface AICompletionRequest {
   character_context?: string;
   worldview_context?: string;
   project_id?: string;
+  chapter_mission_id?: string;
 }
 
 export interface AIRewriteRequest {

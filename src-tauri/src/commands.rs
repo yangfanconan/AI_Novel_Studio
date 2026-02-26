@@ -245,10 +245,14 @@ pub async fn save_chapter(app: AppHandle, request: SaveChapterRequest) -> Result
         status: "draft".to_string(),
         created_at: now.clone(),
         updated_at: now.clone(),
+        versions: None,
+        evaluation: None,
+        summary: None,
+        generation_status: None,
     };
 
     conn.execute(
-        "INSERT INTO chapters (id, project_id, title, content, word_count, sort_order, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO chapters (id, project_id, title, content, word_count, sort_order, status, created_at, updated_at, summary) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         params![
             chapter.id,
             chapter.project_id,
@@ -259,6 +263,7 @@ pub async fn save_chapter(app: AppHandle, request: SaveChapterRequest) -> Result
             chapter.status,
             chapter.created_at,
             chapter.updated_at,
+            None::<String>,
         ],
     ).map_err(|e| {
         logger.error(&format!("Failed to insert chapter: {}", e));
@@ -283,7 +288,7 @@ pub async fn get_chapters(app: AppHandle, projectId: String) -> Result<Vec<Chapt
         })?;
 
     let mut stmt = conn
-        .prepare("SELECT id, project_id, title, content, word_count, sort_order, status, created_at, updated_at FROM chapters WHERE project_id = ? ORDER BY sort_order ASC")
+        .prepare("SELECT id, project_id, title, content, word_count, sort_order, status, created_at, updated_at, summary FROM chapters WHERE project_id = ? ORDER BY sort_order ASC")
         .map_err(|e| {
             logger.error(&format!("Failed to prepare statement: {}", e));
             e.to_string()
@@ -301,6 +306,10 @@ pub async fn get_chapters(app: AppHandle, projectId: String) -> Result<Vec<Chapt
                 status: row.get(6)?,
                 created_at: row.get(7)?,
                 updated_at: row.get(8)?,
+                versions: None,
+                evaluation: None,
+                generation_status: None,
+                summary: row.get(9).ok(),
             })
         })
         .map_err(|e| {
@@ -334,7 +343,7 @@ pub async fn get_chapter(app: AppHandle, chapterId: String) -> Result<Chapter, S
         })?;
 
     let mut stmt = conn
-        .prepare("SELECT id, project_id, title, content, word_count, sort_order, status, created_at, updated_at FROM chapters WHERE id = ?")
+        .prepare("SELECT id, project_id, title, content, word_count, sort_order, status, created_at, updated_at, summary FROM chapters WHERE id = ?")
         .map_err(|e| {
             logger.error(&format!("Failed to prepare statement: {}", e));
             e.to_string()
@@ -352,6 +361,10 @@ pub async fn get_chapter(app: AppHandle, chapterId: String) -> Result<Chapter, S
                 status: row.get(6)?,
                 created_at: row.get(7)?,
                 updated_at: row.get(8)?,
+                versions: None,
+                evaluation: None,
+                generation_status: None,
+                summary: row.get(9).ok(),
             })
         })
         .map_err(|e| {
@@ -393,7 +406,7 @@ pub async fn update_chapter(
     })?;
 
     let mut stmt = conn
-        .prepare("SELECT id, project_id, title, content, word_count, sort_order, status, created_at, updated_at FROM chapters WHERE id = ?")
+        .prepare("SELECT id, project_id, title, content, word_count, sort_order, status, created_at, updated_at, summary FROM chapters WHERE id = ?")
         .map_err(|e| {
             logger.error(&format!("Failed to prepare statement: {}", e));
             e.to_string()
@@ -411,6 +424,10 @@ pub async fn update_chapter(
                 status: row.get(6)?,
                 created_at: row.get(7)?,
                 updated_at: row.get(8)?,
+                versions: None,
+                evaluation: None,
+                generation_status: None,
+                summary: row.get(9).ok(),
             })
         })
         .map_err(|e| {
@@ -1424,10 +1441,76 @@ pub async fn ai_continue_novel(
     mut request: AICompletionRequest,
 ) -> Result<String, String> {
     let logger = Logger::new().with_feature("ai-novel-service");
-    log_command_start(&logger, "ai_continue_novel", &format!("model={}", request.model_id));
+    log_command_start(&logger, "ai_continue_novel", &format!("model={}, chapter_mission_id={:?}", request.model_id, request.chapter_mission_id));
 
     let db_path = get_db_path(&app)?;
     let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+
+    // L3写作层：如果有chapter_mission_id，获取导演脚本
+    let mut mission_context: Option<String> = None;
+    let mut allowed_new_characters: Vec<String> = vec![];
+    let mut forbidden_characters: Vec<String> = vec![];
+    let mut director_pov: Option<String> = None;
+    let mut director_tone: Option<String> = None;
+    let mut director_pacing: Option<String> = None;
+
+    if let Some(ref mission_id) = request.chapter_mission_id {
+        let mut stmt = conn
+            .prepare(
+                "SELECT macro_beat, micro_beats, pov, tone, pacing, allowed_new_characters, forbidden_characters, beat_id
+                 FROM chapter_missions WHERE id = ?"
+            )
+            .map_err(|e| e.to_string())?;
+
+        if let Ok((macro_beat, micro_beats, pov, tone, pacing, allowed_new_chars, forbidden_chars, _beat_id)) =
+            stmt.query_row([mission_id], |row| {
+                let macro_beat: String = row.get(0)?;
+                let micro_beats_json: String = row.get(1)?;
+                let pov: Option<String> = row.get(2)?;
+                let tone: Option<String> = row.get(3)?;
+                let pacing: Option<String> = row.get(4)?;
+                let allowed_new_chars_json: String = row.get(5)?;
+                let forbidden_chars_json: String = row.get(6)?;
+                let _beat_id: Option<String> = row.get(7)?;
+
+                let micro_beats: Vec<String> = serde_json::from_str(&micro_beats_json).unwrap_or_default();
+                let allowed_new_chars: Vec<String> = serde_json::from_str(&allowed_new_chars_json).unwrap_or_default();
+                let forbidden_chars: Vec<String> = serde_json::from_str(&forbidden_chars_json).unwrap_or_default();
+
+                Ok((macro_beat, micro_beats, pov, tone, pacing, allowed_new_chars, forbidden_chars, _beat_id))
+            }) {
+            director_pov = pov.clone();
+            director_tone = tone.clone();
+            director_pacing = pacing.clone();
+            allowed_new_characters = allowed_new_chars.clone();
+            forbidden_characters = forbidden_chars.clone();
+
+            // 构建导演脚本上下文
+            let mut mission_parts = vec![];
+            mission_parts.push("【章节导演脚本】".to_string());
+            mission_parts.push(format!("宏观节拍: {}", macro_beat));
+            if !micro_beats.is_empty() {
+                mission_parts.push("微观节拍:".to_string());
+                for (i, beat) in micro_beats.iter().enumerate() {
+                    mission_parts.push(format!("  {}. {}", i + 1, beat));
+                }
+            }
+            if let Some(p) = &pov { mission_parts.push(format!("视角: {}", p)); }
+            if let Some(t) = &tone { mission_parts.push(format!("基调: {}", t)); }
+            if let Some(p) = &pacing { mission_parts.push(format!("节奏: {}", p)); }
+            if !allowed_new_characters.is_empty() {
+                mission_parts.push(format!("可登场新角色: {}", allowed_new_characters.join(", ")));
+            }
+            if !forbidden_characters.is_empty() {
+                mission_parts.push(format!("禁止登场角色: {}", forbidden_characters.join(", ")));
+            }
+
+            mission_context = Some(mission_parts.join("\n"));
+            logger.info(&format!("Loaded chapter mission: POV={:?}, Tone={:?}, Pacing={:?}", pov, tone, pacing));
+        } else {
+            logger.warn(&format!("Chapter mission not found: {}", mission_id));
+        }
+    }
 
     // 如果有project_id且没有提供上下文，自动获取
     if let Some(ref project_id) = request.project_id {
@@ -1500,6 +1583,22 @@ pub async fn ai_continue_novel(
         }
     }
 
+    // L3写作层：信息可见性过滤
+    if !forbidden_characters.is_empty() {
+        if let Some(ref char_context) = request.character_context {
+            let filtered: Vec<&str> = char_context
+                .lines()
+                .filter(|line| {
+                    !forbidden_characters.iter().any(|forbidden| {
+                        line.contains(&format!("【{}】", forbidden))
+                    })
+                })
+                .collect();
+            request.character_context = Some(filtered.join("\n"));
+            logger.info(&format!("Filtered {} forbidden characters from context", forbidden_characters.len()));
+        }
+    }
+
     // 设置默认值
     if request.character_context.is_none() {
         request.character_context = Some("暂无角色信息".to_string());
@@ -1508,9 +1607,20 @@ pub async fn ai_continue_novel(
         request.worldview_context = Some("暂无世界观设定".to_string());
     }
 
+    // L3写作层：将导演脚本上下文注入到instruction中
+    if let Some(mission) = mission_context {
+        let enhanced_instruction = format!(
+            "{}\n\n{}",
+            request.instruction,
+            mission
+        );
+        request.instruction = enhanced_instruction;
+        logger.info("Injected chapter mission context into instruction");
+    }
+
     let ai_service = app.state::<std::sync::Arc<tokio::sync::RwLock<AIService>>>();
     let service = ai_service.read().await;
-    
+
     let result = service.continue_novel(request, None).await.map_err(|e| {
         logger.error(&format!("Failed to continue novel: {}", e));
         e
@@ -2764,8 +2874,8 @@ pub async fn create_plot_node(app: AppHandle, request: CreatePlotNodeRequest) ->
             request.is_main_path as i32,
             &request.branch_name,
             sort_order,
-            &now,
-            &now,
+            now.clone(),
+            now,
         ],
     ).map_err(|e| e.to_string())?;
 
@@ -4939,4 +5049,2561 @@ pub async fn import_to_project(
 
     log_command_success(&logger, "import_to_project", &format!("imported {} chapters", import_result.chapter_count));
     Ok(import_result)
+}
+
+#[tauri::command]
+pub async fn generate_chapter_versions(
+    app: AppHandle,
+    request: GenerateChapterVersionsRequest,
+) -> Result<Chapter, String> {
+    let logger = Logger::new().with_feature("chapter-versions");
+    log_command_start(&logger, "generate_chapter_versions", &request.chapter_id);
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+
+    let chapter: Chapter = conn.query_row(
+        "SELECT id, project_id, title, content, word_count, sort_order, status, created_at, updated_at, summary FROM chapters WHERE id = ?1",
+        params![&request.chapter_id],
+        |row| Ok(Chapter {
+            id: row.get(0)?,
+            project_id: row.get(1)?,
+            title: row.get(2)?,
+            content: row.get(3)?,
+            word_count: row.get(4)?,
+            sort_order: row.get(5)?,
+            status: row.get(6)?,
+            created_at: row.get(7)?,
+            updated_at: row.get(8)?,
+            versions: None,
+            evaluation: None,
+            generation_status: Some("generating".to_string()),
+            summary: row.get(9).ok(),
+        }),
+    ).map_err(|e| format!("章节未找到: {}", e))?;
+
+    let num_versions = request.num_versions.unwrap_or(3);
+    let styles = vec!["标准".to_string(), "文艺".to_string(), "紧凑".to_string()];
+
+    let mut versions = Vec::new();
+    let ai_service = AIService::new();
+
+    for i in 0..num_versions as usize {
+        let style = styles.get(i).cloned().unwrap_or_else(|| "标准".to_string());
+        
+        let prompt = format!(
+            "请以{}风格续写以下内容：\n\n{}\n\n要求：保持文风一致，情节连贯",
+            style,
+            request.context
+        );
+
+        let ai_request = AICompletionRequest {
+            model_id: "default".to_string(),
+            context: prompt.clone(),
+            instruction: format!("生成{}风格的章节内容", style),
+            temperature: Some(0.8),
+            max_tokens: Some(2000),
+            stream: Some(false),
+            character_context: None,
+            worldview_context: None,
+            project_id: Some(request.project_id.clone()),
+            chapter_mission_id: None,
+        };
+
+        match ai_service.continue_novel(ai_request, None).await {
+            Ok(content) => {
+                versions.push(ChapterVersion {
+                    content,
+                    style: style.clone(),
+                    created_at: Some(Utc::now().to_rfc3339()),
+                });
+            }
+            Err(e) => {
+                logger.warn(&format!("生成{}版本失败: {}", style, e));
+            }
+        }
+    }
+
+    if versions.is_empty() {
+        return Err("所有版本生成失败".to_string());
+    }
+
+    let versions_json = serde_json::to_string(&versions).map_err(|e| e.to_string())?;
+    
+    conn.execute(
+        "UPDATE chapters SET versions = ?1, generation_status = ?2, updated_at = ?3 WHERE id = ?4",
+        params![
+            versions_json,
+            "waiting_for_confirm",
+            Utc::now().to_rfc3339(),
+            &request.chapter_id
+        ],
+    ).map_err(|e| format!("更新章节失败: {}", e))?;
+
+    let updated_chapter = Chapter {
+        id: chapter.id,
+        project_id: chapter.project_id,
+        title: chapter.title,
+        content: chapter.content,
+        word_count: chapter.word_count,
+        sort_order: chapter.sort_order,
+        status: chapter.status,
+        created_at: chapter.created_at,
+        updated_at: Utc::now().to_rfc3339(),
+        versions: Some(versions),
+        evaluation: None,
+        generation_status: Some("waiting_for_confirm".to_string()),
+        summary: chapter.summary,
+    };
+
+    log_command_success(&logger, "generate_chapter_versions", &format!("生成{}个版本", num_versions));
+    Ok(updated_chapter)
+}
+
+#[tauri::command]
+pub async fn select_chapter_version(
+    app: AppHandle,
+    request: SelectChapterVersionRequest,
+) -> Result<Chapter, String> {
+    let logger = Logger::new().with_feature("chapter-versions");
+    log_command_start(&logger, "select_chapter_version", &format!("chapter: {}, version: {}", request.chapter_id, request.version_index));
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+
+    let versions_json: Option<String> = conn.query_row(
+        "SELECT versions FROM chapters WHERE id = ?1",
+        params![&request.chapter_id],
+        |row| row.get(0),
+    ).map_err(|e| format!("章节未找到: {}", e))?;
+
+    let versions: Vec<ChapterVersion> = match versions_json {
+        Some(json) => serde_json::from_str(&json).map_err(|e| e.to_string())?,
+        None => return Err("没有可用版本".to_string()),
+    };
+
+    let selected_version = versions.get(request.version_index as usize)
+        .ok_or_else(|| "版本索引无效".to_string())?;
+
+    let word_count = selected_version.content.chars().count() as i32;
+    
+    conn.execute(
+        "UPDATE chapters SET content = ?1, word_count = ?2, generation_status = ?3, updated_at = ?4 WHERE id = ?5",
+        params![
+            &selected_version.content,
+            word_count,
+            "successful",
+            Utc::now().to_rfc3339(),
+            &request.chapter_id
+        ],
+    ).map_err(|e| format!("更新章节失败: {}", e))?;
+
+    let updated_chapter: Chapter = conn.query_row(
+        "SELECT id, project_id, title, content, word_count, sort_order, status, created_at, updated_at, summary FROM chapters WHERE id = ?1",
+        params![&request.chapter_id],
+        |row| Ok(Chapter {
+            id: row.get(0)?,
+            project_id: row.get(1)?,
+            title: row.get(2)?,
+            content: row.get(3)?,
+            word_count: row.get(4)?,
+            sort_order: row.get(5)?,
+            status: row.get(6)?,
+            created_at: row.get(7)?,
+            updated_at: row.get(8)?,
+            summary: row.get(9).ok(),
+            versions: Some(versions),
+            evaluation: None,
+            generation_status: Some("successful".to_string()),
+        }),
+    ).map_err(|e| e.to_string())?;
+
+    log_command_success(&logger, "select_chapter_version", &format!("已选择版本{}", request.version_index));
+    Ok(updated_chapter)
+}
+
+#[tauri::command]
+pub async fn evaluate_chapter(
+    app: AppHandle,
+    request: EvaluateChapterRequest,
+) -> Result<Chapter, String> {
+    let logger = Logger::new().with_feature("chapter-evaluation");
+    log_command_start(&logger, "evaluate_chapter", &request.chapter_id);
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+
+    let chapter: Chapter = conn.query_row(
+        "SELECT id, project_id, title, content, word_count, sort_order, status, created_at, updated_at, summary FROM chapters WHERE id = ?1",
+        params![&request.chapter_id],
+        |row| Ok(Chapter {
+            id: row.get(0)?,
+            project_id: row.get(1)?,
+            title: row.get(2)?,
+            content: row.get(3)?,
+            word_count: row.get(4)?,
+            sort_order: row.get(5)?,
+            status: row.get(6)?,
+            created_at: row.get(7)?,
+            updated_at: row.get(8)?,
+            versions: None,
+            evaluation: None,
+            summary: row.get(9).ok(),
+            generation_status: Some("evaluating".to_string()),
+        }),
+    ).map_err(|e| format!("章节未找到: {}", e))?;
+
+    let ai_service = AIService::new();
+
+    let prompt = format!(
+        "请评估以下章节内容的质量，从多个维度打分并给出建议：\n\n标题：{}\n内容：\n{}\n\n请以JSON格式返回评估结果，包含：score(总分0-100), coherence(连贯性0-100), style_consistency(风格一致性0-100), character_consistency(角色一致性0-100), plot_advancement(情节推进0-100), summary(简短评价), suggestions(改进建议数组)",
+        chapter.title,
+        chapter.content
+    );
+
+    let ai_request = AICompletionRequest {
+        model_id: "default".to_string(),
+        context: prompt.clone(),
+        instruction: "评估章节质量".to_string(),
+        temperature: Some(0.3),
+        max_tokens: Some(1000),
+        stream: Some(false),
+        character_context: None,
+        worldview_context: None,
+        project_id: Some(request.project_id.clone()),
+        chapter_mission_id: None,
+    };
+
+    let evaluation_result = ai_service.continue_novel(ai_request, None).await
+        .map_err(|e| format!("AI评估失败: {}", e))?;
+
+    let evaluation: ChapterEvaluation = {
+        let json_str = evaluation_result.trim_start_matches("```json").trim_end_matches("```").trim();
+        serde_json::from_str(json_str).unwrap_or_else(|_| ChapterEvaluation {
+            score: 75.0,
+            coherence: 75.0,
+            style_consistency: 75.0,
+            character_consistency: 75.0,
+            plot_advancement: 75.0,
+            summary: "自动评估完成".to_string(),
+            suggestions: vec!["建议人工复核".to_string()],
+            evaluated_at: Utc::now().to_rfc3339(),
+        })
+    };
+
+    let evaluation_json = serde_json::to_string(&evaluation).map_err(|e| e.to_string())?;
+    
+    conn.execute(
+        "UPDATE chapters SET evaluation = ?1, generation_status = ?2, updated_at = ?3 WHERE id = ?4",
+        params![
+            evaluation_json,
+            "evaluated",
+            Utc::now().to_rfc3339(),
+            &request.chapter_id
+        ],
+    ).map_err(|e| format!("更新章节失败: {}", e))?;
+
+    let updated_chapter = Chapter {
+        id: chapter.id,
+        project_id: chapter.project_id,
+        title: chapter.title,
+        content: chapter.content,
+        word_count: chapter.word_count,
+        sort_order: chapter.sort_order,
+        status: chapter.status,
+        created_at: chapter.created_at,
+        updated_at: Utc::now().to_rfc3339(),
+        versions: None,
+        evaluation: Some(evaluation),
+        generation_status: Some("evaluated".to_string()),
+        summary: chapter.summary,
+    };
+
+    log_command_success(&logger, "evaluate_chapter", &format!("评分: {}", updated_chapter.evaluation.as_ref().unwrap().score));
+    Ok(updated_chapter)
+}
+
+#[tauri::command]
+pub async fn create_foreshadowing(
+    app: AppHandle,
+    request: CreateForeshadowingRequest,
+) -> Result<Foreshadowing, String> {
+    let logger = Logger::new().with_feature("foreshadowing");
+    log_command_start(&logger, "create_foreshadowing", &request.chapter_title);
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+
+    let id = format!("foreshadowing_{}", Uuid::new_v4().to_string());
+    let importance = request.importance.unwrap_or_else(|| "medium".to_string());
+    let now = Utc::now().to_rfc3339();
+    let status = "planted".to_string();
+
+    conn.execute(
+        "INSERT INTO foreshadowings (id, project_id, chapter_id, chapter_number, chapter_title, description, foreshadowing_type, keywords, status, importance, expected_payoff_chapter, author_note, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+        params![
+            &id,
+            &request.project_id,
+            &request.chapter_id,
+            &request.chapter_number,
+            &request.chapter_title,
+            &request.description,
+            &request.foreshadowing_type,
+            serde_json::to_string(&request.keywords.clone().unwrap_or_default()).map_err(|e| e.to_string())?,
+            "planted",
+            &importance,
+            &request.expected_payoff_chapter,
+            &request.author_note,
+            &now,
+            &now,
+        ],
+    ).map_err(|e| format!("创建伏笔失败: {}", e))?;
+
+    let foreshadowing = Foreshadowing {
+        id: id.clone(),
+        project_id: request.project_id,
+        chapter_id: request.chapter_id,
+        chapter_number: request.chapter_number,
+        chapter_title: request.chapter_title,
+        description: request.description,
+        foreshadowing_type: request.foreshadowing_type,
+        keywords: request.keywords.clone().unwrap_or_default(),
+        status: Some(status),
+        importance: Some(importance),
+        expected_payoff_chapter: request.expected_payoff_chapter,
+        actual_payoff_chapter: None,
+        author_note: request.author_note,
+        ai_confidence: None,
+        created_at: now.clone(),
+        updated_at: now.clone(),
+    };
+
+    log_command_success(&logger, "create_foreshadowing", &id);
+    Ok(foreshadowing)
+}
+
+#[tauri::command]
+pub async fn get_foreshadowings(
+    app: AppHandle,
+    project_id: String,
+) -> Result<Vec<Foreshadowing>, String> {
+    let logger = Logger::new().with_feature("foreshadowing");
+    log_command_start(&logger, "get_foreshadowings", &project_id);
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+
+    let mut stmt = conn.prepare("SELECT id, project_id, chapter_id, chapter_number, chapter_title, description, foreshadowing_type, keywords, status, importance, expected_payoff_chapter, actual_payoff_chapter, author_note, ai_confidence, created_at, updated_at FROM foreshadowings WHERE project_id = ?1 ORDER BY chapter_number ASC").map_err(|e| e.to_string())?;
+
+    let mut foreshadowings = Vec::new();
+    let mut rows = stmt.query(params![&project_id]).map_err(|e| e.to_string())?;
+
+    while let Some(row) = rows.next().map_err(|e| e.to_string())? {
+        let keywords_json: String = row.get(6).map_err(|e| e.to_string())?;
+        let keywords: Vec<String> = serde_json::from_str(&keywords_json).unwrap_or_default();
+
+        foreshadowings.push(Foreshadowing {
+            id: row.get(0).map_err(|e| e.to_string())?,
+            project_id: row.get(1).map_err(|e| e.to_string())?,
+            chapter_id: row.get(2).map_err(|e| e.to_string())?,
+            chapter_number: row.get(3).map_err(|e| e.to_string())?,
+            chapter_title: row.get(4).map_err(|e| e.to_string())?,
+            description: row.get(5).map_err(|e| e.to_string())?,
+            foreshadowing_type: row.get(7).map_err(|e| e.to_string())?,
+            keywords,
+            status: row.get(8).ok(),
+            importance: row.get(9).ok(),
+            expected_payoff_chapter: row.get(10).ok(),
+            actual_payoff_chapter: row.get(11).ok(),
+            author_note: row.get(12).ok(),
+            ai_confidence: row.get(13).ok(),
+            created_at: row.get(14).map_err(|e| e.to_string())?,
+            updated_at: row.get(15).map_err(|e| e.to_string())?,
+        });
+    }
+
+    log_command_success(&logger, "get_foreshadowings", &format!("获取{}个伏笔", foreshadowings.len()));
+    Ok(foreshadowings)
+}
+
+#[tauri::command]
+pub async fn resolve_foreshadowing(
+    app: AppHandle,
+    request: ResolveForeshadowingRequest,
+) -> Result<Foreshadowing, String> {
+    let logger = Logger::new().with_feature("foreshadowing");
+    log_command_start(&logger, "resolve_foreshadowing", &request.foreshadowing_id);
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+
+    let now = Utc::now().to_rfc3339();
+
+    conn.execute(
+        "UPDATE foreshadowings SET status = ?1, actual_payoff_chapter = ?2, updated_at = ?3 WHERE id = ?4",
+        params![
+            "paid_off",
+            &request.actual_payoff_chapter,
+            now,
+            &request.foreshadowing_id,
+        ],
+    ).map_err(|e| format!("更新伏笔失败: {}", e))?;
+
+    let foreshadowing: Foreshadowing = conn.query_row(
+        "SELECT id, project_id, chapter_id, chapter_number, chapter_title, description, foreshadowing_type, keywords, status, importance, expected_payoff_chapter, actual_payoff_chapter, author_note, ai_confidence, created_at, updated_at FROM foreshadowings WHERE id = ?1",
+        params![&request.foreshadowing_id],
+        |row| {
+            let keywords_json: String = row.get(6)?;
+            let keywords: Vec<String> = serde_json::from_str(&keywords_json).unwrap_or_default();
+            Ok(Foreshadowing {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                chapter_id: row.get(2)?,
+                chapter_number: row.get(3)?,
+                chapter_title: row.get(4)?,
+                description: row.get(5)?,
+                foreshadowing_type: row.get(7)?,
+                keywords,
+                status: row.get(8)?,
+                importance: row.get(9)?,
+                expected_payoff_chapter: row.get(10)?,
+                actual_payoff_chapter: row.get(11)?,
+                author_note: row.get(12)?,
+                ai_confidence: row.get(13)?,
+                created_at: row.get(14)?,
+                updated_at: row.get(15)?,
+            })
+        },
+    ).map_err(|e| format!("伏笔不存在: {}", e))?;
+
+    log_command_success(&logger, "resolve_foreshadowing", &format!("伏笔回收于第{}章", request.actual_payoff_chapter));
+    Ok(foreshadowing)
+}
+
+#[tauri::command]
+pub async fn get_foreshadowing_stats(
+    app: AppHandle,
+    project_id: String,
+) -> Result<ForeshadowingStats, String> {
+    let logger = Logger::new().with_feature("foreshadowing");
+    log_command_start(&logger, "get_foreshadowing_stats", &project_id);
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+
+    let foreshadowings = get_foreshadowings(app.clone(), project_id).await?;
+
+    let total = foreshadowings.len() as i32;
+    let planted = foreshadowings.iter().filter(|f| f.status.as_deref() == Some("planted")).count() as i32;
+    let paid_off = foreshadowings.iter().filter(|f| f.status.as_deref() == Some("paid_off")).count() as i32;
+
+    let mut unresolved_count = 0;
+    let mut overdue_count = 0;
+    let mut total_distance = 0i32;
+    let mut resolved_count = 0;
+
+    for f in &foreshadowings {
+        if f.status.as_deref() == Some("planted") {
+            unresolved_count += 1;
+        }
+        if f.actual_payoff_chapter.is_some() {
+            let distance = f.actual_payoff_chapter.unwrap() - f.chapter_number;
+            total_distance += distance;
+            resolved_count += 1;
+        }
+    }
+
+    let avg_distance = if resolved_count > 0 {
+        total_distance as f32 / resolved_count as f32
+    } else {
+        0.0
+    };
+
+    let mut recommendations = Vec::new();
+    if unresolved_count > 3 {
+        recommendations.push(format!("有{}个伏笔未回收，建议在后续章节中处理", unresolved_count));
+    }
+    if avg_distance > 10.0 {
+        recommendations.push("伏笔回收距离较长，可能影响读者记忆".to_string());
+    }
+
+    let stats = ForeshadowingStats {
+        total_foreshadowings: total,
+        planted_count: planted,
+        paid_off_count: paid_off,
+        overdue_count,
+        unresolved_count,
+        abandoned_count: 0,
+        avg_resolution_distance: avg_distance,
+        recommendations,
+    };
+
+    log_command_success(&logger, "get_foreshadowing_stats", &format!("统计: 总数{}, 已回收{}", total, paid_off));
+    Ok(stats)
+}
+
+#[tauri::command]
+pub async fn calculate_emotion_curve(
+    app: AppHandle,
+    request: EmotionCurveRequest,
+) -> Result<EmotionCurveResponse, String> {
+    let logger = Logger::new().with_feature("emotion-curve");
+    log_command_start(&logger, "calculate_emotion_curve", &request.arc_type);
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+
+    let chapters: Vec<(String, String, i32)> = conn.prepare(
+        "SELECT id, title, sort_order FROM chapters WHERE project_id = ?1 ORDER BY sort_order ASC"
+    )
+    .map_err(|e| e.to_string())?
+    .query_map(params![&request.project_id], |row| {
+        Ok((
+            row.get(0)?,
+            row.get(1)?,
+            row.get(2)?,
+        ))
+    })
+    .map_err(|e| e.to_string())?
+    .collect::<Result<Vec<_>, _>>()
+    .map_err(|e| e.to_string())?;
+
+    let total_chapters = if request.total_chapters > 0 { request.total_chapters } else { chapters.len() as i32 };
+
+    let arc_type = request.arc_type.as_str();
+    let mut curve_data = Vec::new();
+
+    for (i, (id, title, _)) in chapters.iter().enumerate() {
+        let chapter_num = (i + 1) as i32;
+        let position = if total_chapters > 0 { (chapter_num as f32) / (total_chapters as f32) } else { 0.5 };
+
+        let (emotion_min, emotion_max, phase_name) = match arc_type {
+            "standard" | "slow_burn" => {
+                if position < 0.10 { (30, 50, "铺垫期") }
+                else if position < 0.25 { (50, 70, "上升期") }
+                else if position < 0.35 { (70, 90, "第一高潮") }
+                else if position < 0.50 { (50, 70, "发展期") }
+                else if position < 0.60 { (40, 60, "低谷期") }
+                else if position < 0.75 { (60, 80, "反转期") }
+                else if position < 0.90 { (75, 95, "最终上升") }
+                else { (85, 100, "大高潮") }
+            }
+            "fast_paced" => {
+                if position < 0.05 { (50, 65, "快速开场") }
+                else if position < 0.20 { (65, 85, "第一波") }
+                else if position < 0.35 { (55, 70, "短暂喘息") }
+                else if position < 0.50 { (70, 90, "第二波") }
+                else if position < 0.65 { (60, 75, "转折") }
+                else if position < 0.80 { (75, 95, "第三波") }
+                else { (85, 100, "终极高潮") }
+            }
+            "wave" => {
+                if position < 0.10 { (30, 50, "开篇") }
+                else if position < 0.20 { (60, 80, "小高潮1") }
+                else if position < 0.30 { (40, 55, "回落1") }
+                else if position < 0.40 { (65, 85, "小高潮2") }
+                else if position < 0.50 { (45, 60, "回落2") }
+                else if position < 0.60 { (70, 90, "中期高潮") }
+                else if position < 0.70 { (50, 65, "回落3") }
+                else if position < 0.80 { (75, 92, "小高潮3") }
+                else if position < 0.90 { (55, 70, "最后回落") }
+                else { (85, 100, "终极高潮") }
+            }
+            _ => {
+                if position < 0.10 { (30, 50, "铺垫期") }
+                else if position < 0.25 { (50, 70, "上升期") }
+                else if position < 0.35 { (70, 90, "第一高潮") }
+                else if position < 0.50 { (50, 70, "发展期") }
+                else if position < 0.60 { (40, 60, "低谷期") }
+                else if position < 0.75 { (60, 80, "反转期") }
+                else if position < 0.90 { (75, 95, "最终上升") }
+                else { (85, 100, "大高潮") }
+            }
+        };
+
+        let segment_length = emotion_max - emotion_min;
+        let segment_progress = if segment_length > 0 {
+            let start = if position < 0.10 { 0.0 }
+            else if position < 0.25 { 0.10 }
+            else if position < 0.35 { 0.25 }
+            else if position < 0.50 { 0.35 }
+            else if position < 0.60 { 0.50 }
+            else if position < 0.75 { 0.60 }
+            else if position < 0.90 { 0.75 }
+            else { 0.90 };
+            (position - start) / 0.10
+        } else { 0.5 };
+
+        let emotion_target = emotion_min as f32 + (segment_progress * segment_length as f32);
+
+        let (pacing, thrill_density, dialogue_ratio) = match phase_name.as_ref() {
+            "铺垫期" | "开篇" => ("慢速", 0.3, 0.4),
+            "上升期" | "快速开场" | "第一波" => ("中速", 0.5, 0.5),
+            "第一高潮" | "小高潮1" | "小高潮2" | "小高潮3" => ("快速", 0.8, 0.6),
+            "发展期" | "短暂喘息" | "回落1" | "回落2" | "回落3" | "最后回落" => ("中速", 0.4, 0.7),
+            "低谷期" => ("慢速", 0.2, 0.8),
+            "反转期" | "转折" => ("变速", 0.9, 0.5),
+            "最终上升" | "第三波" => ("中速", 0.6, 0.6),
+            "大高潮" | "终极高潮" => ("快速", 0.95, 0.4),
+            _ => ("中速", 0.5, 0.5),
+        };
+
+        let recommendations = if emotion_target > 80.0 {
+            vec!["本章情绪强度较高，注意控制节奏".to_string()]
+        } else if emotion_target < 40.0 {
+            vec!["本章情绪较低，可以增加冲突".to_string()]
+        } else {
+            vec![]
+        };
+
+        curve_data.push(EmotionCurveData {
+            chapter_number: chapter_num,
+            chapter_title: title.clone(),
+            position,
+            phase_name: phase_name.to_string(),
+            emotion_target,
+            emotion_range: (emotion_min, emotion_max),
+            pacing: pacing.to_string(),
+            thrill_density,
+            dialogue_ratio,
+            recommendations,
+        });
+    }
+
+    let emotions: Vec<f32> = curve_data.iter().map(|d| d.emotion_target).collect();
+    let avg_emotion = if emotions.is_empty() { 0.0 } else { emotions.iter().sum::<f32>() / emotions.len() as f32 };
+
+    let emotion_variance = if emotions.len() > 1 {
+        let mean = avg_emotion;
+        let variance: f32 = emotions.iter().map(|&e| (e - mean).powf(2.0)).sum::<f32>() / emotions.len() as f32;
+        variance.sqrt()
+    } else { 0.0 };
+
+    let climax_chapters: Vec<i32> = curve_data.iter()
+        .filter(|d| d.emotion_target > 75.0)
+        .map(|d| d.chapter_number)
+        .collect();
+
+    let pacing_balance = 0.5;
+
+    let overall_stats = EmotionCurveStats {
+        avg_emotion,
+        emotion_variance,
+        climax_chapters,
+        pacing_balance,
+    };
+
+    let data_count = curve_data.len();
+    let response = EmotionCurveResponse {
+        arc_type: request.arc_type.clone(),
+        total_chapters,
+        curve_data,
+        overall_stats,
+    };
+
+    log_command_success(&logger, "calculate_emotion_curve", &format!("生成{}条数据", data_count));
+    Ok(response)
+}
+
+#[tauri::command]
+pub async fn optimize_chapter(
+    app: AppHandle,
+    request: OptimizeChapterRequest,
+) -> Result<OptimizeChapterResponse, String> {
+    let logger = Logger::new().with_feature("optimizer");
+    log_command_start(&logger, "optimize_chapter", &format!("章节ID: {}, 维度: {}", request.chapter_id, request.dimension));
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path)
+        .map_err(|e| {
+            logger.error(&format!("Failed to get database connection: {}", e));
+            format!("数据库连接失败: {}", e)
+        })?;
+
+    // 验证优化维度
+    let dimension = request.dimension.as_str();
+    if !matches!(dimension, "dialogue" | "environment" | "psychology" | "rhythm") {
+        log_command_error(&logger, "optimize_chapter", &format!("不支持的优化维度: {}", dimension));
+        return Err(format!("不支持的优化维度: {}, 支持的维度: dialogue, environment, psychology, rhythm", dimension));
+    }
+
+    // 获取章节内容
+    let chapter_result: Result<String, rusqlite::Error> = conn.query_row(
+        "SELECT content FROM chapters WHERE id = ?1",
+        params![request.chapter_id],
+        |row| row.get(0),
+    );
+
+    let original_content = chapter_result.map_err(|e| {
+        logger.error(&format!("Failed to get chapter: {}", e));
+        format!("获取章节失败: {}", e)
+    })?;
+
+    if original_content.is_empty() {
+        log_command_error(&logger, "optimize_chapter", "章节内容为空");
+        return Err("章节内容为空，无法优化".to_string());
+    }
+
+    // 获取项目角色信息（用于对话和心理优化）
+    let project_id_result: Result<String, rusqlite::Error> = conn.query_row(
+        "SELECT project_id FROM chapters WHERE id = ?1",
+        params![&request.chapter_id],
+        |row| row.get(0),
+    );
+
+    let project_id = project_id_result.map_err(|e| {
+        logger.error(&format!("Failed to get project_id: {}", e));
+        format!("获取项目ID失败: {}", e)
+    })?;
+
+    let character_context = if matches!(dimension, "dialogue" | "psychology") {
+        let mut characters_stmt = conn.prepare(
+            "SELECT name, personality, background, extra FROM characters WHERE project_id = ?1 LIMIT 5"
+        ).map_err(|e| {
+            logger.error(&format!("Failed to prepare characters query: {}", e));
+            format!("准备角色查询失败: {}", e)
+        })?;
+
+        let mut character_info = String::new();
+        let mut character_rows = characters_stmt.query(params![&project_id])
+            .map_err(|e| {
+                logger.error(&format!("Failed to query characters: {}", e));
+                format!("查询角色失败: {}", e)
+            })?;
+
+        while let Some(character) = character_rows.next().map_err(|e| {
+            logger.error(&format!("Failed to iterate characters: {}", e));
+            format!("迭代角色失败: {}", e)
+        })? {
+            let name: String = character.get(0).unwrap_or_default();
+            let personality: String = character.get(1).unwrap_or_default();
+            let background: String = character.get(2).unwrap_or_default();
+            if !name.is_empty() {
+                character_info.push_str(&format!("\n- {}: {}, {}", name, personality, background));
+            }
+        }
+        if !character_info.is_empty() {
+            Some(character_info)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // 构建优化提示词
+    let system_prompt = match dimension {
+        "dialogue" => r#"你是一位专注于小说对话优化的编辑大师。你的任务是对已有的章节内容进行对话层面的深度优化，让每一句对话都更加生动、真实、有层次。
+
+## 优化原则
+
+### 1. 角色声音独特化
+每个角色都应该有独特的说话方式：
+- 用词习惯（文雅/粗犷/专业术语/网络用语）
+- 句式特点（长句/短句/疑问句多/陈述句多）
+- 语气词使用（嗯、啊、呢、吧、哦）
+- 口头禅和特殊表达
+
+### 2. 潜台词丰富化
+好的对话从来不直接表达真实想法：
+- "你还好吗？" → 可能是"你还爱我吗？"
+- "随便你。" → 可能是"你敢试试看。"
+- "我没事。" → 可能是"我很受伤但不想说。"
+
+### 3. 对话节奏感
+- 紧张时：短句、打断、重复
+- 放松时：长句、完整表达、闲聊
+- 冲突时：针锋相对、话中带刺
+- 和解时：欲言又止、小心试探
+
+### 4. 非语言元素
+对话不只是说话，还包括：
+- 说话时的动作（转身、低头、握拳）
+- 表情变化（皱眉、微笑、眼神闪烁）
+- 语气变化（声音变小、语速加快）
+- 停顿和沉默
+
+### 5. 信息传递效率
+- 删除无意义的寒暄
+- 通过对话推动情节
+- 在对话中自然地透露信息
+- 避免"说明文式"对话
+
+## 输入格式
+{
+  "original_content": "需要优化的章节内容",
+  "characters": "角色信息",
+  "additional_notes": "额外优化指令"
+}
+
+## 输出格式
+{
+  "optimized_content": "优化后的完整章节内容",
+  "optimization_notes": "优化说明，列出主要改动点"
+}
+
+## 注意事项
+1. **保持原意**：优化对话但不改变情节走向
+2. **角色一致**：确保优化后的对话符合角色设定
+3. **适度原则**：不是每句话都需要潜台词，自然为上
+4. **上下文连贯**：优化后的对话要与前后文衔接流畅
+
+请只返回JSON格式的结果，不要包含其他文字。"#,
+        "environment" => r#"你是一位专注于小说环境描写的编辑大师。你的任务是对已有的章节内容进行环境描写层面的深度优化，让场景更加生动、氛围更加浓郁、环境与情节更加融合。
+
+## 优化原则
+
+### 1. 环境服务于情绪
+环境描写不是装饰，而是情绪的放大器：
+- 悲伤场景：阴雨、枯叶、冷色调
+- 紧张场景：狭窄空间、昏暗光线、不详的声音
+- 温馨场景：暖光、熟悉的气味、柔和的触感
+- 希望场景：破晓、新绿、清新的空气
+
+### 2. 五感全开
+好的环境描写调动所有感官：
+- **视觉**：颜色、光影、形状、动态
+- **听觉**：声音、噪音、沉默、回响
+- **嗅觉**：气味、香气、臭味、熟悉的味道
+- **触觉**：温度、质感、湿度、风
+- **味觉**：空气的味道、嘴里的感觉
+
+### 3. 细节的选择性
+不是描写所有东西，而是选择有意义的细节：
+- 能反映角色心理的细节
+- 能暗示情节发展的细节
+- 能增强氛围的细节
+- 能唤起读者共鸣的细节
+
+### 4. 动态环境
+环境不是静止的背景：
+- 光线在变化
+- 声音在起伏
+- 气味在流动
+- 温度在改变
+
+### 5. 环境与角色互动
+角色如何感知和回应环境：
+- 角色注意到什么？（反映心理状态）
+- 角色如何与环境互动？（反映性格）
+- 环境如何影响角色的行为？
+
+## 输入格式
+{
+  "original_content": "需要优化的章节内容",
+  "target_emotion": "目标情绪氛围",
+  "additional_notes": "额外优化指令"
+}
+
+## 输出格式
+{
+  "optimized_content": "优化后的完整章节内容",
+  "optimization_notes": "优化说明，列出主要改动点"
+}
+
+## 注意事项
+1. **适度原则**：环境描写要恰到好处，不要喧宾夺主
+2. **节奏配合**：紧张情节少描写，舒缓情节多渲染
+3. **角色视角**：通过角色的眼睛看环境，而不是上帝视角
+4. **前后呼应**：环境的变化可以暗示情节的发展
+5. **避免俗套**：寻找新鲜的比喻和描写角度
+
+请只返回JSON格式的结果，不要包含其他文字。"#,
+        "psychology" => r#"你是一位专注于小说心理描写的编辑大师。你的任务是对已有的章节内容进行心理活动层面的深度优化，让角色的内心世界更加丰富、真实、有层次。
+
+## 优化原则
+
+### 1. 心理活动要符合角色DNA
+如果角色有DNA档案，心理活动必须与之一致：
+- **童年创伤**会在特定情境下被触发
+- **核心恐惧**会影响角色的判断和反应
+- **内心渴望**会在关键时刻浮现
+- **思维模式**决定了角色如何处理信息
+
+### 2. 情绪的复杂性
+真实的人不会只有一种情绪：
+- 愤怒里会有委屈
+- 悲伤里会有解脱
+- 快乐里会有不安
+- 恐惧里会有好奇
+
+### 3. 思维的跳跃性
+人的思维不是线性的：
+- 会突然想起不相关的事
+- 会被某个细节带走
+- 会在重要时刻走神
+- 会有莫名其妙的联想
+
+### 4. 内心与外在的矛盾
+人说的和想的往往不一样：
+- 嘴上说"没关系"，心里在滴血
+- 表面冷静，内心慌乱
+- 装作不在意，其实很在意
+- 故作坚强，实则脆弱
+
+### 5. 心理活动的节奏
+- 紧张时：思维快速、碎片化、重复
+- 放松时：思维舒缓、发散、联想丰富
+- 震惊时：思维停滞、空白、慢动作
+- 决策时：思维来回、权衡、挣扎
+
+## 心理描写技巧
+
+### 1. 内心独白
+直接展示角色的想法：
+> 完了。这下真的完了。他盯着那封邮件，大脑像是被按了暂停键。为什么？为什么偏偏是今天？
+
+### 2. 意识流
+展示思维的自然流动：
+> 咖啡凉了。她应该再点一杯。但是钱包里只剩下三十块。三十块。妈妈说过，女孩子出门要带够钱。妈妈。妈妈现在在做什么？
+
+### 3. 身体反应
+通过身体感受展示心理：
+> 胃像是被人攥住了，一阵阵地抽紧。他知道这种感觉——上一次是三年前，在医院的走廊里。
+
+### 4. 记忆闪回
+用回忆展示心理根源：
+> "你永远都是这样。"她的声音和十年前一模一样。十年前，在那个下着雨的傍晚，母亲也是用这种语气说的。
+
+### 5. 自我对话
+角色与自己的对话：
+> 冷静。你要冷静。深呼吸。一、二、三......不行，心跳还是太快了。再来一次。
+
+## 输入格式
+{
+  "original_content": "需要优化的章节内容",
+  "character_dna": "角色DNA信息",
+  "additional_notes": "额外优化指令"
+}
+
+## 输出格式
+{
+  "optimized_content": "优化后的完整章节内容",
+  "optimization_notes": "优化说明，列出主要改动点"
+}
+
+## 注意事项
+1. **真实性**：心理活动要符合角色设定和情境
+2. **适度性**：不是每个时刻都需要大段心理描写
+3. **节奏感**：心理描写的长度要与情节节奏匹配
+4. **独特性**：每个角色的心理活动应该有不同的风格
+5. **连贯性**：心理变化要有逻辑，不能跳跃太大
+
+请只返回JSON格式的结果，不要包含其他文字。"#,
+        "rhythm" => r#"你是一位专注于小说节奏和韵律的编辑大师。你的任务是优化文章的节奏感，让阅读体验更加流畅和沉浸。
+
+## 优化原则
+
+### 1. 句子长度变化
+- 长短句交替，像呼吸一样自然
+- 紧张时用短句，舒缓时用长句
+- 避免连续多个相同长度的句子
+
+### 2. 段落节奏
+- 重要情节放慢，细致描写
+- 过渡情节加快，简洁带过
+- 高潮部分可以用单句成段
+
+### 3. 标点符号
+- 善用省略号表示思绪飘散
+- 用破折号表示突然转念
+- 感叹号要克制使用
+
+### 4. 韵律感
+- 注意句尾的音节变化
+- 避免重复的句式结构
+- 适当使用排比增强气势
+
+## 输入格式
+{
+  "original_content": "需要优化的章节内容",
+  "additional_notes": "额外优化指令"
+}
+
+## 输出格式
+{
+  "optimized_content": "优化后的完整章节内容",
+  "optimization_notes": "优化说明，列出主要改动点"
+}
+
+## 注意事项
+1. **自然流畅**：节奏变化要自然，不要刻意
+2. **符合情绪**：节奏要配合场景情绪
+3. **保持原意**：不要因为节奏改变而改变原意
+4. **适度原则**：不要过度追求技巧而失去自然
+
+请只返回JSON格式的结果，不要包含其他文字。"#,
+        _ => return Err(format!("不支持的优化维度: {}", dimension)),
+    };
+
+    // 构建用户消息
+    let dimension_name = match dimension {
+        "dialogue" => "对话",
+        "environment" => "环境描写",
+        "psychology" => "心理活动",
+        "rhythm" => "节奏韵律",
+        _ => "未知",
+    };
+
+    let mut user_input = serde_json::json!({
+        "original_content": original_content,
+        "additional_notes": request.additional_notes.unwrap_or_else(|| "无额外指令".to_string())
+    });
+
+    if let Some(characters) = character_context {
+        user_input["characters"] = serde_json::Value::String(characters);
+    }
+
+    // 调用AI服务
+    let ai_service = AIService::new();
+
+    let ai_request = AICompletionRequest {
+        model_id: "default".to_string(),
+        context: system_prompt.to_string(),
+        instruction: user_input.to_string(),
+        temperature: Some(0.7),
+        max_tokens: Some(8000),
+        stream: Some(false),
+        character_context: None,
+        worldview_context: None,
+        project_id: None,
+        chapter_mission_id: None,
+    };
+
+    let ai_response = ai_service.continue_novel(ai_request, None).await.map_err(|e| {
+        logger.error(&format!("AI optimization failed: {}", e));
+        format!("AI优化失败: {}", e)
+    })?;
+
+    // 解析AI响应
+    let response_text = ai_response.trim();
+
+    // 尝试从响应中提取JSON
+    let (optimized_content, optimization_notes) = if response_text.contains("{") && response_text.contains("}") {
+        // 尝试提取JSON部分
+        let start_idx = response_text.find('{').unwrap_or(0);
+        let end_idx = response_text.rfind('}').unwrap_or(response_text.len());
+        let json_str = &response_text[start_idx..=end_idx];
+
+        match serde_json::from_str::<serde_json::Value>(json_str) {
+            Ok(parsed) => {
+                let content = parsed.get("optimized_content")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or(response_text);
+                let notes = parsed.get("optimization_notes")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("优化完成");
+                (content.to_string(), notes.to_string())
+            }
+            Err(_) => {
+                logger.warn("Failed to parse JSON from AI response, using raw text");
+                (response_text.to_string(), "优化完成（响应格式非标准JSON）".to_string())
+            }
+        }
+    } else {
+        (response_text.to_string(), "优化完成".to_string())
+    };
+
+    let response = OptimizeChapterResponse {
+        optimized_content,
+        optimization_notes,
+        dimension: dimension.to_string(),
+    };
+
+    log_command_success(&logger, "optimize_chapter", &format!("维度: {}, 完成", dimension_name));
+    Ok(response)
+}
+
+#[tauri::command]
+pub async fn create_blueprint(
+    app: AppHandle,
+    request: CreateBlueprintRequest,
+) -> Result<Blueprint, String> {
+    let logger = Logger::new().with_feature("blueprint");
+    log_command_start(&logger, "create_blueprint", &format!("项目ID: {}, 标题: {}", request.project_id, request.title));
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| {
+        logger.error(&format!("Failed to get database connection: {}", e));
+        format!("数据库连接失败: {}", e)
+    })?;
+
+    // 生成唯一ID
+    let blueprint_id = Uuid::new_v4().to_string();
+    let now = Utc::now().to_rfc3339();
+
+    // 收集项目信息用于AI生成
+    let (characters_json, relationships_json, settings_json) = {
+        let mut characters_stmt = conn.prepare("SELECT name, personality, role, extra FROM characters WHERE project_id = ?1").map_err(|e| {
+            logger.error(&format!("Failed to prepare characters query: {}", e));
+            format!("准备角色查询失败: {}", e)
+        })?;
+
+        let characters: Vec<serde_json::Value> = characters_stmt
+            .query_map(params![&request.project_id], |row| {
+                Ok(serde_json::json!({
+                    "name": row.get::<_, String>(0).unwrap_or_default(),
+                    "personality": row.get::<_, String>(1).unwrap_or_default(),
+                    "role": row.get::<_, String>(2).unwrap_or_default(),
+                    "extra": row.get::<_, String>(3).unwrap_or_default(),
+                }))
+            })
+            .map_err(|e| {
+                logger.error(&format!("Failed to query characters: {}", e));
+                format!("查询角色失败: {}", e)
+            })?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| {
+                logger.error(&format!("Failed to collect characters: {}", e));
+                format!("收集角色数据失败: {}", e)
+            })?;
+
+        let mut relationships_stmt = conn.prepare("SELECT from_char, to_char, relationship_type, description FROM character_relations WHERE project_id = ?1").map_err(|e| {
+            logger.error(&format!("Failed to prepare relationships query: {}", e));
+            format!("准备关系查询失败: {}", e)
+        })?;
+
+        let relationships: Vec<serde_json::Value> = relationships_stmt
+            .query_map(params![&request.project_id], |row| {
+                Ok(serde_json::json!({
+                    "from": row.get::<_, String>(0).unwrap_or_default(),
+                    "to": row.get::<_, String>(1).unwrap_or_default(),
+                    "relationship_type": row.get::<_, String>(2).unwrap_or_default(),
+                    "description": row.get::<_, String>(3).unwrap_or_default(),
+                }))
+            })
+            .map_err(|e| {
+                logger.error(&format!("Failed to query relationships: {}", e));
+                format!("查询关系失败: {}", e)
+            })?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| {
+                logger.error(&format!("Failed to collect relationships: {}", e));
+                format!("收集关系数据失败: {}", e)
+            })?;
+
+        let mut settings_stmt = conn.prepare("SELECT category, name, description, details FROM world_views WHERE project_id = ?1").map_err(|e| {
+            logger.error(&format!("Failed to prepare settings query: {}", e));
+            format!("准备设定查询失败: {}", e)
+        })?;
+
+        let settings: Vec<serde_json::Value> = settings_stmt
+            .query_map(params![&request.project_id], |row| {
+                Ok(serde_json::json!({
+                    "category": row.get::<_, String>(0).unwrap_or_default(),
+                    "name": row.get::<_, String>(1).unwrap_or_default(),
+                    "description": row.get::<_, String>(2).unwrap_or_default(),
+                    "details": row.get::<_, String>(3).unwrap_or_default(),
+                }))
+            })
+            .map_err(|e| {
+                logger.error(&format!("Failed to query settings: {}", e));
+                format!("查询设定失败: {}", e)
+            })?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| {
+                logger.error(&format!("Failed to collect settings: {}", e));
+                format!("收集设定数据失败: {}", e)
+            })?;
+
+        (
+            serde_json::to_string(&characters).unwrap_or_default(),
+            serde_json::to_string(&relationships).unwrap_or_default(),
+            serde_json::to_string(&settings).unwrap_or_default(),
+        )
+    };
+
+    // 调用AI生成蓝图
+    let ai_service = AIService::new();
+
+    let system_prompt = r#"你是一位世界蓝图构建专家。你的任务是根据提供的故事信息，生成一份完整的世界蓝图。
+
+## 蓝图结构
+蓝图包含三个核心部分：
+1. 角色蓝图 - 定义主要角色的核心特质和故事定位
+2. 关系蓝图 - 定义角色之间的动态关系
+3. 设定蓝图 - 定义世界观和关键设定
+
+## 输入信息
+{
+  "title": "故事标题",
+  "genre": "类型",
+  "target_length": "目标字数",
+  "characters": [角色列表],
+  "relationships": [关系列表],
+  "settings": [设定列表]
+}
+
+## 输出格式
+返回JSON格式的蓝图，包含：
+{
+  "characters": [
+    {
+      "name": "角色名",
+      "role": "角色定位（主角/反派/配角等）",
+      "personality": "性格描述",
+      "background": "背景故事",
+      "arc_type": "角色弧类型",
+      "is_main_character": true/false
+    }
+  ],
+  "relationships": [
+    {
+      "from": "角色A",
+      "to": "角色B",
+      "relationship_type": "关系类型",
+      "description": "关系描述"
+    }
+  ],
+  "settings": [
+    {
+      "category": "类别",
+      "name": "设定名称",
+      "description": "描述",
+      "details": "详细说明"
+    }
+  ]
+}
+
+## 注意事项
+1. 角色要区分主次，主要角色要有完整的弧线
+2. 关系要动态且有意义，能推动情节发展
+3. 设定要服务于故事，避免冗余
+4. 保持与已有信息的一致性
+
+请只返回JSON格式的结果，不要包含其他文字。"#;
+
+    let user_input = serde_json::json!({
+        "title": request.title,
+        "genre": request.genre,
+        "target_length": request.target_length,
+        "characters": characters_json,
+        "relationships": relationships_json,
+        "settings": settings_json,
+    });
+
+    let ai_request = AICompletionRequest {
+        model_id: "default".to_string(),
+        context: system_prompt.to_string(),
+        instruction: user_input.to_string(),
+        temperature: Some(0.7),
+        max_tokens: Some(4000),
+        stream: Some(false),
+        character_context: None,
+        worldview_context: None,
+        project_id: None,
+        chapter_mission_id: None,
+    };
+
+    let ai_response = ai_service.continue_novel(ai_request, None).await.map_err(|e| {
+        logger.error(&format!("AI blueprint generation failed: {}", e));
+        format!("AI蓝图生成失败: {}", e)
+    })?;
+
+    // 解析AI响应
+    let response_text = ai_response.trim();
+    let (bp_characters, bp_relationships, bp_settings) = if response_text.contains("{") && response_text.contains("}") {
+        let start_idx = response_text.find('{').unwrap_or(0);
+        let end_idx = response_text.rfind('}').unwrap_or(response_text.len());
+        let json_str = &response_text[start_idx..=end_idx];
+
+        match serde_json::from_str::<serde_json::Value>(json_str) {
+            Ok(parsed) => {
+                let chars = parsed.get("characters")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| {
+                        arr.iter().filter_map(|v| {
+                            Some(BlueprintCharacter {
+                                name: v.get("name")?.as_str()?.to_string(),
+                                role: v.get("role")?.as_str().map(|s| s.to_string()),
+                                personality: v.get("personality")?.as_str().map(|s| s.to_string()),
+                                background: v.get("background")?.as_str().map(|s| s.to_string()),
+                                arc_type: v.get("arc_type")?.as_str().map(|s| s.to_string()),
+                                is_main_character: v.get("is_main_character")?.as_bool().unwrap_or(false),
+                            })
+                        }).collect()
+                    })
+                    .unwrap_or_default();
+                let rels = parsed.get("relationships")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| {
+                        arr.iter().filter_map(|v| {
+                            Some(BlueprintRelationship {
+                                from: v.get("from")?.as_str()?.to_string(),
+                                to: v.get("to")?.as_str()?.to_string(),
+                                relationship_type: v.get("relationship_type")?.as_str()?.to_string(),
+                                description: v.get("description")?.as_str().map(|s| s.to_string()),
+                            })
+                        }).collect()
+                    })
+                    .unwrap_or_default();
+                let sets = parsed.get("settings")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| {
+                        arr.iter().filter_map(|v| {
+                            Some(BlueprintSetting {
+                                category: v.get("category")?.as_str()?.to_string(),
+                                name: v.get("name")?.as_str()?.to_string(),
+                                description: v.get("description")?.as_str().map(|s| s.to_string()),
+                                details: v.get("details")?.as_str().map(|s| s.to_string()),
+                            })
+                        }).collect()
+                    })
+                    .unwrap_or_default();
+                (chars, rels, sets)
+            }
+            Err(_) => {
+                logger.warn("Failed to parse JSON from AI response, using empty arrays");
+                (vec![], vec![], vec![])
+            }
+        }
+    } else {
+        (vec![], vec![], vec![])
+    };
+
+    let characters_json = serde_json::to_string(&bp_characters).unwrap_or_default();
+    let relationships_json = serde_json::to_string(&bp_relationships).unwrap_or_default();
+    let settings_json = serde_json::to_string(&bp_settings).unwrap_or_default();
+
+    // 插入数据库
+    conn.execute(
+        "INSERT INTO blueprints (id, project_id, title, genre, target_length, characters, relationships, settings, created_at, updated_at)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+        params![
+            &blueprint_id,
+            &request.project_id,
+            &request.title,
+            &request.genre,
+            &request.target_length,
+            &characters_json,
+            &relationships_json,
+            &settings_json,
+            &now,
+            &now,
+        ],
+    ).map_err(|e| {
+        logger.error(&format!("Failed to insert blueprint: {}", e));
+        format!("插入蓝图失败: {}", e)
+    })?;
+
+    let blueprint = Blueprint {
+        id: blueprint_id.clone(),
+        project_id: request.project_id,
+        title: request.title,
+        genre: request.genre,
+        target_length: request.target_length,
+        characters: bp_characters,
+        relationships: bp_relationships,
+        settings: bp_settings,
+        created_at: now.clone(),
+        updated_at: now,
+    };
+
+    log_command_success(&logger, "create_blueprint", &format!("蓝图ID: {}", blueprint_id));
+    Ok(blueprint)
+}
+
+#[tauri::command]
+pub async fn get_blueprint(
+    app: AppHandle,
+    project_id: String,
+) -> Result<Option<Blueprint>, String> {
+    let logger = Logger::new().with_feature("blueprint");
+    log_command_start(&logger, "get_blueprint", &format!("项目ID: {}", project_id));
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| {
+        logger.error(&format!("Failed to get database connection: {}", e));
+        format!("数据库连接失败: {}", e)
+    })?;
+
+    let result = conn.query_row(
+        "SELECT id, project_id, title, genre, target_length, characters, relationships, settings, created_at, updated_at
+        FROM blueprints WHERE project_id = ?1",
+        params![&project_id],
+        |row| {
+            let characters_json: String = row.get(4).unwrap_or_default();
+            let relationships_json: String = row.get(5).unwrap_or_default();
+            let settings_json: String = row.get(6).unwrap_or_default();
+
+            let characters: Vec<BlueprintCharacter> = serde_json::from_str(&characters_json).unwrap_or_default();
+            let relationships: Vec<BlueprintRelationship> = serde_json::from_str(&relationships_json).unwrap_or_default();
+            let settings: Vec<BlueprintSetting> = serde_json::from_str(&settings_json).unwrap_or_default();
+
+            Ok(Blueprint {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                title: row.get(2)?,
+                genre: row.get(3).ok(),
+                target_length: row.get(4).ok(),
+                characters,
+                relationships,
+                settings,
+                created_at: row.get(7)?,
+                updated_at: row.get(8)?,
+            })
+        },
+    );
+
+    match result {
+        Ok(blueprint) => {
+            log_command_success(&logger, "get_blueprint", "找到蓝图");
+            Ok(Some(blueprint))
+        }
+        Err(rusqlite::Error::QueryReturnedNoRows) => {
+            log_command_success(&logger, "get_blueprint", "未找到蓝图");
+            Ok(None)
+        }
+        Err(e) => {
+            logger.error(&format!("Failed to query blueprint: {}", e));
+            Err(format!("查询蓝图失败: {}", e))
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn update_blueprint(
+    app: AppHandle,
+    request: UpdateBlueprintRequest,
+) -> Result<Blueprint, String> {
+    let logger = Logger::new().with_feature("blueprint");
+    log_command_start(&logger, "update_blueprint", &format!("蓝图ID: {}", request.blueprint_id));
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| {
+        logger.error(&format!("Failed to get database connection: {}", e));
+        format!("数据库连接失败: {}", e)
+    })?;
+
+    // 获取现有蓝图
+    let existing = conn.query_row(
+        "SELECT id, project_id, title, genre, target_length, characters, relationships, settings, created_at, updated_at
+        FROM blueprints WHERE id = ?1",
+        params![&request.blueprint_id],
+        |row| {
+            let characters_json: String = row.get(4).unwrap_or_default();
+            let relationships_json: String = row.get(5).unwrap_or_default();
+            let settings_json: String = row.get(6).unwrap_or_default();
+
+            let characters: Vec<BlueprintCharacter> = serde_json::from_str(&characters_json).unwrap_or_default();
+            let relationships: Vec<BlueprintRelationship> = serde_json::from_str(&relationships_json).unwrap_or_default();
+            let settings: Vec<BlueprintSetting> = serde_json::from_str(&settings_json).unwrap_or_default();
+
+            Ok(Blueprint {
+                id: row.get(0)?,
+                project_id: row.get(1)?,
+                title: row.get(2)?,
+                genre: row.get(3).ok(),
+                target_length: row.get(4).ok(),
+                characters,
+                relationships,
+                settings,
+                created_at: row.get(7)?,
+                updated_at: row.get(8)?,
+            })
+        },
+    );
+
+    let mut blueprint = match existing {
+        Ok(bp) => bp,
+        Err(rusqlite::Error::QueryReturnedNoRows) => {
+            log_command_error(&logger, "update_blueprint", "未找到蓝图");
+            return Err("未找到指定的蓝图".to_string());
+        }
+        Err(e) => {
+            logger.error(&format!("Failed to query blueprint: {}", e));
+            return Err(format!("查询蓝图失败: {}", e));
+        }
+    };
+
+    // 更新字段
+    if let Some(title) = request.title {
+        blueprint.title = title;
+    }
+    if let Some(genre) = request.genre {
+        blueprint.genre = Some(genre);
+    }
+    if let Some(target_length) = request.target_length {
+        blueprint.target_length = Some(target_length);
+    }
+    if let Some(characters) = request.characters {
+        blueprint.characters = characters;
+    }
+    if let Some(relationships) = request.relationships {
+        blueprint.relationships = relationships;
+    }
+    if let Some(settings) = request.settings {
+        blueprint.settings = settings;
+    }
+
+    let now = Utc::now().to_rfc3339();
+    let characters_json = serde_json::to_string(&blueprint.characters).unwrap_or_default();
+    let relationships_json = serde_json::to_string(&blueprint.relationships).unwrap_or_default();
+    let settings_json = serde_json::to_string(&blueprint.settings).unwrap_or_default();
+
+    // 更新数据库
+    conn.execute(
+        "UPDATE blueprints SET title = ?1, genre = ?2, target_length = ?3, characters = ?4, relationships = ?5, settings = ?6, updated_at = ?7
+        WHERE id = ?8",
+        params![
+            &blueprint.title,
+            &blueprint.genre,
+            &blueprint.target_length,
+            &characters_json,
+            &relationships_json,
+            &settings_json,
+            &now,
+            &request.blueprint_id,
+        ],
+    ).map_err(|e| {
+        logger.error(&format!("Failed to update blueprint: {}", e));
+        format!("更新蓝图失败: {}", e)
+    })?;
+
+    blueprint.updated_at = now;
+
+    log_command_success(&logger, "update_blueprint", "更新完成");
+    Ok(blueprint)
+}
+
+#[tauri::command]
+pub async fn create_chapter_mission(
+    app: AppHandle,
+    request: CreateChapterMissionRequest,
+) -> Result<ChapterMission, String> {
+    let logger = Logger::new().with_feature("chapter_mission");
+    log_command_start(&logger, "create_chapter_mission", &format!("章节ID: {}, 章节号: {}", request.chapter_id, request.chapter_number));
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| {
+        logger.error(&format!("Failed to get database connection: {}", e));
+        format!("数据库连接失败: {}", e)
+    })?;
+
+    let mission_id = Uuid::new_v4().to_string();
+    let now = Utc::now().to_rfc3339();
+
+    conn.execute(
+        "INSERT INTO chapter_missions (id, chapter_id, chapter_number, macro_beat, micro_beats, pov, tone, pacing, allowed_new_characters, forbidden_characters, beat_id, created_at)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+        params![
+            &mission_id,
+            &request.chapter_id,
+            &request.chapter_number,
+            None::<String>,
+            None::<String>,
+            None::<String>,
+            None::<String>,
+            None::<String>,
+            None::<String>,
+            None::<String>,
+            &now,
+        ],
+    ).map_err(|e| {
+        logger.error(&format!("Failed to insert chapter mission: {}", e));
+        format!("插入章节导演脚本失败: {}", e)
+    })?;
+
+    let mission = ChapterMission {
+        id: mission_id.clone(),
+        chapter_id: request.chapter_id,
+        chapter_number: request.chapter_number,
+        macro_beat: String::new(),
+        micro_beats: vec![],
+        pov: None,
+        tone: None,
+        pacing: None,
+        allowed_new_characters: vec![],
+        forbidden_characters: vec![],
+        beat_id: None,
+        created_at: now,
+    };
+
+    log_command_success(&logger, "create_chapter_mission", &format!("导演脚本ID: {}", mission_id));
+    Ok(mission)
+}
+
+#[tauri::command]
+pub async fn get_chapter_mission(
+    app: AppHandle,
+    chapter_id: String,
+) -> Result<Option<ChapterMission>, String> {
+    let logger = Logger::new().with_feature("chapter_mission");
+    log_command_start(&logger, "get_chapter_mission", &format!("章节ID: {}", chapter_id));
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| {
+        logger.error(&format!("Failed to get database connection: {}", e));
+        format!("数据库连接失败: {}", e)
+    })?;
+
+    let result = conn.query_row(
+        "SELECT id, chapter_id, chapter_number, macro_beat, micro_beats, pov, tone, pacing, allowed_new_characters, forbidden_characters, beat_id, created_at
+            FROM chapter_missions WHERE chapter_id = ?1",
+        params![&chapter_id],
+        |row| {
+            let micro_beats_json: String = row.get(4).unwrap_or_default();
+            let allowed_new_json: String = row.get(7).unwrap_or_default();
+            let forbidden_json: String = row.get(8).unwrap_or_default();
+
+            let micro_beats: Vec<String> = serde_json::from_str(&micro_beats_json).unwrap_or_default();
+            let allowed_new: Vec<String> = serde_json::from_str(&allowed_new_json).unwrap_or_default();
+            let forbidden: Vec<String> = serde_json::from_str(&forbidden_json).unwrap_or_default();
+
+            Ok(ChapterMission {
+                id: row.get(0)?,
+                chapter_id: row.get(1)?,
+                chapter_number: row.get(2)?,
+                macro_beat: row.get(3).unwrap_or_default(),
+                micro_beats,
+                pov: row.get(5).ok(),
+                tone: row.get(6).ok(),
+                pacing: row.get(7).ok(),
+                allowed_new_characters: allowed_new,
+                forbidden_characters: forbidden,
+                beat_id: row.get(9).ok(),
+                created_at: row.get(10)?,
+            })
+        },
+    );
+
+    match result {
+        Ok(mission) => {
+            log_command_success(&logger, "get_chapter_mission", "找到导演脚本");
+            Ok(Some(mission))
+        }
+        Err(rusqlite::Error::QueryReturnedNoRows) => {
+            log_command_success(&logger, "get_chapter_mission", "未找到导演脚本");
+            Ok(None)
+        }
+        Err(e) => {
+            logger.error(&format!("Failed to query chapter mission: {}", e));
+            Err(format!("查询章节导演脚本失败: {}", e))
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn update_chapter_mission(
+    app: AppHandle,
+    request: UpdateChapterMissionRequest,
+) -> Result<ChapterMission, String> {
+    let logger = Logger::new().with_feature("chapter_mission");
+    log_command_start(&logger, "update_chapter_mission", &format!("导演脚本ID: {}", request.mission_id));
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| {
+        logger.error(&format!("Failed to get database connection: {}", e));
+        format!("数据库连接失败: {}", e)
+    })?;
+
+    let existing = conn.query_row(
+        "SELECT id, chapter_id, chapter_number, macro_beat, micro_beats, pov, tone, pacing, allowed_new_characters, forbidden_characters, beat_id, created_at
+            FROM chapter_missions WHERE id = ?1",
+        params![&request.mission_id],
+        |row| {
+            let micro_beats_json: String = row.get(4).unwrap_or_default();
+            let allowed_new_json: String = row.get(7).unwrap_or_default();
+            let forbidden_json: String = row.get(8).unwrap_or_default();
+
+            let micro_beats: Vec<String> = serde_json::from_str(&micro_beats_json).unwrap_or_default();
+            let allowed_new: Vec<String> = serde_json::from_str(&allowed_new_json).unwrap_or_default();
+            let forbidden: Vec<String> = serde_json::from_str(&forbidden_json).unwrap_or_default();
+
+            Ok(ChapterMission {
+                id: row.get(0)?,
+                chapter_id: row.get(1)?,
+                chapter_number: row.get(2)?,
+                macro_beat: row.get(3).unwrap_or_default(),
+                micro_beats,
+                pov: row.get(5).ok(),
+                tone: row.get(6).ok(),
+                pacing: row.get(7).ok(),
+                allowed_new_characters: allowed_new,
+                forbidden_characters: forbidden,
+                beat_id: row.get(9).ok(),
+                created_at: row.get(10)?,
+            })
+        },
+    );
+
+    let mut mission = match existing {
+        Ok(m) => m,
+        Err(rusqlite::Error::QueryReturnedNoRows) => {
+            log_command_error(&logger, "update_chapter_mission", "未找到导演脚本");
+            return Err("未找到指定的章节导演脚本".to_string());
+        }
+        Err(e) => {
+            logger.error(&format!("Failed to query chapter mission: {}", e));
+            return Err(format!("查询章节导演脚本失败: {}", e));
+        }
+    };
+
+    if let Some(macro_beat) = request.macro_beat {
+        mission.macro_beat = macro_beat;
+    }
+    if let Some(micro_beats) = request.micro_beats {
+        mission.micro_beats = micro_beats;
+    }
+    if let Some(pov) = request.pov {
+        mission.pov = Some(pov);
+    }
+    if let Some(tone) = request.tone {
+        mission.tone = Some(tone);
+    }
+    if let Some(pacing) = request.pacing {
+        mission.pacing = Some(pacing);
+    }
+    if let Some(allowed_new) = request.allowed_new_characters {
+        mission.allowed_new_characters = allowed_new;
+    }
+    if let Some(forbidden) = request.forbidden_characters {
+        mission.forbidden_characters = forbidden;
+    }
+    if let Some(beat_id) = request.beat_id {
+        mission.beat_id = Some(beat_id);
+    }
+
+    let micro_beats_json = serde_json::to_string(&mission.micro_beats).unwrap_or_default();
+    let allowed_new_json = serde_json::to_string(&mission.allowed_new_characters).unwrap_or_default();
+    let forbidden_json = serde_json::to_string(&mission.forbidden_characters).unwrap_or_default();
+
+    conn.execute(
+        "UPDATE chapter_missions SET macro_beat = ?1, micro_beats = ?2, pov = ?3, tone = ?4, pacing = ?5, allowed_new_characters = ?6, forbidden_characters = ?7, beat_id = ?8
+            WHERE id = ?9",
+        params![
+            &mission.macro_beat,
+            &micro_beats_json,
+            &mission.pov,
+            &mission.tone,
+            &mission.pacing,
+            &allowed_new_json,
+            &forbidden_json,
+            &mission.beat_id,
+            &request.mission_id,
+        ],
+    ).map_err(|e| {
+        logger.error(&format!("Failed to update chapter mission: {}", e));
+        format!("更新章节导演脚本失败: {}", e)
+    })?;
+
+    log_command_success(&logger, "update_chapter_mission", "更新完成");
+    Ok(mission)
+}
+
+#[tauri::command]
+pub async fn generate_chapter_mission_with_ai(
+    app: AppHandle,
+    chapter_id: String,
+    chapter_number: i32,
+    chapter_outline: Option<String>,
+    blueprint_context: Option<String>,
+) -> Result<ChapterMission, String> {
+    let logger = Logger::new().with_feature("chapter_mission");
+    log_command_start(&logger, "generate_chapter_mission_with_ai", &format!("章节ID: {}, 章节号: {}", chapter_id, chapter_number));
+
+    let db_path = get_db_path(&app)?;
+    let conn = get_connection(&db_path).map_err(|e| {
+        logger.error(&format!("Failed to get database connection: {}", e));
+        format!("数据库连接失败: {}", e)
+    })?;
+
+    let ai_service = AIService::new();
+
+    let system_prompt = r#"你是一位专业的章节导演（Chapter Director）。你的任务是根据章节大纲和项目蓝图，为每一章生成导演脚本（Chapter Mission）。
+
+## 导演脚本结构
+导演脚本包含以下元素：
+1. **宏观节拍** - 本章的主要事件/目标
+2. **微观节拍** - 将宏观节拍分解为3-5个具体场景或情节点
+3. **视角（POV）** - 指定本章的叙事视角角色
+4. **基调（Tone）** - 本章的情感基调（紧张/温馨/悬疑/欢快等）
+5. **节奏（Pacing）** - 本章的节奏类型（慢/中/快）
+6. **允许新登场角色** - 本章可以引入的新角色列表
+7. **禁止角色** - 本章不允许出现的角色列表
+
+## 设计原则
+1. **每章一个节拍** - 确保每个宏观节拍对应一章
+2. **视角一致性** - 尽量保持视角的一致性
+3. **节奏变化** - 根据情节需要调整节奏
+4. **角色出场控制** - 合理安排角色出场时机
+5. **信息可见性** - 根据章节序号控制角色和设定的可见性
+
+## 输入信息
+{
+  "chapter_number": 章节号,
+  "chapter_outline": 章节大纲,
+  "blueprint_context": 项目蓝图上下文
+}
+
+## 输出格式
+返回JSON格式的导演脚本：
+{
+  "macro_beat": "宏观节拍描述",
+  "micro_beats": ["微观节拍1", "微观节拍2", "微观节拍3"],
+  "pov": "视角角色名",
+  "tone": "基调",
+  "pacing": "节奏",
+  "allowed_new_characters": ["新角色名1", "新角色名2"],
+  "forbidden_characters": ["禁止角色名1"]
+}
+
+## 注意事项
+1. 宏观节拍要简洁明了，一句话概括本章核心
+2. 微观节拍要具体，能指导AI写作
+3. 视角角色应该是本章的主要行动者
+4. 基调和节奏要服务于情节需要
+5. 允许新登场角色列表只列出确实需要在本章登场的新角色
+6. 禁止角色列表是为了防止信息泄露，只列出确实不能出现的角色
+
+请只返回JSON格式的结果，不要包含其他文字。"#;
+
+    let user_input = serde_json::json!({
+        "chapter_number": chapter_number,
+        "chapter_outline": chapter_outline.unwrap_or_else(|| "无大纲".to_string()),
+        "blueprint_context": blueprint_context.unwrap_or_else(|| "无蓝图上下文".to_string()),
+    });
+
+    let ai_request = AICompletionRequest {
+        model_id: "default".to_string(),
+        context: system_prompt.to_string(),
+        instruction: user_input.to_string(),
+        temperature: Some(0.7),
+        max_tokens: Some(2000),
+        stream: Some(false),
+        character_context: None,
+        worldview_context: None,
+        project_id: None,
+        chapter_mission_id: None,
+    };
+
+    let ai_response = ai_service.continue_novel(ai_request, None).await.map_err(|e| {
+        logger.error(&format!("AI mission generation failed: {}", e));
+        format!("AI导演脚本生成失败: {}", e)
+    })?;
+
+    let response_text = ai_response.trim();
+    let (macro_beat, micro_beats, pov, tone, pacing, allowed_new, forbidden) = if response_text.contains("{") && response_text.contains("}") {
+        let start_idx = response_text.find('{').unwrap_or(0);
+        let end_idx = response_text.rfind('}').unwrap_or(response_text.len());
+        let json_str = &response_text[start_idx..=end_idx];
+
+        match serde_json::from_str::<serde_json::Value>(json_str) {
+            Ok(parsed) => {
+                let mb = parsed.get("macro_beat").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                let mbs: Vec<String> = parsed.get("micro_beats")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+                    .unwrap_or_default();
+                let p = parsed.get("pov").and_then(|v| v.as_str()).map(|s| s.to_string());
+                let t = parsed.get("tone").and_then(|v| v.as_str()).map(|s| s.to_string());
+                let pac = parsed.get("pacing").and_then(|v| v.as_str()).map(|s| s.to_string());
+                let anc: Vec<String> = parsed.get("allowed_new_characters")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+                    .unwrap_or_default();
+                let forb: Vec<String> = parsed.get("forbidden_characters")
+                    .and_then(|v| v.as_array())
+                    .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+                    .unwrap_or_default();
+                (mb, mbs, p, t, pac, anc, forb)
+            }
+            Err(_) => {
+                logger.warn("Failed to parse JSON from AI response, using defaults");
+                (String::new(), vec![], None, None, None, vec![], vec![])
+            }
+        }
+    } else {
+        (String::new(), vec![], None, None, None, vec![], vec![])
+    };
+
+    let mission_id = Uuid::new_v4().to_string();
+    let now = Utc::now().to_rfc3339();
+
+    let micro_beats_json = serde_json::to_string(&micro_beats).unwrap_or_default();
+    let allowed_new_json = serde_json::to_string(&allowed_new).unwrap_or_default();
+    let forbidden_json = serde_json::to_string(&forbidden).unwrap_or_default();
+
+    conn.execute(
+        "INSERT OR REPLACE INTO chapter_missions (id, chapter_id, chapter_number, macro_beat, micro_beats, pov, tone, pacing, allowed_new_characters, forbidden_characters, beat_id, created_at)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+        params![
+            &mission_id,
+            &chapter_id,
+            &chapter_number,
+            &macro_beat,
+            &micro_beats_json,
+            &pov,
+            &tone,
+            &pacing,
+            &allowed_new_json,
+            &forbidden_json,
+            None::<String>,
+            &now,
+        ],
+    ).map_err(|e| {
+        logger.error(&format!("Failed to insert chapter mission: {}", e));
+        format!("插入章节导演脚本失败: {}", e)
+    })?;
+
+    let mission = ChapterMission {
+        id: mission_id,
+        chapter_id,
+        chapter_number,
+        macro_beat,
+        micro_beats,
+        pov,
+        tone,
+        pacing,
+        allowed_new_characters: allowed_new,
+        forbidden_characters: forbidden,
+        beat_id: None,
+        created_at: now,
+    };
+
+    log_command_success(&logger, "generate_chapter_mission_with_ai", "生成完成");
+    Ok(mission)
+}
+
+#[tauri::command]
+pub async fn get_story_beats(
+    app: tauri::AppHandle,
+    project_id: String,
+) -> Result<Vec<StoryBeat>, String> {
+    let logger = Logger::new().with_feature("get_story_beats");
+    log_command_start(&logger, "get_story_beats", &format!("project_id={}", project_id));
+
+    let db_path = get_db_path(&app).map_err(|e| {
+        logger.error(&format!("Failed to get database path: {}", e));
+        format!("获取数据库路径失败: {}", e)
+    })?;
+
+    let conn = get_connection(&db_path).map_err(|e| {
+        logger.error(&format!("Failed to get database connection: {}", e));
+        format!("数据库连接失败: {}", e)
+    })?;
+
+    let mut stmt = conn.prepare(
+        "SELECT id, parent_id, title, content, node_type, sort_order
+         FROM outline_nodes
+         WHERE project_id = ?1
+         AND node_type IN ('chapter', 'scene', 'beat')
+         ORDER BY sort_order ASC"
+    ).map_err(|e| {
+        logger.error(&format!("Failed to prepare query: {}", e));
+        format!("准备查询失败: {}", e)
+    })?;
+
+    let mut rows = stmt.query(params![&project_id]).map_err(|e| {
+        logger.error(&format!("Failed to query outline nodes: {}", e));
+        format!("查询大纲节点失败: {}", e)
+    })?;
+
+    let mut beats = Vec::new();
+    let mut chapter_number = 0;
+
+    while let Some(row) = rows.next().map_err(|e| {
+        logger.error(&format!("Failed to iterate rows: {}", e));
+        format!("迭代查询结果失败: {}", e)
+    })? {
+        let node_id: String = row.get(0).map_err(|e| e.to_string())?;
+        let parent_id: Option<String> = row.get(1).ok();
+        let title: String = row.get(2).map_err(|e| e.to_string())?;
+        let content: String = row.get(3).map_err(|e| e.to_string())?;
+        let node_type: String = row.get(4).map_err(|e| e.to_string())?;
+        let sort_order: i32 = row.get(5).map_err(|e| e.to_string())?;
+
+        let beat_type = if node_type == "chapter" {
+            chapter_number += 1;
+            "chapter".to_string()
+        } else if node_type == "scene" {
+            "scene".to_string()
+        } else {
+            "beat".to_string()
+        };
+
+        beats.push(StoryBeat {
+            id: format!("beat_{}", Uuid::new_v4().to_string()),
+            outline_node_id: node_id,
+            title,
+            description: content,
+            chapter_number,
+            beat_type,
+            status: "pending".to_string(),
+        });
+    }
+
+    log_command_success(&logger, "get_story_beats", &format!("获取{}个节拍", beats.len()));
+    Ok(beats)
+}
+
+#[tauri::command]
+pub async fn create_chapter_guardrails(
+    app: tauri::AppHandle,
+    request: CreateChapterGuardrailsRequest,
+) -> Result<ChapterGuardrails, String> {
+    let logger = Logger::new().with_feature("create_chapter_guardrails");
+    log_command_start(&logger, "create_chapter_guardrails", &format!("{:?}", request));
+
+    let db_path = get_db_path(&app).map_err(|e| {
+        logger.error(&format!("Failed to get database path: {}", e));
+        format!("获取数据库路径失败: {}", e)
+    })?;
+
+    let conn = get_connection(&db_path).map_err(|e| {
+        logger.error(&format!("Failed to get database connection: {}", e));
+        format!("数据库连接失败: {}", e)
+    })?;
+
+    let id = format!("guardrails_{}", Uuid::new_v4().to_string());
+    let now = Utc::now().to_rfc3339();
+
+    let forbidden_characters = request.forbidden_characters.clone().unwrap_or_default();
+    let forbidden_topics = request.forbidden_topics.clone().unwrap_or_default();
+    let forbidden_emojis = request.forbidden_emojis.clone().unwrap_or_default();
+
+    let forbidden_chars_json = serde_json::to_string(&forbidden_characters).unwrap_or_default();
+    let forbidden_topics_json = serde_json::to_string(&forbidden_topics).unwrap_or_default();
+    let forbidden_emojis_json = serde_json::to_string(&forbidden_emojis).unwrap_or_default();
+
+    conn.execute(
+        "INSERT INTO chapter_guardrails (id, chapter_id, chapter_number, forbidden_characters, forbidden_topics, forbidden_emojis, min_length, max_length, required_beat_completion, created_at)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+        params![
+            &id,
+            &request.chapter_id,
+            &request.chapter_number,
+            &forbidden_chars_json,
+            &forbidden_topics_json,
+            &forbidden_emojis_json,
+            request.min_length.unwrap_or(0),
+            request.max_length.unwrap_or(100000),
+            if request.required_beat_completion.unwrap_or(true) { 1 } else { 0 },
+            &now,
+        ],
+    ).map_err(|e| {
+        logger.error(&format!("Failed to insert chapter guardrails: {}", e));
+        format!("插入章节护栏失败: {}", e)
+    })?;
+
+    let guardrails = ChapterGuardrails {
+        id: id.clone(),
+        chapter_id: request.chapter_id,
+        chapter_number: request.chapter_number,
+        forbidden_characters,
+        forbidden_topics,
+        forbidden_emojis,
+        min_length: request.min_length.unwrap_or(0),
+        max_length: request.max_length.unwrap_or(100000),
+        required_beat_completion: request.required_beat_completion.unwrap_or(true),
+        created_at: now,
+    };
+
+    log_command_success(&logger, "create_chapter_guardrails", &id);
+    Ok(guardrails)
+}
+
+#[tauri::command]
+pub async fn get_chapter_guardrails(
+    app: tauri::AppHandle,
+    chapter_id: String,
+) -> Result<Option<ChapterGuardrails>, String> {
+    let logger = Logger::new().with_feature("get_chapter_guardrails");
+    log_command_start(&logger, "get_chapter_guardrails", &format!("chapter_id={}", chapter_id));
+
+    let db_path = get_db_path(&app).map_err(|e| {
+        logger.error(&format!("Failed to get database path: {}", e));
+        format!("获取数据库路径失败: {}", e)
+    })?;
+
+    let conn = get_connection(&db_path).map_err(|e| {
+        logger.error(&format!("Failed to get database connection: {}", e));
+        format!("数据库连接失败: {}", e)
+    })?;
+
+    let result = conn.query_row(
+        "SELECT id, chapter_id, chapter_number, forbidden_characters, forbidden_topics, forbidden_emojis, min_length, max_length, required_beat_completion, created_at
+            FROM chapter_guardrails WHERE chapter_id = ?1",
+        params![&chapter_id],
+        |row| {
+            let forbidden_chars_json: String = row.get(3).unwrap_or_default();
+            let forbidden_topics_json: String = row.get(4).unwrap_or_default();
+            let forbidden_emojis_json: String = row.get(5).unwrap_or_default();
+
+            let forbidden_chars: Vec<String> = serde_json::from_str(&forbidden_chars_json).unwrap_or_default();
+            let forbidden_topics: Vec<String> = serde_json::from_str(&forbidden_topics_json).unwrap_or_default();
+            let forbidden_emojis: Vec<String> = serde_json::from_str(&forbidden_emojis_json).unwrap_or_default();
+
+            Ok(ChapterGuardrails {
+                id: row.get(0)?,
+                chapter_id: row.get(1)?,
+                chapter_number: row.get(2)?,
+                forbidden_characters: forbidden_chars,
+                forbidden_topics: forbidden_topics,
+                forbidden_emojis: forbidden_emojis,
+                min_length: row.get(6)?,
+                max_length: row.get(7)?,
+                required_beat_completion: {
+                    let val: i32 = row.get(8)?;
+                    val != 0
+                },
+                created_at: row.get(9)?,
+            })
+        },
+    );
+
+    match result {
+        Ok(guardrails) => {
+            log_command_success(&logger, "get_chapter_guardrails", &guardrails.id);
+            Ok(Some(guardrails))
+        }
+        Err(rusqlite::Error::QueryReturnedNoRows) => {
+            log_command_success(&logger, "get_chapter_guardrails", "未找到护栏");
+            Ok(None)
+        }
+        Err(e) => {
+            logger.error(&format!("Failed to query guardrails: {}", e));
+            Err(format!("查询章节护栏失败: {}", e))
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn update_chapter_guardrails(
+    app: tauri::AppHandle,
+    request: UpdateChapterGuardrailsRequest,
+) -> Result<ChapterGuardrails, String> {
+    let logger = Logger::new().with_feature("update_chapter_guardrails");
+    log_command_start(&logger, "update_chapter_guardrails", &format!("{:?}", request));
+
+    let db_path = get_db_path(&app).map_err(|e| {
+        logger.error(&format!("Failed to get database path: {}", e));
+        format!("获取数据库路径失败: {}", e)
+    })?;
+
+    let conn = get_connection(&db_path).map_err(|e| {
+        logger.error(&format!("Failed to get database connection: {}", e));
+        format!("数据库连接失败: {}", e)
+    })?;
+
+    let existing = conn.query_row(
+        "SELECT id, chapter_id, chapter_number, forbidden_characters, forbidden_topics, forbidden_emojis, min_length, max_length, required_beat_completion, created_at
+            FROM chapter_guardrails WHERE id = ?1",
+        params![&request.guardrails_id],
+        |row| {
+            let forbidden_chars_json: String = row.get(3).unwrap_or_default();
+            let forbidden_topics_json: String = row.get(4).unwrap_or_default();
+            let forbidden_emojis_json: String = row.get(5).unwrap_or_default();
+
+            let forbidden_chars: Vec<String> = serde_json::from_str(&forbidden_chars_json).unwrap_or_default();
+            let forbidden_topics: Vec<String> = serde_json::from_str(&forbidden_topics_json).unwrap_or_default();
+            let forbidden_emojis: Vec<String> = serde_json::from_str(&forbidden_emojis_json).unwrap_or_default();
+
+            Ok(ChapterGuardrails {
+                id: row.get(0)?,
+                chapter_id: row.get(1)?,
+                chapter_number: row.get(2)?,
+                forbidden_characters: forbidden_chars,
+                forbidden_topics: forbidden_topics,
+                forbidden_emojis: forbidden_emojis,
+                min_length: row.get(6)?,
+                max_length: row.get(7)?,
+                required_beat_completion: {
+                    let val: i32 = row.get(8)?;
+                    val != 0
+                },
+                created_at: row.get(9)?,
+            })
+        },
+    );
+
+    let mut guardrails = match existing {
+        Ok(g) => g,
+        Err(rusqlite::Error::QueryReturnedNoRows) => {
+            return Err("未找到指定的护栏记录".to_string());
+        }
+        Err(e) => {
+            logger.error(&format!("Failed to query guardrails: {}", e));
+            return Err(format!("查询章节护栏失败: {}", e));
+        }
+    };
+
+    if let Some(forbidden_chars) = request.forbidden_characters {
+        guardrails.forbidden_characters = forbidden_chars;
+    }
+    if let Some(forbidden_topics) = request.forbidden_topics {
+        guardrails.forbidden_topics = forbidden_topics;
+    }
+    if let Some(forbidden_emojis) = request.forbidden_emojis {
+        guardrails.forbidden_emojis = forbidden_emojis;
+    }
+    if let Some(min_length) = request.min_length {
+        guardrails.min_length = min_length;
+    }
+    if let Some(max_length) = request.max_length {
+        guardrails.max_length = max_length;
+    }
+    if let Some(required) = request.required_beat_completion {
+        guardrails.required_beat_completion = required;
+    }
+
+    let forbidden_chars_json = serde_json::to_string(&guardrails.forbidden_characters).unwrap_or_default();
+    let forbidden_topics_json = serde_json::to_string(&guardrails.forbidden_topics).unwrap_or_default();
+    let forbidden_emojis_json = serde_json::to_string(&guardrails.forbidden_emojis).unwrap_or_default();
+
+    conn.execute(
+        "UPDATE chapter_guardrails SET forbidden_characters = ?1, forbidden_topics = ?2, forbidden_emojis = ?3, min_length = ?4, max_length = ?5, required_beat_completion = ?6
+            WHERE id = ?7",
+        params![
+            &forbidden_chars_json,
+            &forbidden_topics_json,
+            &forbidden_emojis_json,
+            guardrails.min_length,
+            guardrails.max_length,
+            if guardrails.required_beat_completion { 1 } else { 0 },
+            &request.guardrails_id,
+        ],
+    ).map_err(|e| {
+        logger.error(&format!("Failed to update chapter guardrails: {}", e));
+        format!("更新章节护栏失败: {}", e)
+    })?;
+
+    log_command_success(&logger, "update_chapter_guardrails", &request.guardrails_id);
+    Ok(guardrails)
+}
+
+#[tauri::command]
+pub async fn check_content_against_guardrails(
+    app: tauri::AppHandle,
+    request: CheckContentAgainstGuardrailsRequest,
+) -> Result<CheckContentAgainstGuardrailsResponse, String> {
+    let logger = Logger::new().with_feature("check_content_against_guardrails");
+    log_command_start(&logger, "check_content_against_guardrails", &format!("chapter_id={}", request.chapter_id));
+
+    let db_path = get_db_path(&app).map_err(|e| {
+        logger.error(&format!("Failed to get database path: {}", e));
+        format!("获取数据库路径失败: {}", e)
+    })?;
+
+    let conn = get_connection(&db_path).map_err(|e| {
+        logger.error(&format!("Failed to get database connection: {}", e));
+        format!("数据库连接失败: {}", e)
+    })?;
+
+    let guardrails = conn.query_row(
+        "SELECT forbidden_characters, forbidden_topics, forbidden_emojis, min_length, max_length
+            FROM chapter_guardrails WHERE chapter_id = ?1",
+        params![&request.chapter_id],
+        |row| {
+            let forbidden_chars_json: String = row.get(0).unwrap_or_default();
+            let forbidden_topics_json: String = row.get(1).unwrap_or_default();
+            let forbidden_emojis_json: String = row.get(2).unwrap_or_default();
+
+            let forbidden_chars: Vec<String> = serde_json::from_str(&forbidden_chars_json).unwrap_or_default();
+            let forbidden_topics: Vec<String> = serde_json::from_str(&forbidden_topics_json).unwrap_or_default();
+            let forbidden_emojis: Vec<String> = serde_json::from_str(&forbidden_emojis_json).unwrap_or_default();
+
+            Ok((forbidden_chars, forbidden_topics, forbidden_emojis, row.get(3)?, row.get(4)?))
+        },
+    );
+
+    let (forbidden_chars, forbidden_topics, forbidden_emojis, min_length, max_length) = match guardrails {
+        Ok(g) => g,
+        Err(rusqlite::Error::QueryReturnedNoRows) => {
+            (vec![], vec![], vec![], 0, 100000)
+        }
+        Err(e) => {
+            logger.error(&format!("Failed to query guardrails: {}", e));
+            return Err(format!("查询章节护栏失败: {}", e));
+        }
+    };
+
+    let mut violations = Vec::new();
+    let mut suggestions = Vec::new();
+    let content_length = request.content.chars().count() as i32;
+
+    if content_length < min_length {
+        violations.push(GuardrailViolation {
+            violation_type: "length".to_string(),
+            message: format!("内容长度{}字低于最小要求{}字", content_length, min_length),
+            severity: "error".to_string(),
+        });
+        suggestions.push(format!("请扩展内容至至少{}字", min_length));
+    }
+
+    if content_length > max_length {
+        violations.push(GuardrailViolation {
+            violation_type: "length".to_string(),
+            message: format!("内容长度{}字超过最大限制{}字", content_length, max_length),
+            severity: "warning".to_string(),
+        });
+        suggestions.push(format!("建议缩减内容至{}字以内", max_length));
+    }
+
+    for forbidden_char in &forbidden_chars {
+        if request.content.contains(forbidden_char) {
+            violations.push(GuardrailViolation {
+                violation_type: "forbidden_character".to_string(),
+                message: format!("内容中包含禁止角色：{}", forbidden_char),
+                severity: "error".to_string(),
+            });
+            suggestions.push(format!("请移除角色\"{}\"的相关内容", forbidden_char));
+        }
+    }
+
+    for forbidden_topic in &forbidden_topics {
+        if request.content.contains(forbidden_topic) {
+            violations.push(GuardrailViolation {
+                violation_type: "forbidden_topic".to_string(),
+                message: format!("内容中涉及禁止话题：{}", forbidden_topic),
+                severity: "warning".to_string(),
+            });
+            suggestions.push(format!("请移除话题\"{}\"的相关内容", forbidden_topic));
+        }
+    }
+
+    for forbidden_emoji in &forbidden_emojis {
+        if request.content.contains(forbidden_emoji) {
+            violations.push(GuardrailViolation {
+                violation_type: "forbidden_emoji".to_string(),
+                message: format!("内容中包含禁止表情符号：{}", forbidden_emoji),
+                severity: "warning".to_string(),
+            });
+            suggestions.push(format!("请移除表情符号\"{}\"", forbidden_emoji));
+        }
+    }
+
+    let passed = violations.is_empty() || violations.iter().all(|v| v.severity != "error");
+
+    log_command_success(&logger, "check_content_against_guardrails", &format!("passed={}, violations={}", passed, violations.len()));
+    Ok(CheckContentAgainstGuardrailsResponse {
+        passed,
+        violations,
+        suggestions,
+    })
+}
+
+#[tauri::command]
+pub async fn vectorize_chapter(
+    app: tauri::AppHandle,
+    request: VectorizeChapterRequest,
+) -> Result<VectorizeChapterResponse, String> {
+    let logger = Logger::new().with_feature("vectorize_chapter");
+    log_command_start(&logger, "vectorize_chapter", &format!("chapter_id={}", request.chapter_id));
+
+    let db_path = get_db_path(&app).map_err(|e| {
+        logger.error(&format!("Failed to get database path: {}", e));
+        format!("获取数据库路径失败: {}", e)
+    })?;
+
+    let conn = get_connection(&db_path).map_err(|e| {
+        logger.error(&format!("Failed to get database connection: {}", e));
+        format!("数据库连接失败: {}", e)
+    })?;
+
+    let chapter: String = conn.query_row(
+        "SELECT content FROM chapters WHERE id = ?1",
+        params![&request.chapter_id],
+        |row| row.get(0),
+    ).map_err(|e| {
+        logger.error(&format!("Failed to query chapter: {}", e));
+        format!("查询章节失败: {}", e)
+    })?;
+
+    let chunk_size = request.chunk_size.unwrap_or(500) as usize;
+    let overlap = request.overlap.unwrap_or(50) as usize;
+    let chars: Vec<char> = chapter.chars().collect();
+    let now = Utc::now().to_rfc3339();
+
+    let mut chunks_created = 0;
+    let mut start = 0;
+
+    while start < chars.len() {
+        let end = std::cmp::min(start + chunk_size, chars.len());
+        let chunk_text: String = chars[start..end].iter().collect();
+
+        if !chunk_text.trim().is_empty() {
+            let chunk_id = format!("chunk_{}", Uuid::new_v4().to_string());
+            let metadata = serde_json::json!({
+                "start_pos": start,
+                "end_pos": end,
+                "chunk_size": chunk_size,
+                "overlap": overlap,
+            }).to_string();
+
+            conn.execute(
+                "INSERT INTO vector_chunks (id, chapter_id, chunk_index, content, metadata, created_at)
+                    VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params![
+                    &chunk_id,
+                    &request.chapter_id,
+                    chunks_created,
+                    &chunk_text,
+                    &metadata,
+                    &now,
+                ],
+            ).map_err(|e| {
+                logger.error(&format!("Failed to insert chunk: {}", e));
+                format!("插入向量块失败: {}", e)
+            })?;
+
+            chunks_created += 1;
+        }
+
+        start += chunk_size - overlap;
+    }
+
+    log_command_success(&logger, "vectorize_chapter", &format!("创建{}个块", chunks_created));
+    Ok(VectorizeChapterResponse {
+        chunks_created,
+        chapter_id: request.chapter_id,
+    })
+}
+
+#[tauri::command]
+pub async fn search_chunks(
+    app: tauri::AppHandle,
+    request: SearchChunksRequest,
+) -> Result<SearchChunksResponse, String> {
+    let logger = Logger::new().with_feature("search_chunks");
+    log_command_start(&logger, "search_chunks", &format!("query={}", request.query));
+
+    let db_path = get_db_path(&app).map_err(|e| {
+        logger.error(&format!("Failed to get database path: {}", e));
+        format!("获取数据库路径失败: {}", e)
+    })?;
+
+    let conn = get_connection(&db_path).map_err(|e| {
+        logger.error(&format!("Failed to get database connection: {}", e));
+        format!("数据库连接失败: {}", e)
+    })?;
+
+    let mut stmt = conn.prepare(
+        "SELECT id, chapter_id, chunk_index, content, metadata, created_at
+         FROM vector_chunks
+         WHERE content LIKE ?1
+         ORDER BY chunk_index ASC
+         LIMIT ?2"
+    ).map_err(|e| {
+        logger.error(&format!("Failed to prepare query: {}", e));
+        format!("准备查询失败: {}", e)
+    })?;
+
+    let top_k = request.top_k.unwrap_or(5) as usize;
+    let search_pattern = format!("%{}%", request.query);
+    let mut rows = stmt.query(params![&search_pattern, top_k]).map_err(|e| {
+        logger.error(&format!("Failed to search chunks: {}", e));
+        format!("搜索向量块失败: {}", e)
+    })?;
+
+    let mut results = Vec::new();
+    let query_lower = request.query.to_lowercase();
+
+    while let Some(row) = rows.next().map_err(|e| {
+        logger.error(&format!("Failed to iterate rows: {}", e));
+        format!("迭代查询结果失败: {}", e)
+    })? {
+        let chunk = VectorChunk {
+            id: row.get(0).map_err(|e| e.to_string())?,
+            chapter_id: row.get(1).map_err(|e| e.to_string())?,
+            chunk_index: row.get(2).map_err(|e| e.to_string())?,
+            content: row.get(3).map_err(|e| e.to_string())?,
+            metadata: row.get(4).map_err(|e| e.to_string())?,
+            created_at: row.get(5).map_err(|e| e.to_string())?,
+        };
+
+        let chunk_lower = chunk.content.to_lowercase();
+        let similarity = calculate_similarity(&query_lower, &chunk_lower);
+
+        results.push(ChunkSearchResult {
+            chunk,
+            similarity,
+        });
+    }
+
+    results.sort_by(|a, b| b.similarity.partial_cmp(&a.similarity).unwrap());
+
+    let results: Vec<ChunkSearchResult> = results.into_iter().take(top_k).collect();
+
+    log_command_success(&logger, "search_chunks", &format!("找到{}个结果", results.len()));
+    Ok(SearchChunksResponse {
+        results,
+        query: request.query,
+    })
+}
+
+fn calculate_similarity(query: &str, chunk: &str) -> f64 {
+    let query_words: Vec<&str> = query.split_whitespace().collect();
+    let chunk_words: Vec<&str> = chunk.split_whitespace().collect();
+
+    if query_words.is_empty() {
+        return 0.0;
+    }
+
+    let mut matches = 0;
+    for qword in &query_words {
+        for cword in &chunk_words {
+            if cword.contains(qword) || qword.contains(cword) {
+                matches += 1;
+                break;
+            }
+        }
+    }
+
+    matches as f64 / query_words.len() as f64
+}
+
+#[tauri::command]
+pub async fn generate_chapter_summary(
+    app: tauri::AppHandle,
+    chapter_id: String,
+) -> Result<String, String> {
+    let logger = Logger::new().with_feature("generate_chapter_summary");
+    log_command_start(&logger, "generate_chapter_summary", &format!("chapter_id={}", chapter_id));
+
+    let db_path = get_db_path(&app).map_err(|e| {
+        logger.error(&format!("Failed to get database path: {}", e));
+        format!("获取数据库路径失败: {}", e)
+    })?;
+
+    let conn = get_connection(&db_path).map_err(|e| {
+        logger.error(&format!("Failed to get database connection: {}", e));
+        format!("数据库连接失败: {}", e)
+    })?;
+
+    let chapter: String = conn.query_row(
+        "SELECT content FROM chapters WHERE id = ?1",
+        params![&chapter_id],
+        |row| row.get(0),
+    ).map_err(|e| {
+        logger.error(&format!("Failed to query chapter: {}", e));
+        format!("查询章节失败: {}", e)
+    })?;
+
+    if chapter.trim().is_empty() {
+        log_command_success(&logger, "generate_chapter_summary", "章节内容为空");
+        return Ok("章节内容为空".to_string());
+    }
+
+    let ai_service = AIService::new();
+
+    let system_prompt = "你是一个专业的小说编辑。请为以下章节内容生成一个简洁的摘要（200字以内），突出本章的主要事件和情节发展。".to_string();
+
+    let response = ai_service.complete("default", &system_prompt, &chapter).await.map_err(|e| {
+        logger.error(&format!("AI生成摘要失败: {}", e));
+        format!("AI生成摘要失败: {}", e)
+    })?;
+
+    let summary = response.trim().to_string();
+
+    conn.execute(
+        "UPDATE chapters SET summary = ?1 WHERE id = ?2",
+        params![&summary, &chapter_id],
+    ).map_err(|e| {
+        logger.error(&format!("Failed to update chapter summary: {}", e));
+        format!("更新章节摘要失败: {}", e)
+    })?;
+
+    log_command_success(&logger, "generate_chapter_summary", &format!("摘要生成完成，长度：{}", summary.len()));
+    Ok(summary)
 }

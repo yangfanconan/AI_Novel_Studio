@@ -23,6 +23,13 @@ import type {
   StoryboardScene,
   FormatOptions,
   FormattedContent,
+  GenerateChapterVersionsRequest,
+  EvaluateChapterRequest,
+  SelectChapterVersionRequest,
+  Foreshadowing,
+  CreateForeshadowingRequest,
+  ResolveForeshadowingRequest,
+  ForeshadowingStats,
 } from "../types";
 
 export const projectService = {
@@ -63,6 +70,18 @@ export const chapterService = {
 
   async updateChapter(id: string, title?: string, content?: string): Promise<Chapter> {
     return await invoke("update_chapter", { chapterId: id, title, content });
+  },
+
+  async generateVersions(request: GenerateChapterVersionsRequest): Promise<Chapter> {
+    return await invoke("generate_chapter_versions", { request });
+  },
+
+  async evaluateChapter(request: EvaluateChapterRequest): Promise<Chapter> {
+    return await invoke("evaluate_chapter", { request });
+  },
+
+  async selectVersion(request: SelectChapterVersionRequest): Promise<Chapter> {
+    return await invoke("select_chapter_version", { request });
   },
 };
 
@@ -197,5 +216,35 @@ export const aiGeneratorService = {
     return await invoke("ai_format_content", {
       request: { content, options },
     });
+  },
+};
+
+export const emotionCurveService = {
+  async calculateCurve(projectId: string, arcType: string, totalChapters: number = 0): Promise<any> {
+    return await invoke("calculate_emotion_curve", {
+      request: {
+        project_id: projectId,
+        arc_type: arcType,
+        total_chapters: totalChapters,
+      },
+    });
+  },
+};
+
+export const foreshadowingService = {
+  async createForeshadowing(request: CreateForeshadowingRequest): Promise<Foreshadowing> {
+    return await invoke("create_foreshadowing", { request });
+  },
+
+  async getForeshadowings(projectId: string): Promise<Foreshadowing[]> {
+    return await invoke("get_foreshadowings", { projectId });
+  },
+
+  async resolveForeshadowing(request: ResolveForeshadowingRequest): Promise<Foreshadowing> {
+    return await invoke("resolve_foreshadowing", { request });
+  },
+
+  async getStats(projectId: string): Promise<ForeshadowingStats> {
+    return await invoke("get_foreshadowing_stats", { projectId });
   },
 };

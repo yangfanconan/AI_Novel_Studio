@@ -26,6 +26,45 @@ export interface Chapter {
   status: string;
   created_at: string;
   updated_at: string;
+  versions?: ChapterVersion[];
+  evaluation?: ChapterEvaluation;
+  generation_status?: string;
+}
+
+export interface ChapterVersion {
+  content: string;
+  style: string;
+  created_at?: string;
+}
+
+export interface ChapterEvaluation {
+  score: number;
+  coherence: number;
+  style_consistency: number;
+  character_consistency: number;
+  plot_advancement: number;
+  summary: string;
+  suggestions: string[];
+  evaluated_at: string;
+}
+
+export interface GenerateChapterVersionsRequest {
+  project_id: string;
+  chapter_id: string;
+  context: string;
+  num_versions?: number;
+  style?: string;
+}
+
+export interface EvaluateChapterRequest {
+  project_id: string;
+  chapter_id: string;
+}
+
+export interface SelectChapterVersionRequest {
+  project_id: string;
+  chapter_id: string;
+  version_index: number;
 }
 
 export interface SaveChapterRequest {
@@ -46,6 +85,8 @@ export interface Character {
   birth_date?: string;
   appearance?: string;
   personality?: string;
+  description?: string;
+  tags?: string[];
   background?: string;
   skills?: string;
   status?: string;
@@ -55,6 +96,7 @@ export interface Character {
   enneagram?: string;
   items?: string;
   avatar_url?: string;
+  relationships?: CharacterRelation[];
   created_at: string;
   updated_at: string;
 }
@@ -447,4 +489,284 @@ export interface SearchKnowledgeRequest {
   query: string;
   entry_types?: string[];
   limit?: number;
+}
+
+export interface Foreshadowing {
+  id: string;
+  project_id: string;
+  chapter_id: string;
+  chapter_number: number;
+  chapter_title: string;
+  description: string;
+  foreshadowing_type: string;
+  keywords: string[];
+  status: string;
+  importance: string;
+  expected_payoff_chapter?: number;
+  actual_payoff_chapter?: number;
+  author_note?: string;
+  ai_confidence?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateForeshadowingRequest {
+  project_id: string;
+  chapter_id: string;
+  chapter_number: number;
+  chapter_title: string;
+  description: string;
+  foreshadowing_type: string;
+  keywords?: string[];
+  importance?: string;
+  expected_payoff_chapter?: number;
+  author_note?: string;
+}
+
+export interface ResolveForeshadowingRequest {
+  foreshadowing_id: string;
+  actual_payoff_chapter: number;
+  resolution_text: string;
+  quality_score?: number;
+}
+
+export interface ForeshadowingStats {
+  total_foreshadowings: number;
+  planted_count: number;
+  paid_off_count: number;
+  overdue_count: number;
+  unresolved_count: number;
+  abandoned_count: number;
+  avg_resolution_distance: number;
+  recommendations: string[];
+}
+
+export interface EmotionCurveRequest {
+  project_id: string;
+  arc_type: string;
+  total_chapters: number;
+}
+
+export interface EmotionCurveData {
+  chapter_number: number;
+  chapter_title: string;
+  position: number;
+  phase_name: string;
+  emotion_target: number;
+  emotion_range: [number, number];
+  pacing: string;
+  thrill_density: number;
+  dialogue_ratio: number;
+  recommendations: string[];
+}
+
+export interface EmotionCurveResponse {
+  arc_type: string;
+  total_chapters: number;
+  curve_data: EmotionCurveData[];
+  overall_stats: EmotionCurveStats;
+}
+
+export interface EmotionCurveStats {
+  avg_emotion: number;
+  emotion_variance: number;
+  climax_chapters: number[];
+  pacing_balance: number;
+}
+
+export interface OptimizeChapterRequest {
+  project_id: string;
+  chapter_id: string;
+  dimension: string;
+  additional_notes?: string;
+}
+
+export interface OptimizeChapterResponse {
+  optimized_content: string;
+  optimization_notes: string;
+  dimension: string;
+}
+
+export interface BlueprintCharacter {
+  name: string;
+  role?: string;
+  personality?: string;
+  background?: string;
+  arc_type?: string;
+  is_main_character: boolean;
+}
+
+export interface BlueprintRelationship {
+  from: string;
+  to: string;
+  relationship_type: string;
+  description?: string;
+}
+
+export interface BlueprintSetting {
+  category: string;
+  name: string;
+  description?: string;
+  details?: string;
+}
+
+export interface Blueprint {
+  id: string;
+  project_id: string;
+  title: string;
+  genre?: string;
+  target_length?: number;
+  characters: BlueprintCharacter[];
+  relationships: BlueprintRelationship[];
+  settings: BlueprintSetting[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateBlueprintRequest {
+  project_id: string;
+  title: string;
+  genre?: string;
+  target_length?: number;
+}
+
+export interface UpdateBlueprintRequest {
+  blueprint_id: string;
+  title?: string;
+  genre?: string;
+  target_length?: number;
+  characters?: BlueprintCharacter[];
+  relationships?: BlueprintRelationship[];
+  settings?: BlueprintSetting[];
+}
+
+export interface ChapterMission {
+  id: string;
+  chapter_id: string;
+  chapter_number: number;
+  macro_beat: string;
+  micro_beats: string[];
+  pov?: string;
+  tone?: string;
+  pacing?: string;
+  allowed_new_characters: string[];
+  forbidden_characters: string[];
+  beat_id?: string;
+  selected_beat?: StoryBeat;
+  created_at: string;
+}
+
+export interface CreateChapterMissionRequest {
+  chapter_id: string;
+  chapter_number: number;
+}
+
+export interface UpdateChapterMissionRequest {
+  mission_id: string;
+  macro_beat?: string;
+  micro_beats?: string[];
+  pov?: string;
+  tone?: string;
+  pacing?: string;
+  allowed_new_characters?: string[];
+  forbidden_characters?: string[];
+  beat_id?: string;
+}
+
+export interface StoryBeat {
+  id: string;
+  outline_node_id: string;
+  title: string;
+  description: string;
+  chapter_number: number;
+  beat_type: string;
+  status: string;
+}
+
+export interface ChapterGuardrails {
+  id: string;
+  chapter_id: string;
+  chapter_number: number;
+  forbidden_characters: string[];
+  forbidden_topics: string[];
+  forbidden_emojis: string[];
+  min_length: number;
+  max_length: number;
+  required_beat_completion: boolean;
+  created_at: string;
+}
+
+export interface CreateChapterGuardrailsRequest {
+  chapter_id: string;
+  chapter_number: number;
+  forbidden_characters?: string[];
+  forbidden_topics?: string[];
+  forbidden_emojis?: string[];
+  min_length?: number;
+  max_length?: number;
+  required_beat_completion?: boolean;
+}
+
+export interface UpdateChapterGuardrailsRequest {
+  guardrails_id: string;
+  forbidden_characters?: string[];
+  forbidden_topics?: string[];
+  forbidden_emojis?: string[];
+  min_length?: number;
+  max_length?: number;
+  required_beat_completion?: boolean;
+}
+
+export interface CheckContentAgainstGuardrailsRequest {
+  chapter_id: string;
+  content: string;
+}
+
+export interface GuardrailViolation {
+  type: string;
+  message: string;
+  severity: "error" | "warning" | "info";
+}
+
+export interface CheckContentAgainstGuardrailsResponse {
+  passed: boolean;
+  violations: GuardrailViolation[];
+  suggestions: string[];
+}
+
+export interface VectorChunk {
+  id: string;
+  chapter_id: string;
+  chunk_index: number;
+  content: string;
+  metadata: Record<string, any>;
+  created_at: string;
+}
+
+export interface VectorizeChapterRequest {
+  chapter_id: string;
+  chunk_size?: number;
+  overlap?: number;
+}
+
+export interface VectorizeChapterResponse {
+  chunks_created: number;
+  chapter_id: string;
+}
+
+export interface SearchChunksRequest {
+  query: string;
+  chapter_id?: string;
+  project_id?: string;
+  top_k?: number;
+}
+
+export interface ChunkSearchResult {
+  chunk: VectorChunk;
+  similarity: number;
+}
+
+export interface SearchChunksResponse {
+  results: ChunkSearchResult[];
+  query: string;
 }

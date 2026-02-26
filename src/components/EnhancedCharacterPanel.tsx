@@ -440,9 +440,9 @@ export const EnhancedCharacterPanel: React.FC<EnhancedCharacterPanelProps> = ({
                 </label>
                 {editMode ? (
                   <input
-                    type="text"
+                    type="number"
                     value={editForm.age || ""}
-                    onChange={(e) => setEditForm({ ...editForm, age: e.target.value })}
+                    onChange={(e) => setEditForm({ ...editForm, age: e.target.value ? parseInt(e.target.value) : undefined })}
                     className="w-full px-2 py-1.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 ) : (
@@ -527,7 +527,7 @@ export const EnhancedCharacterPanel: React.FC<EnhancedCharacterPanelProps> = ({
                   key={idx}
                   className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full"
                 >
-                  {rel}
+                  {rel.relation_type}{rel.description ? `: ${rel.description}` : ''}
                 </span>
               )) || <span className="text-sm text-muted-foreground">暂无关系记录</span>}
             </div>

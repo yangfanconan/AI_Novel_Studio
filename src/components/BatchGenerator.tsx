@@ -133,9 +133,12 @@ export default function BatchGenerator({
 这是第 ${index + 1} 章。`;
 
       const response = await invoke<string>("ai_continue_novel", {
-        projectId,
-        context: prompt,
-        instruction: "生成一个完整的章节，包含标题和正文",
+        request: {
+          model_id: "default",
+          context: prompt,
+          instruction: "生成一个完整的章节，包含标题和正文",
+          project_id: projectId,
+        },
       });
 
       const titleMatch = response.match(/第[一二三四五六七八九十\d]+章[^\n]*/);

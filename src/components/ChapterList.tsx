@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { BookOpen, Plus, MoreHorizontal, Trash2, Edit2, Download } from "lucide-react";
+import { BookOpen, Plus, MoreHorizontal, Trash2, Edit2, Download, GitBranch, Sparkles, Clapperboard } from "lucide-react";
 import { ConfirmDialog } from "./ConfirmDialog";
 import type { Chapter } from "../types";
 
@@ -11,6 +11,9 @@ interface ChapterListProps {
   onDeleteChapter: (chapterId: string) => void;
   onRenameChapter: () => void;
   onExportChapter?: (chapterId: string) => void;
+  onOpenVersions?: (chapter: Chapter) => void;
+  onOpenOptimizer?: (chapter: Chapter) => void;
+  onOpenMission?: (chapter: Chapter) => void;
 }
 
 export const ChapterList: React.FC<ChapterListProps> = ({
@@ -21,6 +24,9 @@ export const ChapterList: React.FC<ChapterListProps> = ({
   onDeleteChapter,
   onRenameChapter,
   onExportChapter,
+  onOpenVersions,
+  onOpenOptimizer,
+  onOpenMission,
 }) => {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{
@@ -127,6 +133,45 @@ export const ChapterList: React.FC<ChapterListProps> = ({
                       <Edit2 className="w-4 h-4" />
                       重命名
                     </button>
+                    {onOpenVersions && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenVersions(chapter);
+                          setActiveMenuId(null);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center gap-2"
+                      >
+                        <GitBranch className="w-4 h-4" />
+                        版本与评估
+                      </button>
+                    )}
+                    {onOpenOptimizer && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenOptimizer(chapter);
+                          setActiveMenuId(null);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center gap-2"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        章节优化
+                      </button>
+                    )}
+                    {onOpenMission && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenMission(chapter);
+                          setActiveMenuId(null);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-accent flex items-center gap-2"
+                      >
+                        <Clapperboard className="w-4 h-4" />
+                        导演脚本
+                      </button>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

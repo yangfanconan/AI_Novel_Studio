@@ -31,10 +31,17 @@ pub fn init_database(db_path: &Path) -> SqlResult<()> {
             status TEXT DEFAULT 'draft',
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
+            summary TEXT,
             FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
         )",
         [],
     )?;
+
+    // 检查并添加summary列（数据库迁移）
+    conn.execute(
+        "ALTER TABLE chapters ADD COLUMN summary TEXT",
+        [],
+    ).ok();
 
     // 创建角色表
     conn.execute(
@@ -499,6 +506,46 @@ pub fn init_database(db_path: &Path) -> SqlResult<()> {
         [],
     )?;
 
+    // 创建伏笔追踪表
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS foreshadowings (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL,
+            chapter_id TEXT NOT NULL,
+            chapter_number INTEGER NOT NULL,
+            chapter_title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            foreshadowing_type TEXT NOT NULL,
+            keywords TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'planted',
+            importance TEXT NOT NULL DEFAULT 'medium',
+            expected_payoff_chapter INTEGER,
+            actual_payoff_chapter INTEGER,
+            author_note TEXT,
+            ai_confidence REAL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+            FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_foreshadowings_project ON foreshadowings(project_id)",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_foreshadowings_chapter ON foreshadowings(chapter_id)",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_foreshadowings_status ON foreshadowings(status)",
+        [],
+    )?;
+
     // 创建角色对话会话表
     conn.execute(
         "CREATE TABLE IF NOT EXISTS character_dialogue_sessions (
@@ -670,6 +717,122 @@ pub fn init_database(db_path: &Path) -> SqlResult<()> {
 
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_script_scenes_chapter ON script_scenes(chapter_id)",
+        [],
+    )?;
+
+    // 蓝图表（L1规划层）
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS blueprints (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            genre TEXT,
+            target_length INTEGER,
+            characters TEXT,
+            relationships TEXT,
+            settings TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_blueprints_project ON blueprints(project_id)",
+        [],
+    )?;
+
+    // 章节导演脚本表（L2导演层）
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS chapter_missions (
+            id TEXT PRIMARY KEY,
+            chapter_id TEXT NOT NULL,
+            chapter_number INTEGER NOT NULL,
+            macro_beat TEXT,
+            micro_beats TEXT,
+            pov TEXT,
+            tone TEXT,
+            pacing TEXT,
+            allowed_new_characters TEXT,
+            forbidden_characters TEXT,
+            beat_id TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_chapter_missions_chapter ON chapter_missions(chapter_id)",
+        [],
+    )?;
+
+    // 检查并添加beat_id列（数据库迁移）
+    conn.execute(
+        "ALTER TABLE chapter_missions ADD COLUMN beat_id TEXT",
+        [],
+    ).ok();
+
+    // 章节护栏表（后置检查）
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS chapter_guardrails (
+            id TEXT PRIMARY KEY,
+            chapter_id TEXT NOT NULL,
+            chapter_number INTEGER NOT NULL,
+            forbidden_characters TEXT,
+            forbidden_topics TEXT,
+            forbidden_emojis TEXT,
+            min_length INTEGER DEFAULT 0,
+            max_length INTEGER DEFAULT 100000,
+            required_beat_completion INTEGER DEFAULT 1,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_chapter_guardrails_chapter ON chapter_guardrails(chapter_id)",
+        [],
+    )?;
+
+    // 向量存储表（用于RAG检索）
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS vector_chunks (
+            id TEXT PRIMARY KEY,
+            chapter_id TEXT NOT NULL,
+            chunk_index INTEGER NOT NULL,
+            content TEXT NOT NULL,
+            embedding BLOB,
+            metadata TEXT,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_vector_chunks_chapter ON vector_chunks(chapter_id)",
+        [],
+    )?;
+
+    // 任务队列表（用于异步任务处理）
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS task_queue (
+            id TEXT PRIMARY KEY,
+            task_type TEXT NOT NULL,
+            status TEXT NOT NULL,
+            payload TEXT,
+            created_at TEXT NOT NULL,
+            completed_at TEXT,
+            error_message TEXT
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_task_queue_status ON task_queue(status)",
         [],
     )?;
 

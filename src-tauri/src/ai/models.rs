@@ -66,6 +66,7 @@ pub struct AICompletionRequest {
     pub character_context: Option<String>,
     pub worldview_context: Option<String>,
     pub project_id: Option<String>,
+    pub chapter_mission_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
