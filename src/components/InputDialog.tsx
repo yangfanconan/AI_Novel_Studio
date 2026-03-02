@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useModalKeyboard } from "../hooks/useModalKeyboard";
 
 interface InputDialogProps {
   isOpen: boolean;
@@ -22,6 +23,14 @@ export function InputDialog({
   const [value, setValue] = useState(defaultValue);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
+  const handleSubmit = () => {
+    if (value.trim()) {
+      onSubmit(value.trim());
+    }
+  };
+
+  useModalKeyboard({ isOpen, onClose: onCancel, onSubmit: handleSubmit, enableEnterSubmit: false });
+
   useEffect(() => {
     if (isOpen) {
       setValue(defaultValue);
@@ -29,21 +38,19 @@ export function InputDialog({
     }
   }, [isOpen, defaultValue]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const onFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (value.trim()) {
-      onSubmit(value.trim());
-    }
+    handleSubmit();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={(e) => e.target === e.currentTarget && onCancel()}>
       <div className="bg-background rounded-lg shadow-lg w-full max-w-md p-6">
         <h2 className="text-lg font-semibold mb-2">{title}</h2>
         {message && <p className="text-sm text-muted-foreground mb-4">{message}</p>}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={onFormSubmit}>
           <input
             ref={inputRef}
             type="text"

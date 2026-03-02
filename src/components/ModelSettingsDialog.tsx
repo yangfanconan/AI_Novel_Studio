@@ -212,7 +212,7 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({ open, 
     setNewApiKey("");
   };
 
-  console.log("ModelSettingsDialog render check, open:", open);
+  console.log("ModelSettingsDialog render check - open:", open);
 
   if (!open) {
     console.log("ModelSettingsDialog returning null because open is false");
@@ -375,7 +375,7 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({ open, 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Max Tokens（最大 Token 数）
+                    Max Tokens（最大输出 Token 数）
                   </label>
                   <span className="text-sm text-slate-600 dark:text-slate-400 font-mono">
                     {aiParams.max_tokens}
@@ -383,9 +383,9 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({ open, 
                 </div>
                 <input
                   type="range"
-                  min="100"
-                  max="4000"
-                  step="100"
+                  min="1000"
+                  max="131072"
+                  step="1000"
                   value={aiParams.max_tokens}
                   onChange={(e) =>
                     setAIParams({ ...aiParams, max_tokens: parseInt(e.target.value) })
@@ -393,9 +393,15 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({ open, 
                   className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
                 />
                 <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                  <span>简洁 (100)</span>
-                  <span>详细 (4000)</span>
+                  <span>1K</span>
+                  <span>32K</span>
+                  <span>64K</span>
+                  <span>128K</span>
                 </div>
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  ⚠️ 注意：GLM-4-Flash 最大输出仅 4095 tokens（约3000字）。
+                  建议使用 GLM-4.7-Flash（支持 65K 输出）或 GLM-4-Plus 获得更长内容。
+                </p>
               </div>
 
               {/* Top P */}

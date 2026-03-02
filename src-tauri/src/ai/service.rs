@@ -15,6 +15,18 @@ use futures::StreamExt;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VersionReviewResult {
+    pub consistency_score: f32,
+    pub creativity_score: f32,
+    pub completeness_score: f32,
+    pub rhythm_score: f32,
+    pub overall_score: f32,
+    pub feedback: String,
+    pub recommended_version: u32,
+}
 
 pub struct AIService {
     model_registry: ModelRegistry,
@@ -23,6 +35,20 @@ pub struct AIService {
 }
 
 impl AIService {
+    fn clean_json_string(input: &str) -> String {
+        let cleaned = input
+            .trim()
+            .trim_start_matches("```json")
+            .trim_start_matches("```")
+            .trim_end_matches("```")
+            .trim();
+        
+        cleaned
+            .chars()
+            .filter(|c| (*c as u32) >= 0x20)
+            .collect()
+    }
+
     pub fn new() -> Self {
         Self {
             model_registry: ModelRegistry::new(),
@@ -42,14 +68,16 @@ impl AIService {
         let glm4_air = Arc::new(BigModelAdapter::new(default_api_key.clone(), "glm-4-air".to_string()));
         let glm4_flash = Arc::new(BigModelAdapter::new(default_api_key.clone(), "glm-4-flash".to_string()));
         let glm4_flashx = Arc::new(BigModelAdapter::new(default_api_key.clone(), "glm-4-flashx".to_string()));
+        let glm47_flash = Arc::new(BigModelAdapter::new(default_api_key.clone(), "glm-4.7-flash".to_string()));
 
         self.model_registry.register_model("glm-4".to_string(), glm4).await;
         self.model_registry.register_model("glm-4-plus".to_string(), glm4_plus).await;
         self.model_registry.register_model("glm-4-air".to_string(), glm4_air).await;
         self.model_registry.register_model("glm-4-flash".to_string(), glm4_flash).await;
         self.model_registry.register_model("glm-4-flashx".to_string(), glm4_flashx).await;
+        self.model_registry.register_model("glm-4.7-flash".to_string(), glm47_flash).await;
 
-        self.logger.info("Default BigModel models initialized successfully");
+        self.logger.info("Default BigModel models initialized successfully (including glm-4.7-flash with 128K output)");
     }
 
     pub fn get_registry(&self) -> &ModelRegistry {
@@ -79,6 +107,7 @@ impl AIService {
         model_id: &str,
         system_prompt: &str,
         user_content: &str,
+        max_tokens: Option<u32>,
     ) -> Result<String, String> {
         let model = self
             .model_registry
@@ -99,12 +128,48 @@ impl AIService {
                 },
             ],
             temperature: Some(0.7),
-            max_tokens: Some(2000),
+            max_tokens: Some(max_tokens.unwrap_or(8192)),
             stream: Some(false),
         };
 
         let response = model.complete(request).await?;
         Ok(response.content)
+    }
+
+    pub async fn review_versions(
+        &self,
+        versions: &[&str],
+    ) -> Result<VersionReviewResult, String> {
+        let system_prompt = r#"你是一个专业的小说编辑。请评审以下多个版本的内容，从以下维度打分（1-10分）：
+1. 一致性 - 与上下文的连贯程度
+2. 创意性 - 内容的新颖和创意程度
+3. 完整性 - 情节的完整程度
+4. 节奏感 - 叙事节奏的把控
+
+请以JSON格式返回评审结果：
+{
+  "consistency_score": 8.0,
+  "creativity_score": 7.5,
+  "completeness_score": 8.5,
+  "rhythm_score": 7.0,
+  "overall_score": 7.8,
+  "feedback": "简要评价...",
+  "recommended_version": 2
+}"#;
+
+        let versions_text = versions
+            .iter()
+            .enumerate()
+            .map(|(i, v)| format!("【版本{}】\n{}", i + 1, v))
+            .collect::<Vec<_>>()
+            .join("\n\n---\n\n");
+
+        let response = self.complete("default", system_prompt, &versions_text, None).await?;
+        
+        let cleaned = Self::clean_json_string(&response);
+        
+        serde_json::from_str(&cleaned)
+            .map_err(|e| format!("解析评审结果失败: {} - 原始响应: {}", e, cleaned))
     }
 
     pub async fn complete_stream(
@@ -133,7 +198,7 @@ impl AIService {
                 },
             ],
             temperature: Some(0.7),
-            max_tokens: Some(2000),
+            max_tokens: Some(8192),
             stream: Some(true),
         };
 
@@ -187,7 +252,7 @@ impl AIService {
                 .await?;
             Ok(String::new())
         } else {
-            self.complete(&request.model_id, &system_prompt, &user_prompt)
+            self.complete(&request.model_id, &system_prompt, &user_prompt, request.max_tokens)
                 .await
         }
     }
@@ -209,7 +274,7 @@ impl AIService {
             )
             .await?;
 
-        self.complete(&request.model_id, &system_prompt, &user_prompt)
+        self.complete(&request.model_id, &system_prompt, &user_prompt, None)
             .await
     }
 
@@ -232,7 +297,7 @@ impl AIService {
             )
             .await?;
 
-        self.complete(model_id, &system_prompt, &user_prompt)
+        self.complete(model_id, &system_prompt, &user_prompt, None)
             .await
     }
 
@@ -253,7 +318,7 @@ impl AIService {
             )
             .await?;
 
-        self.complete(model_id, &system_prompt, &user_prompt)
+        self.complete(model_id, &system_prompt, &user_prompt, None)
             .await
     }
 
@@ -274,7 +339,7 @@ impl AIService {
             )
             .await?;
 
-        self.complete(model_id, &system_prompt, &user_prompt)
+        self.complete(model_id, &system_prompt, &user_prompt, None)
             .await
     }
 
@@ -350,7 +415,7 @@ impl AIService {
             existing_characters_context
         );
 
-        let response = self.complete(&model_id, system_prompt, &user_prompt).await?;
+        let response = self.complete(&model_id, system_prompt, &user_prompt, None).await?;
         
         let cleaned_response = self.clean_json_response(&response);
 
@@ -407,7 +472,7 @@ impl AIService {
             request.description.as_deref(),
         );
 
-        let response = self.complete(&model_id, system_prompt, &user_prompt).await?;
+        let response = self.complete(&model_id, system_prompt, &user_prompt, None).await?;
         
         let cleaned_response = self.clean_json_response(&response);
 
@@ -462,7 +527,7 @@ impl AIService {
 
         let user_prompt = GeneratorPrompts::build_character_relations_prompt(&characters_str, project_context);
 
-        let response = self.complete(&model_id, system_prompt, &user_prompt).await?;
+        let response = self.complete(&model_id, system_prompt, &user_prompt, None).await?;
         
         let cleaned_response = self.clean_json_response(&response);
 
@@ -530,7 +595,7 @@ impl AIService {
             request.description.as_deref(),
         );
 
-        let response = self.complete(&model_id, system_prompt, &user_prompt).await?;
+        let response = self.complete(&model_id, system_prompt, &user_prompt, None).await?;
         
         let cleaned_response = self.clean_json_response(&response);
 
@@ -625,7 +690,7 @@ impl AIService {
             plot_context
         );
 
-        let response = self.complete(&model_id, system_prompt, &user_prompt).await?;
+        let response = self.complete(&model_id, system_prompt, &user_prompt, None).await?;
         
         let cleaned_response = self.clean_json_response(&response);
 
@@ -708,7 +773,7 @@ impl AIService {
             request.direction.as_deref().unwrap_or("自然发展，注重情感深度")
         );
 
-        let response = self.complete(&model_id, system_prompt, &user_prompt).await?;
+        let response = self.complete(&model_id, system_prompt, &user_prompt, None).await?;
         
         let cleaned_response = self.clean_json_response(&response);
 
@@ -765,7 +830,7 @@ impl AIService {
             request.direction.as_deref(),
         );
 
-        let response = self.complete(&model_id, system_prompt, &user_prompt).await?;
+        let response = self.complete(&model_id, system_prompt, &user_prompt, None).await?;
         
         let cleaned_response = self.clean_json_response(&response);
 
@@ -811,7 +876,7 @@ impl AIService {
             request.style_preference.as_deref(),
         );
 
-        let response = self.complete(&model_id, system_prompt, &user_prompt).await?;
+        let response = self.complete(&model_id, system_prompt, &user_prompt, None).await?;
         
         let cleaned_response = self.clean_json_response(&response);
 
@@ -858,7 +923,7 @@ impl AIService {
 
         let user_prompt = GeneratorPrompts::build_format_prompt(&request.content, &options);
 
-        let response = self.complete(&model_id, system_prompt, &user_prompt).await?;
+        let response = self.complete(&model_id, system_prompt, &user_prompt, None).await?;
         
         // 清理响应，移除可能的引号包裹
         let cleaned_response = response
@@ -964,7 +1029,7 @@ impl AIService {
             content_preview
         );
 
-        let response = self.complete(&model_id, system_prompt, &user_prompt).await?;
+        let response = self.complete(&model_id, system_prompt, &user_prompt, None).await?;
         
         let cleaned_response = self.clean_json_response(&response);
 
@@ -1072,7 +1137,7 @@ impl AIService {
             content_to_check
         );
 
-        let response = self.complete(&model_id, system_prompt, &user_prompt).await?;
+        let response = self.complete(&model_id, system_prompt, &user_prompt, None).await?;
         
         let cleaned_response = self.clean_json_response(&response);
 

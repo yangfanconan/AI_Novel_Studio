@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Globe, Users, Network, Map, Plus, Trash2, Save, Sparkles, Loader2, RefreshCw } from "lucide-react";
+import { Globe, Users, Network, Map, Plus, Trash2, Save, Sparkles, Loader2, RefreshCw, X } from "lucide-react";
 import type { Blueprint, BlueprintCharacter, BlueprintRelationship, BlueprintSetting } from "../types";
+import { useModalKeyboard } from "../hooks/useModalKeyboard";
 
 interface BlueprintEditorProps {
   projectId: string;
@@ -14,6 +15,10 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ projectId, onC
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "characters" | "relationships" | "settings">("overview");
   const [isCreating, setIsCreating] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+
+  useModalKeyboard({ isOpen: showCreateDialog, onClose: () => setShowCreateDialog(false) });
 
   const loadBlueprint = async () => {
     setIsLoading(true);
@@ -22,34 +27,39 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ projectId, onC
       setBlueprint(result);
     } catch (error) {
       console.error("加载蓝图失败:", error);
-      alert("加载蓝图失败: " + (error as Error).message);
     } finally {
       setIsLoading(false);
     }
   };
 
   const createBlueprint = async () => {
+    if (!newTitle.trim()) return;
+    
     setIsCreating(true);
     try {
-      const title = prompt("请输入故事标题:");
-      if (!title) return;
-
       const result = await invoke<Blueprint>("create_blueprint", {
         request: {
           project_id: projectId,
-          title,
+          title: newTitle.trim(),
           genre: undefined,
           target_length: undefined,
         },
       });
 
       setBlueprint(result);
+      setShowCreateDialog(false);
+      setNewTitle("");
     } catch (error) {
       console.error("创建蓝图失败:", error);
       alert("创建蓝图失败: " + (error as Error).message);
     } finally {
       setIsCreating(false);
     }
+  };
+
+  const handleOpenCreateDialog = () => {
+    setNewTitle("");
+    setShowCreateDialog(true);
   };
 
   const saveBlueprint = async () => {
@@ -102,7 +112,7 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ projectId, onC
           </p>
         </div>
         <button
-          onClick={createBlueprint}
+          onClick={handleOpenCreateDialog}
           disabled={isCreating}
           className="px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
         >
@@ -123,6 +133,46 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ projectId, onC
   }
 
   return (
+    <>
+      {showCreateDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={(e) => e.target === e.currentTarget && setShowCreateDialog(false)}>
+          <div className="bg-background rounded-lg shadow-lg w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">创建项目蓝图</h2>
+              <button onClick={() => setShowCreateDialog(false)} className="p-1 hover:bg-accent rounded">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">故事标题</label>
+              <input
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="请输入故事标题"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowCreateDialog(false)}
+                className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={createBlueprint}
+                disabled={!newTitle.trim() || isCreating}
+                className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
+              >
+                {isCreating && <Loader2 className="w-4 h-4 animate-spin" />}
+                创建
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-border bg-muted/30">
         <div className="flex items-center justify-between">
@@ -673,5 +723,6 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ projectId, onC
         </div>
       </div>
     </div>
+    </>
   );
 };

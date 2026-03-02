@@ -16,7 +16,9 @@ import {
   ChevronDown,
   ChevronUp,
   AlertCircle,
+  List,
 } from "lucide-react";
+import { invoke } from "@tauri-apps/api/core";
 import {
   moyinService,
   BatchProductionJob,
@@ -28,6 +30,26 @@ import {
   SceneStatistics,
   ParsedScreenplay,
 } from "../services/moyin.service";
+
+interface OutlineNode {
+  id: string;
+  project_id: string;
+  parent_id: string | null;
+  title: string;
+  content: string;
+  node_type: "arc" | "chapter" | "scene" | "beat";
+  sort_order: number;
+  status: string;
+  word_count_target: number | null;
+  word_count_actual: number;
+}
+
+interface ChapterInfo {
+  id: string;
+  title: string;
+  word_count: number;
+  outline_node_id?: string;
+}
 
 interface BatchProductionPanelProps {
   projectId: string;
@@ -52,10 +74,14 @@ export const BatchProductionPanel: React.FC<BatchProductionPanelProps> = ({
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [previewScreenplay, setPreviewScreenplay] = useState<ParsedScreenplay | null>(null);
   const [expandedSceneId, setExpandedSceneId] = useState<string | null>(null);
+  const [outlineNodes, setOutlineNodes] = useState<OutlineNode[]>([]);
+  const [chapters, setChapters] = useState<ChapterInfo[]>([]);
+  const [selectedChapterIds, setSelectedChapterIds] = useState<string[]>([]);
+  const [selectedOutlineNodeIds, setSelectedOutlineNodeIds] = useState<string[]>([]);
 
   const [newJobForm, setNewJobForm] = useState<{
     name: string;
-    sourceType: "NovelText" | "AiGenerated" | "ChapterContent" | "ExistingScenes";
+    sourceType: "NovelText" | "AiGenerated" | "ChapterContent" | "ExistingScenes" | "OutlineNodes";
     sourceContent: string;
     sceneCount: number;
     config: BatchProductionConfig;
@@ -66,6 +92,24 @@ export const BatchProductionPanel: React.FC<BatchProductionPanelProps> = ({
     sceneCount: 5,
     config: moyinService.createDefaultBatchConfig(),
   });
+
+  const loadOutlineNodes = useCallback(async () => {
+    try {
+      const nodes = await invoke<OutlineNode[]>("get_outline_nodes", { projectId });
+      setOutlineNodes(nodes.filter(n => n.node_type === "chapter" || n.node_type === "scene"));
+    } catch (err) {
+      console.error("加载大纲节点失败:", err);
+    }
+  }, [projectId]);
+
+  const loadChapters = useCallback(async () => {
+    try {
+      const result = await invoke<ChapterInfo[]>("get_chapters", { projectId });
+      setChapters(result || []);
+    } catch (err) {
+      console.error("加载章节列表失败:", err);
+    }
+  }, [projectId]);
 
   const loadJobs = useCallback(async () => {
     try {
@@ -108,7 +152,9 @@ export const BatchProductionPanel: React.FC<BatchProductionPanelProps> = ({
     loadScenes();
     loadCharacters();
     loadStatistics();
-  }, [loadJobs, loadScenes, loadCharacters, loadStatistics]);
+    loadOutlineNodes();
+    loadChapters();
+  }, [loadJobs, loadScenes, loadCharacters, loadStatistics, loadOutlineNodes, loadChapters]);
 
   useEffect(() => {
     if (!selectedJob) return;
@@ -137,6 +183,16 @@ export const BatchProductionPanel: React.FC<BatchProductionPanelProps> = ({
       return;
     }
 
+    if (newJobForm.sourceType === "OutlineNodes" && selectedOutlineNodeIds.length === 0) {
+      setError("请至少选择一个大纲节点");
+      return;
+    }
+
+    if (newJobForm.sourceType === "ChapterContent" && selectedChapterIds.length === 0) {
+      setError("请至少选择一个章节");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -153,6 +209,8 @@ export const BatchProductionPanel: React.FC<BatchProductionPanelProps> = ({
         name: newJobForm.name,
         source_type: newJobForm.sourceType,
         source_content: newJobForm.sourceContent || undefined,
+        chapter_ids: newJobForm.sourceType === "ChapterContent" ? selectedChapterIds : 
+                     newJobForm.sourceType === "OutlineNodes" ? selectedOutlineNodeIds : undefined,
         scene_count: newJobForm.sceneCount,
         config: newJobForm.config,
       };
@@ -520,6 +578,7 @@ export const BatchProductionPanel: React.FC<BatchProductionPanelProps> = ({
               <option value="AiGenerated">AI 生成</option>
               <option value="ChapterContent">章节内容</option>
               <option value="ExistingScenes">已有场景</option>
+              <option value="OutlineNodes">从大纲选择</option>
             </select>
           </div>
 
@@ -532,6 +591,105 @@ export const BatchProductionPanel: React.FC<BatchProductionPanelProps> = ({
                 className="border rounded px-2 py-1 w-full h-40 resize-none"
                 placeholder="粘贴小说文本，系统将自动解析为场景..."
               />
+            </div>
+          )}
+
+          {newJobForm.sourceType === "OutlineNodes" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">从大纲选择章节/场景</label>
+              <div className="border rounded p-2 max-h-48 overflow-y-auto bg-gray-50">
+                {outlineNodes.length === 0 ? (
+                  <div className="text-center text-gray-500 py-4">
+                    <List className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">暂无大纲节点</p>
+                    <p className="text-xs">请先在创作面板创建大纲</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {outlineNodes.map((node) => (
+                      <label
+                        key={node.id}
+                        className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedOutlineNodeIds.includes(node.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedOutlineNodeIds([...selectedOutlineNodeIds, node.id]);
+                            } else {
+                              setSelectedOutlineNodeIds(
+                                selectedOutlineNodeIds.filter((id) => id !== node.id)
+                              );
+                            }
+                          }}
+                        />
+                        <span
+                          className={`text-sm ${
+                            node.node_type === "chapter" ? "font-medium" : "text-gray-600"
+                          }`}
+                        >
+                          {node.node_type === "chapter" ? "📖" : "📄"} {node.title}
+                        </span>
+                        {node.word_count_actual > 0 && (
+                          <span className="text-xs text-gray-400">({node.word_count_actual}字)</span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {selectedOutlineNodeIds.length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  已选择 {selectedOutlineNodeIds.length} 个节点
+                </p>
+              )}
+            </div>
+          )}
+
+          {newJobForm.sourceType === "ChapterContent" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">选择章节</label>
+              <div className="border rounded p-2 max-h-48 overflow-y-auto bg-gray-50">
+                {chapters.length === 0 ? (
+                  <div className="text-center text-gray-500 py-4">
+                    <List className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">暂无章节</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {chapters.map((chapter) => (
+                      <label
+                        key={chapter.id}
+                        className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedChapterIds.includes(chapter.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedChapterIds([...selectedChapterIds, chapter.id]);
+                            } else {
+                              setSelectedChapterIds(
+                                selectedChapterIds.filter((id) => id !== chapter.id)
+                              );
+                            }
+                          }}
+                        />
+                        <span className="text-sm">{chapter.title}</span>
+                        {chapter.word_count > 0 && (
+                          <span className="text-xs text-gray-400">({chapter.word_count}字)</span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {selectedChapterIds.length > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  已选择 {selectedChapterIds.length} 个章节
+                </p>
+              )}
             </div>
           )}
 

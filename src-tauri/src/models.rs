@@ -57,21 +57,27 @@ pub struct Chapter {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ChapterVersion {
+    pub id: String,
+    pub chapter_id: String,
+    pub version_number: i32,
     pub content: String,
-    pub style: String,
-    pub created_at: Option<String>,
+    pub style_hint: Option<String>,
+    pub created_at: String,
+    pub selected: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ChapterEvaluation {
-    pub score: f32,
-    pub coherence: f32,
-    pub style_consistency: f32,
-    pub character_consistency: f32,
-    pub plot_advancement: f32,
-    pub summary: String,
-    pub suggestions: Vec<String>,
-    pub evaluated_at: String,
+    pub id: String,
+    pub chapter_id: String,
+    pub consistency_score: f32,
+    pub creativity_score: f32,
+    pub completeness_score: f32,
+    pub rhythm_score: f32,
+    pub overall_score: f32,
+    pub feedback: String,
+    pub recommended_version: u32,
+    pub created_at: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -363,7 +369,7 @@ impl Default for AIParams {
     fn default() -> Self {
         Self {
             temperature: 0.7,
-            max_tokens: 2000,
+            max_tokens: 8192,
             top_p: 0.9,
         }
     }

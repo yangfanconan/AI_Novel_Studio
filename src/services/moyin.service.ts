@@ -208,7 +208,7 @@ export type BatchJobStatus =
   | "Completed"
   | "Failed"
   | "Cancelled";
-export type BatchSourceType = "NovelText" | "AiGenerated" | "ChapterContent" | "ExistingScenes";
+export type BatchSourceType = "NovelText" | "AiGenerated" | "ChapterContent" | "ExistingScenes" | "OutlineNodes";
 
 export interface BatchProductionConfig {
   image_provider?: string;

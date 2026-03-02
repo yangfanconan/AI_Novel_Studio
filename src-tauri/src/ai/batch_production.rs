@@ -360,50 +360,6 @@ impl Default for BatchProductionManager {
 }
 
 #[tauri::command]
-pub async fn create_batch_production_job(
-    request: CreateBatchJobRequest,
-) -> Result<BatchProductionJob, String> {
-    let manager = BatchProductionManager::new();
-    Ok(manager.create_job(request).await)
-}
-
-#[tauri::command]
-pub async fn get_batch_production_job(id: String) -> Result<Option<BatchProductionJob>, String> {
-    let manager = BatchProductionManager::new();
-    Ok(manager.get_job(&id).await)
-}
-
-#[tauri::command]
-pub async fn get_project_batch_jobs(project_id: String) -> Result<Vec<BatchProductionJob>, String> {
-    let manager = BatchProductionManager::new();
-    Ok(manager.get_project_jobs(&project_id).await)
-}
-
-#[tauri::command]
-pub async fn cancel_batch_job(id: String) -> Result<Option<BatchProductionJob>, String> {
-    let manager = BatchProductionManager::new();
-    Ok(manager.cancel_job(&id).await)
-}
-
-#[tauri::command]
-pub async fn pause_batch_job(id: String) -> Result<Option<BatchProductionJob>, String> {
-    let manager = BatchProductionManager::new();
-    Ok(manager.pause_job(&id).await)
-}
-
-#[tauri::command]
-pub async fn resume_batch_job(id: String) -> Result<Option<BatchProductionJob>, String> {
-    let manager = BatchProductionManager::new();
-    Ok(manager.resume_job(&id).await)
-}
-
-#[tauri::command]
-pub async fn get_batch_job_progress(id: String) -> Result<Option<ProductionProgress>, String> {
-    let manager = BatchProductionManager::new();
-    Ok(manager.get_progress(&id).await)
-}
-
-#[tauri::command]
 pub async fn prepare_scenes_from_novel(
     text: String,
     scene_count: i32,

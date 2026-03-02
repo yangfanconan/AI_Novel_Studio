@@ -1,6 +1,6 @@
 [package]
 name = "ai-novel-studio"
-version = "0.1.0"
+version = "0.3.0"
 description = "AI小说创作工作室"
 authors = ["AI Novel Studio Team"]
 edition = "2021"
@@ -30,8 +30,8 @@ genpdf = "0.2"
 epub-builder = "0.7"
 semver = "1.0"
 log = "0.4"
-rquickjs = "0.5"
-pyo3 = { version = "0.28", features = ["auto-initialize"] }
+rquickjs = "0.6"
+pyo3 = { version = "0.22", features = ["auto-initialize"] }
 rlua = "0.19"
 urlencoding = "2.1"
 zip = "2.2"
@@ -41,10 +41,10 @@ base64 = "0.22"
 
 [dev-dependencies]
 tauri-cli = { version = "2.0", features = [] }
-tempfile = "3.12"
+tempfile = "3.18"
 tokio-test = "0.4"
 criterion = "0.5"
-proptest = "1.4"
+proptest = "1.6"
 mockall = "0.13"
 
 [features]

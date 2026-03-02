@@ -1,5 +1,6 @@
 import React from "react";
 import { AlertTriangle } from "lucide-react";
+import { useModalKeyboard } from "../hooks/useModalKeyboard";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -22,6 +23,8 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  useModalKeyboard({ isOpen, onClose: onCancel, onSubmit: onConfirm, enableEnterSubmit: true });
+
   if (!isOpen) return null;
 
   const variantStyles = {
@@ -37,7 +40,7 @@ export function ConfirmDialog({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={(e) => e.target === e.currentTarget && onCancel()}>
       <div className="bg-background rounded-lg shadow-lg w-full max-w-sm p-6 mx-4">
         <div className="flex items-start gap-3 mb-4">
           <AlertTriangle className={`w-6 h-6 ${iconColors[variant]} flex-shrink-0 mt-0.5`} />

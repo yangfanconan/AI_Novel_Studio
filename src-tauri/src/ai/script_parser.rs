@@ -1,6 +1,4 @@
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use chrono::Utc;
 use regex::Regex;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -407,49 +405,4 @@ pub struct ParseNovelRequest {
     pub text: String,
     pub scene_count: Option<i32>,
     pub language: Option<String>,
-}
-
-#[tauri::command]
-pub async fn parse_novel_to_screenplay(
-    request: ParseNovelRequest,
-) -> Result<String, String> {
-    let parser = ScriptParser::new();
-    let options = ScriptParseOptions {
-        scene_count: request.scene_count,
-        language: request.language,
-        ..Default::default()
-    };
-
-    let screenplay = parser.parse_novel_to_scenes(&request.text, &options)?;
-    parser.export_to_json(&screenplay)
-}
-
-#[tauri::command]
-pub async fn parse_ai_screenplay_response(
-    json_response: String,
-) -> Result<String, String> {
-    let parser = ScriptParser::new();
-    let screenplay = parser.parse_ai_response(&json_response)?;
-    parser.export_to_json(&screenplay)
-}
-
-#[tauri::command]
-pub async fn merge_screenplay_scenes(
-    scenes_json: String,
-    target_count: i32,
-) -> Result<String, String> {
-    let parser = ScriptParser::new();
-    let scenes: Vec<ParsedScene> = serde_json::from_str(&scenes_json)
-        .map_err(|e| format!("Failed to parse scenes: {}", e))?;
-    
-    let merged = parser.merge_scenes(&scenes, target_count);
-    
-    let screenplay = ParsedScreenplay {
-        title: "Merged Screenplay".to_string(),
-        scenes: merged,
-        total_duration: 0.0,
-        character_references: vec![],
-    };
-    
-    parser.export_to_json(&screenplay)
 }

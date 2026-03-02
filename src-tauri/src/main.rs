@@ -4,6 +4,7 @@
 mod database;
 mod models;
 mod commands;
+mod db_utils;
 mod logger;
 mod ai;
 mod export;
@@ -28,6 +29,7 @@ mod character_dialogue;
 mod character_dialogue_commands;
 mod import;
 mod prompt_template_commands;
+mod services;
 mod outline;
 mod reverse_analysis;
 
@@ -338,13 +340,12 @@ fn main() {
             ai::task_queue::create_task,
             ai::task_queue::get_task,
             ai::task_queue::get_project_tasks,
-            ai::task_queue::cancel_task,
+            ai::task_queue::cancel_queue_task,
             ai::task_queue::get_queue_stats,
             ai::task_queue::clear_completed_tasks,
             // 剧本解析命令
-            ai::script_parser::parse_novel_to_screenplay,
-            ai::script_parser::parse_ai_screenplay_response,
-            ai::script_parser::merge_screenplay_scenes,
+            commands::parse_novel_to_screenplay,
+            commands::parse_ai_screenplay_response,
             // 场景管理命令
             ai::scene_manager::create_script_scene,
             ai::scene_manager::get_script_scene,
@@ -358,13 +359,13 @@ fn main() {
             ai::scene_manager::set_scene_generated_video,
             ai::scene_manager::get_scene_statistics_cmd,
             // 批量生产命令
-            ai::batch_production::create_batch_production_job,
-            ai::batch_production::get_batch_production_job,
-            ai::batch_production::get_project_batch_jobs,
-            ai::batch_production::cancel_batch_job,
-            ai::batch_production::pause_batch_job,
-            ai::batch_production::resume_batch_job,
-            ai::batch_production::get_batch_job_progress,
+            commands::create_batch_production_job,
+            commands::get_batch_production_job,
+            commands::get_project_batch_jobs,
+            commands::pause_batch_job,
+            commands::resume_batch_job,
+            commands::cancel_batch_job,
+            commands::get_batch_job_progress,
             ai::batch_production::prepare_scenes_from_novel,
             ai::batch_production::prepare_scenes_from_ai,
             ai::batch_production::get_batch_job_statistics,
@@ -432,6 +433,10 @@ fn main() {
             commands::search_chunks,
             // 自动摘要命令（L3写作层）
             commands::generate_chapter_summary,
+            // 异步任务命令
+            commands::get_all_tasks,
+            commands::cancel_task,
+            commands::cleanup_completed_tasks,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

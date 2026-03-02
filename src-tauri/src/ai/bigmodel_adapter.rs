@@ -104,6 +104,9 @@ impl AIModel for BigModelAdapter {
     async fn complete(&self, request: AIRequest) -> Result<AIResponse, String> {
         self.logger.info(&format!("Starting BigModel completion with model: {}", self.model));
 
+        self.logger.info(&format!("BigModel request: model={}, max_tokens={:?}, temp={:?}", 
+            self.model, request.max_tokens, request.temperature));
+
         let bigmodel_request = BigModelRequest {
             model: self.model.clone(),
             messages: request
@@ -119,7 +122,7 @@ impl AIModel for BigModelAdapter {
             stream: Some(false),
         };
 
-        self.logger.debug(&format!("Sending request to BigModel: {:?}", bigmodel_request));
+        self.logger.info(&format!("Sending BigModel API request with max_tokens: {:?}", bigmodel_request.max_tokens));
 
         let response = self
             .client

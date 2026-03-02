@@ -54,6 +54,8 @@ import { EmotionCurvePanel } from "./components/EmotionCurvePanel";
 import { ChapterOptimizerPanel } from "./components/ChapterOptimizerPanel";
 import { BlueprintEditor } from "./components/BlueprintEditor";
 import { ChapterMissionPanel } from "./components/ChapterMissionPanel";
+import VersionComparisonPanel from "./components/VersionComparisonPanel";
+import TaskProgressPanel from "./components/TaskProgressPanel";
 import { useProjectStore } from "./stores/projectStore";
 import {
   projectService,
@@ -124,6 +126,8 @@ function App() {
   const [isChapterOptimizerOpen, setIsChapterOptimizerOpen] = useState(false);
   const [isBlueprintEditorOpen, setIsBlueprintEditorOpen] = useState(false);
   const [isChapterMissionPanelOpen, setIsChapterMissionPanelOpen] = useState(false);
+  const [isVersionComparisonOpen, setIsVersionComparisonOpen] = useState(false);
+  const [isTaskProgressOpen, setIsTaskProgressOpen] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | undefined>();
   const [editingScene, setEditingScene] = useState<any>(null);
   const [exportProjectId, setExportProjectId] = useState<string | null>(null);
@@ -946,6 +950,22 @@ function App() {
                       <Layers className="w-3.5 h-3.5" />
                       分镜
                     </button>
+                    <button
+                      onClick={() => setIsVersionComparisonOpen(true)}
+                      title="版本对比 - AI多版本评审"
+                      className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      版本对比
+                    </button>
+                    <button
+                      onClick={() => setIsTaskProgressOpen(true)}
+                      title="任务进度 - 后台任务监控"
+                      className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
+                    >
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      任务进度
+                    </button>
                   </div>
                   <div className="flex-1 overflow-hidden">
                     <CharacterBiblePanel
@@ -1305,6 +1325,25 @@ function App() {
             />
           </div>
         </div>
+      )}
+
+      {isVersionComparisonOpen && currentChapter && (
+        <VersionComparisonPanel
+          chapterId={currentChapter.id}
+          versions={[]}
+          evaluation={undefined}
+          onClose={() => setIsVersionComparisonOpen(false)}
+          onSelectVersion={(index) => {
+            console.log("Selected version:", index);
+            setIsVersionComparisonOpen(false);
+          }}
+        />
+      )}
+
+      {isTaskProgressOpen && (
+        <TaskProgressPanel
+          onClose={() => setIsTaskProgressOpen(false)}
+        />
       )}
     </ResizableLayout>
   );

@@ -1,6 +1,7 @@
 use tauri::{AppHandle, Manager};
 use crate::models::{*, AIParams, APIKeyInfo, ModelInfo};
 use crate::database::get_connection;
+use crate::db_utils::{get_db_path, resolve_default_model};
 use crate::logger::{Logger, log_command_start, log_command_success, log_command_error};
 use crate::ai::{ModelConfig, PromptTemplate};
 use crate::ai::models::{
@@ -21,19 +22,6 @@ use chrono::Utc;
 use serde::{Serialize, Deserialize};
 use rusqlite::{params, OptionalExtension};
 use std::path::PathBuf;
-
-fn get_db_path(app: &AppHandle) -> Result<PathBuf, String> {
-    if cfg!(debug_assertions) {
-        let mut project_dir = std::env::current_dir()
-            .map_err(|e| format!("Failed to get current directory: {}", e))?;
-        project_dir.push("novel_studio_dev.db");
-        Ok(std::fs::canonicalize(&project_dir).unwrap_or(project_dir))
-    } else {
-        let app_data_dir = app.path().app_data_dir()
-            .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-        Ok(app_data_dir.join("novel_studio.db"))
-    }
-}
 
 #[tauri::command]
 pub async fn create_project(app: AppHandle, request: CreateProjectRequest) -> Result<Project, String> {
@@ -1446,6 +1434,10 @@ pub async fn ai_continue_novel(
     let db_path = get_db_path(&app)?;
     let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
 
+    // 如果model_id是"default"，获取实际的默认模型
+    request.model_id = resolve_default_model(&conn, &request.model_id)?;
+    logger.info(&format!("Using model: {}", request.model_id));
+
     // L3写作层：如果有chapter_mission_id，获取导演脚本
     let mut mission_context: Option<String> = None;
     let mut allowed_new_characters: Vec<String> = vec![];
@@ -1605,6 +1597,35 @@ pub async fn ai_continue_novel(
     }
     if request.worldview_context.is_none() {
         request.worldview_context = Some("暂无世界观设定".to_string());
+    }
+
+    // 自动获取最后一章的内容作为上下文（用于续写）
+    if let Some(ref project_id) = request.project_id {
+        let last_chapter: Option<(String, String, String)> = conn
+            .query_row(
+                "SELECT id, title, content FROM chapters WHERE project_id = ? ORDER BY sort_order DESC, updated_at DESC LIMIT 1",
+                [project_id],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .optional()
+            .map_err(|e| e.to_string())?;
+
+        if let Some((chapter_id, chapter_title, chapter_content)) = last_chapter {
+            // 如果context为空或很短，使用最后一章作为上下文
+            if request.context.is_empty() || request.context.len() < 100 {
+                let content_preview = if chapter_content.len() > 4000 {
+                    format!("...(前文省略)...\n{}", &chapter_content[chapter_content.len()-4000..])
+                } else {
+                    chapter_content.clone()
+                };
+                request.context = format!(
+                    "【前一章：{}】\n{}\n\n请根据以上内容继续创作下一章。",
+                    chapter_title,
+                    content_preview
+                );
+                logger.info(&format!("Using last chapter as context: {} (ID: {})", chapter_title, chapter_id));
+            }
+        }
     }
 
     // L3写作层：将导演脚本上下文注入到instruction中
@@ -1806,18 +1827,26 @@ pub async fn save_ui_logs(logs: Vec<UILogEntry>) -> Result<(), String> {
 #[tauri::command]
 pub async fn ai_generate_character(
     app: AppHandle,
-    request: AIGenerateCharacterRequest,
+    mut request: AIGenerateCharacterRequest,
 ) -> Result<GeneratedCharacter, String> {
     let logger = Logger::new().with_feature("ai-generator");
     log_command_start(&logger, "ai_generate_character", &format!("projectId: {}", request.project_id));
 
     // 获取项目信息、世界观设定和已有角色
-    let (genre, worldviews, existing_characters) = {
+    let (genre, worldviews, existing_characters, resolved_model_id) = {
         let db_path = get_db_path(&app)?;
         let conn = get_connection(&db_path).map_err(|e| {
             logger.error(&format!("Failed to get database connection: {}", e));
             e.to_string()
         })?;
+
+        // 解析默认模型
+        let model_id = match &request.model_id {
+            Some(id) if id != "default" => id.clone(),
+            Some(_) | None => {
+                resolve_default_model(&conn, "default")?
+            }
+        };
 
         // 获取项目题材
         let genre: String = conn
@@ -1854,13 +1883,13 @@ pub async fn ai_generate_character(
             .filter_map(|r| r.ok())
             .collect();
 
-        (genre, worldviews, existing_characters)
+        (genre, worldviews, existing_characters, model_id)
     };
 
-    let mut request = request;
     if request.genre.is_none() {
         request.genre = Some(genre);
     }
+    request.model_id = Some(resolved_model_id);
 
     // 构建上下文
     let worldviews_context = if worldviews.is_empty() {
@@ -1997,18 +2026,26 @@ pub async fn ai_generate_character_relations(
 #[tauri::command]
 pub async fn ai_generate_worldview(
     app: AppHandle,
-    request: AIGenerateWorldViewRequest,
+    mut request: AIGenerateWorldViewRequest,
 ) -> Result<GeneratedWorldView, String> {
     let logger = Logger::new().with_feature("ai-generator");
     log_command_start(&logger, "ai_generate_worldview", &format!("projectId: {}, category: {}", request.project_id, request.category));
 
     // 使用块来限制数据库连接的生命周期
-    let (genre, existing_worldviews, characters, plot_points) = {
+    let (genre, existing_worldviews, characters, plot_points, resolved_model_id) = {
         let db_path = get_db_path(&app)?;
         let conn = get_connection(&db_path).map_err(|e| {
             logger.error(&format!("Failed to get database connection: {}", e));
             e.to_string()
         })?;
+
+        // 解析默认模型
+        let model_id = match &request.model_id {
+            Some(id) if id != "default" => id.clone(),
+            Some(_) | None => {
+                resolve_default_model(&conn, "default")?
+            }
+        };
 
         // 获取项目题材
         let genre: String = conn
@@ -2080,8 +2117,10 @@ pub async fn ai_generate_worldview(
             .filter_map(|r| r.ok())
             .collect();
 
-        (genre, existing_worldviews, characters, plot_points)
+        (genre, existing_worldviews, characters, plot_points, model_id)
     };
+
+    request.model_id = Some(resolved_model_id);
 
     // 构建角色上下文
     let characters_context = if characters.is_empty() {
@@ -4470,7 +4509,7 @@ pub async fn multimedia_generate_storyboard(
     );
 
     let model_id = "glm-4-flash".to_string();
-    let response = service.complete(&model_id, "你是一位专业的分镜师，请根据用户的要求生成JSON格式的分镜脚本。只返回JSON，不要包含任何其他文字。", &prompt).await.map_err(|e| e.to_string())?;
+    let response = service.complete(&model_id, "你是一位专业的分镜师，请根据用户的要求生成JSON格式的分镜脚本。只返回JSON，不要包含任何其他文字。", &prompt, None).await.map_err(|e| e.to_string())?;
 
     let json_start = response.find('{').unwrap_or(0);
     let json_end = response.rfind('}').map(|i| i + 1).unwrap_or(response.len());
@@ -4561,7 +4600,7 @@ pub async fn multimedia_generate_script(
     );
 
     let model_id = "glm-4-flash".to_string();
-    let response = service.complete(&model_id, "你是一位专业的编剧，请根据用户的要求将小说转换为JSON格式的剧本。只返回JSON，不要包含任何其他文字。", &prompt).await.map_err(|e| e.to_string())?;
+    let response = service.complete(&model_id, "你是一位专业的编剧，请根据用户的要求将小说转换为JSON格式的剧本。只返回JSON，不要包含任何其他文字。", &prompt, None).await.map_err(|e| e.to_string())?;
 
     let json_start = response.find('{').unwrap_or(0);
     let json_end = response.rfind('}').map(|i| i + 1).unwrap_or(response.len());
@@ -4660,7 +4699,7 @@ pub async fn multimedia_generate_comic(
     );
 
     let model_id = "glm-4-flash".to_string();
-    let response = service.complete(&model_id, "你是一位专业的漫画分镜师，请根据用户的要求将小说转换为JSON格式的漫画分镜。只返回JSON，不要包含任何其他文字。", &prompt).await.map_err(|e| e.to_string())?;
+    let response = service.complete(&model_id, "你是一位专业的漫画分镜师，请根据用户的要求将小说转换为JSON格式的漫画分镜。只返回JSON，不要包含任何其他文字。", &prompt, None).await.map_err(|e| e.to_string())?;
 
     let json_start = response.find('{').unwrap_or(0);
     let json_end = response.rfind('}').map(|i| i + 1).unwrap_or(response.len());
@@ -5100,9 +5139,9 @@ pub async fn generate_chapter_versions(
         let ai_request = AICompletionRequest {
             model_id: "default".to_string(),
             context: prompt.clone(),
-            instruction: format!("生成{}风格的章节内容", style),
+            instruction: format!("生成{}风格的章节内容，要求至少3000字", style),
             temperature: Some(0.8),
-            max_tokens: Some(2000),
+            max_tokens: Some(8192),
             stream: Some(false),
             character_context: None,
             worldview_context: None,
@@ -5113,9 +5152,13 @@ pub async fn generate_chapter_versions(
         match ai_service.continue_novel(ai_request, None).await {
             Ok(content) => {
                 versions.push(ChapterVersion {
+                    id: uuid::Uuid::new_v4().to_string(),
+                    chapter_id: request.chapter_id.clone(),
+                    version_number: versions.len() as i32 + 1,
                     content,
-                    style: style.clone(),
-                    created_at: Some(Utc::now().to_rfc3339()),
+                    style_hint: Some(style.clone()),
+                    created_at: Utc::now().to_rfc3339(),
+                    selected: false,
                 });
             }
             Err(e) => {
@@ -5253,7 +5296,8 @@ pub async fn evaluate_chapter(
         }),
     ).map_err(|e| format!("章节未找到: {}", e))?;
 
-    let ai_service = AIService::new();
+    let ai_service = app.state::<std::sync::Arc<tokio::sync::RwLock<AIService>>>();
+    let service = ai_service.read().await;
 
     let prompt = format!(
         "请评估以下章节内容的质量，从多个维度打分并给出建议：\n\n标题：{}\n内容：\n{}\n\n请以JSON格式返回评估结果，包含：score(总分0-100), coherence(连贯性0-100), style_consistency(风格一致性0-100), character_consistency(角色一致性0-100), plot_advancement(情节推进0-100), summary(简短评价), suggestions(改进建议数组)",
@@ -5274,20 +5318,22 @@ pub async fn evaluate_chapter(
         chapter_mission_id: None,
     };
 
-    let evaluation_result = ai_service.continue_novel(ai_request, None).await
+    let evaluation_result = service.continue_novel(ai_request, None).await
         .map_err(|e| format!("AI评估失败: {}", e))?;
 
     let evaluation: ChapterEvaluation = {
         let json_str = evaluation_result.trim_start_matches("```json").trim_end_matches("```").trim();
         serde_json::from_str(json_str).unwrap_or_else(|_| ChapterEvaluation {
-            score: 75.0,
-            coherence: 75.0,
-            style_consistency: 75.0,
-            character_consistency: 75.0,
-            plot_advancement: 75.0,
-            summary: "自动评估完成".to_string(),
-            suggestions: vec!["建议人工复核".to_string()],
-            evaluated_at: Utc::now().to_rfc3339(),
+            id: uuid::Uuid::new_v4().to_string(),
+            chapter_id: request.chapter_id.clone(),
+            consistency_score: 7.5,
+            creativity_score: 7.5,
+            completeness_score: 7.5,
+            rhythm_score: 7.5,
+            overall_score: 7.5,
+            feedback: "自动评估完成".to_string(),
+            recommended_version: 1,
+            created_at: Utc::now().to_rfc3339(),
         })
     };
 
@@ -5319,7 +5365,7 @@ pub async fn evaluate_chapter(
         summary: chapter.summary,
     };
 
-    log_command_success(&logger, "evaluate_chapter", &format!("评分: {}", updated_chapter.evaluation.as_ref().unwrap().score));
+    log_command_success(&logger, "evaluate_chapter", &format!("评分: {}", updated_chapter.evaluation.as_ref().unwrap().overall_score));
     Ok(updated_chapter)
 }
 
@@ -5758,7 +5804,7 @@ pub async fn optimize_chapter(
 
     let character_context = if matches!(dimension, "dialogue" | "psychology") {
         let mut characters_stmt = conn.prepare(
-            "SELECT name, personality, background, extra FROM characters WHERE project_id = ?1 LIMIT 5"
+            "SELECT name, personality, background FROM characters WHERE project_id = ?1 LIMIT 5"
         ).map_err(|e| {
             logger.error(&format!("Failed to prepare characters query: {}", e));
             format!("准备角色查询失败: {}", e)
@@ -6134,7 +6180,7 @@ pub async fn create_blueprint(
 
     // 收集项目信息用于AI生成
     let (characters_json, relationships_json, settings_json) = {
-        let mut characters_stmt = conn.prepare("SELECT name, personality, role, extra FROM characters WHERE project_id = ?1").map_err(|e| {
+        let mut characters_stmt = conn.prepare("SELECT name, personality, role_type FROM characters WHERE project_id = ?1").map_err(|e| {
             logger.error(&format!("Failed to prepare characters query: {}", e));
             format!("准备角色查询失败: {}", e)
         })?;
@@ -6145,7 +6191,6 @@ pub async fn create_blueprint(
                     "name": row.get::<_, String>(0).unwrap_or_default(),
                     "personality": row.get::<_, String>(1).unwrap_or_default(),
                     "role": row.get::<_, String>(2).unwrap_or_default(),
-                    "extra": row.get::<_, String>(3).unwrap_or_default(),
                 }))
             })
             .map_err(|e| {
@@ -6869,7 +6914,7 @@ pub async fn generate_chapter_mission_with_ai(
         context: system_prompt.to_string(),
         instruction: user_input.to_string(),
         temperature: Some(0.7),
-        max_tokens: Some(2000),
+        max_tokens: Some(4096),
         stream: Some(false),
         character_context: None,
         worldview_context: None,
@@ -7589,7 +7634,7 @@ pub async fn generate_chapter_summary(
 
     let system_prompt = "你是一个专业的小说编辑。请为以下章节内容生成一个简洁的摘要（200字以内），突出本章的主要事件和情节发展。".to_string();
 
-    let response = ai_service.complete("default", &system_prompt, &chapter).await.map_err(|e| {
+    let response = ai_service.complete("default", &system_prompt, &chapter, None).await.map_err(|e| {
         logger.error(&format!("AI生成摘要失败: {}", e));
         format!("AI生成摘要失败: {}", e)
     })?;
@@ -7606,4 +7651,319 @@ pub async fn generate_chapter_summary(
 
     log_command_success(&logger, "generate_chapter_summary", &format!("摘要生成完成，长度：{}", summary.len()));
     Ok(summary)
+}
+
+#[tauri::command]
+pub async fn get_all_tasks(app: tauri::AppHandle) -> Result<Vec<crate::services::async_task_service::BackgroundTask>, String> {
+    let db_path = get_db_path(&app).map_err(|e| format!("获取数据库路径失败: {}", e))?;
+    let conn = get_connection(&db_path).map_err(|e| format!("数据库连接失败: {}", e))?;
+    
+    let service = crate::services::async_task_service::AsyncTaskService::new();
+    service.get_pending_tasks(&conn).map_err(|e| format!("获取任务列表失败: {}", e))
+}
+
+#[tauri::command]
+pub async fn cancel_task(app: tauri::AppHandle, task_id: String) -> Result<(), String> {
+    let db_path = get_db_path(&app).map_err(|e| format!("获取数据库路径失败: {}", e))?;
+    let conn = get_connection(&db_path).map_err(|e| format!("数据库连接失败: {}", e))?;
+    
+    let service = crate::services::async_task_service::AsyncTaskService::new();
+    service.cancel_task(&conn, &task_id).map_err(|e| format!("取消任务失败: {}", e))
+}
+
+#[tauri::command]
+pub async fn cleanup_completed_tasks(app: tauri::AppHandle, days_old: i32) -> Result<usize, String> {
+    let db_path = get_db_path(&app).map_err(|e| format!("获取数据库路径失败: {}", e))?;
+    let conn = get_connection(&db_path).map_err(|e| format!("数据库连接失败: {}", e))?;
+    
+    let service = crate::services::async_task_service::AsyncTaskService::new();
+    service.cleanup_completed_tasks(&conn, days_old).map_err(|e| format!("清理任务失败: {}", e))
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ParseScreenplayRequest {
+    pub text: String,
+    pub scene_count: Option<i32>,
+    pub language: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ParsedScreenplay {
+    pub title: String,
+    pub scenes: Vec<ParsedScene>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ParsedScene {
+    pub id: String,
+    pub scene_number: i32,
+    pub title: String,
+    pub description: String,
+    pub characters: Vec<String>,
+    pub location: String,
+    pub time_of_day: String,
+}
+
+#[tauri::command]
+pub async fn parse_novel_to_screenplay(
+    app: tauri::AppHandle,
+    request: ParseScreenplayRequest,
+) -> Result<String, String> {
+    let logger = Logger::new().with_feature("parse_screenplay");
+    log_command_start(&logger, "parse_novel_to_screenplay", &format!("文本长度: {}", request.text.len()));
+
+    let db_path = get_db_path(&app).map_err(|e| format!("获取数据库路径失败: {}", e))?;
+    let conn = get_connection(&db_path).map_err(|e| format!("数据库连接失败: {}", e))?;
+    
+    let default_model: Option<String> = conn
+        .query_row(
+            "SELECT value FROM app_settings WHERE key = 'default_model'",
+            [],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(|e| format!("获取默认模型失败: {}", e))?;
+    
+    let model_id = match default_model {
+        Some(id) => id,
+        None => return Err("请先在设置中配置AI模型".to_string()),
+    };
+
+    let ai_service = AIService::new();
+    let scene_count = request.scene_count.unwrap_or(5);
+    
+    let system_prompt = format!(
+        "你是一个专业的剧本分析师。请将以下小说文本解析为{}个场景的剧本格式。
+        请以JSON格式返回：
+        {{
+            \"title\": \"剧本标题\",
+            \"scenes\": [
+                {{
+                    \"id\": \"唯一ID\",
+                    \"scene_number\": 1,
+                    \"title\": \"场景标题\",
+                    \"description\": \"场景描述\",
+                    \"characters\": [\"角色1\", \"角色2\"],
+                    \"location\": \"地点\",
+                    \"time_of_day\": \"时间\"
+                }}
+            ]
+        }}",
+        scene_count
+    );
+
+    let result = ai_service.complete(&model_id, &system_prompt, &request.text, None).await
+        .map_err(|e| format!("AI解析失败: {}", e))?;
+
+    log_command_success(&logger, "parse_novel_to_screenplay", "解析完成");
+    Ok(result)
+}
+
+#[tauri::command]
+pub async fn parse_ai_screenplay_response(json_response: String) -> Result<String, String> {
+    let cleaned = json_response
+        .trim()
+        .trim_start_matches("```json")
+        .trim_start_matches("```")
+        .trim_end_matches("```")
+        .trim();
+    
+    let _parsed: ParsedScreenplay = serde_json::from_str(cleaned)
+        .map_err(|e| format!("解析JSON失败: {}", e))?;
+    
+    Ok(cleaned.to_string())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateBatchJobRequest {
+    pub project_id: String,
+    pub name: String,
+    pub source_type: String,
+    pub source_content: Option<String>,
+    pub scene_count: i32,
+    pub config: BatchProductionConfigDto,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BatchProductionConfigDto {
+    pub image_provider: Option<String>,
+    pub video_provider: Option<String>,
+    pub style_tokens: Vec<String>,
+    pub quality_tokens: Vec<String>,
+    pub max_concurrent_tasks: i32,
+    pub retry_failed_tasks: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BatchProductionJob {
+    pub id: String,
+    pub project_id: String,
+    pub name: String,
+    pub source_type: String,
+    pub status: String,
+    pub progress: f32,
+    pub total_scenes: i32,
+    pub completed_scenes: i32,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[tauri::command]
+pub async fn create_batch_production_job(
+    app: tauri::AppHandle,
+    request: CreateBatchJobRequest,
+) -> Result<BatchProductionJob, String> {
+    let logger = Logger::new().with_feature("batch_production");
+    log_command_start(&logger, "create_batch_production_job", &request.name);
+
+    let db_path = get_db_path(&app).map_err(|e| format!("获取数据库路径失败: {}", e))?;
+    let conn = get_connection(&db_path).map_err(|e| format!("数据库连接失败: {}", e))?;
+    
+    let job_id = uuid::Uuid::new_v4().to_string();
+    let now = Utc::now().to_rfc3339();
+    
+    conn.execute(
+        "INSERT INTO batch_production_jobs (id, project_id, name, source_type, status, progress, total_scenes, completed_scenes, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, 'Pending', 0.0, ?5, 0, ?6, ?7)",
+        params![&job_id, &request.project_id, &request.name, &request.source_type, request.scene_count, &now, &now],
+    ).map_err(|e| format!("创建任务失败: {}", e))?;
+
+    let job = BatchProductionJob {
+        id: job_id,
+        project_id: request.project_id,
+        name: request.name,
+        source_type: request.source_type,
+        status: "Pending".to_string(),
+        progress: 0.0,
+        total_scenes: request.scene_count,
+        completed_scenes: 0,
+        created_at: now.clone(),
+        updated_at: now,
+    };
+
+    log_command_success(&logger, "create_batch_production_job", &format!("任务创建成功: {}", job.id));
+    Ok(job)
+}
+
+#[tauri::command]
+pub async fn get_batch_production_job(app: tauri::AppHandle, id: String) -> Result<Option<BatchProductionJob>, String> {
+    let db_path = get_db_path(&app).map_err(|e| format!("获取数据库路径失败: {}", e))?;
+    let conn = get_connection(&db_path).map_err(|e| format!("数据库连接失败: {}", e))?;
+
+    let mut stmt = conn.prepare(
+        "SELECT id, project_id, name, source_type, status, progress, total_scenes, completed_scenes, created_at, updated_at 
+         FROM batch_production_jobs WHERE id = ?1"
+    ).map_err(|e| format!("查询失败: {}", e))?;
+
+    let job = stmt.query_row(params![&id], |row| {
+        Ok(BatchProductionJob {
+            id: row.get(0)?,
+            project_id: row.get(1)?,
+            name: row.get(2)?,
+            source_type: row.get(3)?,
+            status: row.get(4)?,
+            progress: row.get(5)?,
+            total_scenes: row.get(6)?,
+            completed_scenes: row.get(7)?,
+            created_at: row.get(8)?,
+            updated_at: row.get(9)?,
+        })
+    }).optional().map_err(|e| format!("获取任务失败: {}", e))?;
+
+    Ok(job)
+}
+
+#[tauri::command]
+pub async fn get_project_batch_jobs(app: tauri::AppHandle, project_id: String) -> Result<Vec<BatchProductionJob>, String> {
+    let db_path = get_db_path(&app).map_err(|e| format!("获取数据库路径失败: {}", e))?;
+    let conn = get_connection(&db_path).map_err(|e| format!("数据库连接失败: {}", e))?;
+
+    let mut stmt = conn.prepare(
+        "SELECT id, project_id, name, source_type, status, progress, total_scenes, completed_scenes, created_at, updated_at 
+         FROM batch_production_jobs WHERE project_id = ?1 ORDER BY created_at DESC"
+    ).map_err(|e| format!("查询失败: {}", e))?;
+
+    let jobs = stmt.query_map(params![&project_id], |row| {
+        Ok(BatchProductionJob {
+            id: row.get(0)?,
+            project_id: row.get(1)?,
+            name: row.get(2)?,
+            source_type: row.get(3)?,
+            status: row.get(4)?,
+            progress: row.get(5)?,
+            total_scenes: row.get(6)?,
+            completed_scenes: row.get(7)?,
+            created_at: row.get(8)?,
+            updated_at: row.get(9)?,
+        })
+    }).map_err(|e| format!("获取任务列表失败: {}", e))?
+    .collect::<Result<Vec<_>, _>>().map_err(|e| format!("解析失败: {}", e))?;
+
+    Ok(jobs)
+}
+
+#[tauri::command]
+pub async fn pause_batch_job(app: tauri::AppHandle, id: String) -> Result<BatchProductionJob, String> {
+    let db_path = get_db_path(&app).map_err(|e| format!("获取数据库路径失败: {}", e))?;
+    let conn = get_connection(&db_path).map_err(|e| format!("数据库连接失败: {}", e))?;
+
+    let now = Utc::now().to_rfc3339();
+    conn.execute(
+        "UPDATE batch_production_jobs SET status = 'Paused', updated_at = ?1 WHERE id = ?2",
+        params![&now, &id],
+    ).map_err(|e| format!("暂停任务失败: {}", e))?;
+
+    get_batch_production_job(app, id).await?.ok_or_else(|| "任务不存在".to_string())
+}
+
+#[tauri::command]
+pub async fn resume_batch_job(app: tauri::AppHandle, id: String) -> Result<BatchProductionJob, String> {
+    let db_path = get_db_path(&app).map_err(|e| format!("获取数据库路径失败: {}", e))?;
+    let conn = get_connection(&db_path).map_err(|e| format!("数据库连接失败: {}", e))?;
+
+    let now = Utc::now().to_rfc3339();
+    conn.execute(
+        "UPDATE batch_production_jobs SET status = 'Running', updated_at = ?1 WHERE id = ?2",
+        params![&now, &id],
+    ).map_err(|e| format!("恢复任务失败: {}", e))?;
+
+    get_batch_production_job(app, id).await?.ok_or_else(|| "任务不存在".to_string())
+}
+
+#[tauri::command]
+pub async fn cancel_batch_job(app: tauri::AppHandle, id: String) -> Result<BatchProductionJob, String> {
+    let db_path = get_db_path(&app).map_err(|e| format!("获取数据库路径失败: {}", e))?;
+    let conn = get_connection(&db_path).map_err(|e| format!("数据库连接失败: {}", e))?;
+
+    let now = Utc::now().to_rfc3339();
+    conn.execute(
+        "UPDATE batch_production_jobs SET status = 'Cancelled', updated_at = ?1 WHERE id = ?2",
+        params![&now, &id],
+    ).map_err(|e| format!("取消任务失败: {}", e))?;
+
+    get_batch_production_job(app, id).await?.ok_or_else(|| "任务不存在".to_string())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ProductionProgress {
+    pub job_id: String,
+    pub current_status: String,
+    pub progress: f32,
+    pub completed_scenes: i32,
+    pub total_scenes: i32,
+    pub current_scene_title: Option<String>,
+}
+
+#[tauri::command]
+pub async fn get_batch_job_progress(app: tauri::AppHandle, job_id: String) -> Result<Option<ProductionProgress>, String> {
+    let job = get_batch_production_job(app, job_id).await?;
+    
+    Ok(job.map(|j| ProductionProgress {
+        job_id: j.id,
+        current_status: j.status,
+        progress: j.progress,
+        completed_scenes: j.completed_scenes,
+        total_scenes: j.total_scenes,
+        current_scene_title: None,
+    }))
 }

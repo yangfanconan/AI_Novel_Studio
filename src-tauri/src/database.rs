@@ -836,6 +836,34 @@ pub fn init_database(db_path: &Path) -> SqlResult<()> {
         [],
     )?;
 
+    // 批量生产任务表
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS batch_production_jobs (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            source_type TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'Pending',
+            progress REAL DEFAULT 0.0,
+            total_scenes INTEGER DEFAULT 0,
+            completed_scenes INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+        )",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_batch_jobs_project ON batch_production_jobs(project_id)",
+        [],
+    )?;
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_batch_jobs_status ON batch_production_jobs(status)",
+        [],
+    )?;
+
     // 数据库迁移：为 characters 表添加新列（如果不存在）
     let migrations = vec![
         "ALTER TABLE characters ADD COLUMN role_type TEXT",

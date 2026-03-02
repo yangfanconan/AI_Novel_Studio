@@ -144,7 +144,7 @@ export default function BatchGenerator({
       const titleMatch = response.match(/第[一二三四五六七八九十\d]+章[^\n]*/);
       const title = titleMatch ? titleMatch[0] : `第${index + 1}章`;
 
-      await invoke("save_chapter", {
+      await invoke("create_chapter", {
         request: {
           project_id: projectId,
           title,
@@ -161,10 +161,38 @@ export default function BatchGenerator({
   const generateCharacter = async (_index: number): Promise<GenerationResult> => {
     try {
       const response = await invoke<any>("ai_generate_character", {
-        projectId,
-        description: config.context || "请生成一个角色",
-        style: config.style,
+        request: {
+          project_id: projectId,
+          description: config.context || "请生成一个角色",
+          genre: config.style || undefined,
+          role_type: undefined,
+          model_id: "default",
+        },
       });
+
+      if (response) {
+        await invoke("create_character", {
+          request: {
+            project_id: projectId,
+            name: response.name || "新角色",
+            role_type: response.role_type || "supporting",
+            race: response.race,
+            age: response.age,
+            gender: response.gender,
+            birth_date: response.birth_date,
+            appearance: response.appearance,
+            personality: response.personality,
+            background: response.background,
+            skills: response.skills,
+            status: response.status,
+            bazi: response.bazi,
+            ziwei: response.ziwei,
+            mbti: response.mbti,
+            enneagram: response.enneagram,
+            items: response.items,
+          },
+        });
+      }
 
       return { name: response.name || "新角色", success: true };
     } catch (error) {
@@ -174,12 +202,35 @@ export default function BatchGenerator({
 
   const generateWorldview = async (_index: number): Promise<GenerationResult> => {
     try {
+      const categories = ["地理环境", "历史文化", "社会制度", "科技魔法", "种族势力"];
+      const category = categories[_index % categories.length];
+      
       const response = await invoke<any>("ai_generate_worldview", {
-        projectId,
-        description: config.context || "请生成一个世界观设定",
+        request: {
+          project_id: projectId,
+          category: category,
+          description: config.context || `请生成${category}相关的世界观设定`,
+          model_id: "default",
+        },
       });
 
-      return { name: response.name || "新设定", success: true };
+      if (response) {
+        const tags = Array.isArray(response.tags) 
+          ? response.tags.join(",") 
+          : (typeof response.tags === "string" ? response.tags : undefined);
+        
+        await invoke("create_world_view", {
+          request: {
+            project_id: projectId,
+            category: response.category || category,
+            title: response.title || `${category}设定`,
+            content: response.content || "",
+            tags: tags,
+          },
+        });
+      }
+
+      return { name: response.title || `${category}设定`, success: true };
     } catch (error) {
       return { name: "世界观生成失败", success: false, message: String(error) };
     }

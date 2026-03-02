@@ -1,8 +1,7 @@
 use super::models::PromptTemplate;
 use crate::logger::Logger;
 use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 pub struct PromptManager {
     templates: Arc<RwLock<HashMap<String, PromptTemplate>>>,
@@ -99,35 +98,25 @@ impl PromptManager {
             },
         ];
 
-        let rt = tokio::runtime::Handle::try_current();
-        if let Ok(handle) = rt {
-            let templates_clone = self.templates.clone();
-            handle.block_on(async {
-                let mut templates_map = templates_clone.write().await;
-                for template in templates {
-                    templates_map.insert(template.id.clone(), template);
-                }
-            });
+        if let Ok(mut templates_map) = self.templates.write() {
+            for template in templates {
+                templates_map.insert(template.id.clone(), template);
+            }
         } else {
-            self.logger.warn("No tokio runtime found, loading templates synchronously");
-            let templates_clone = self.templates.clone();
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(async {
-                let mut templates_map = templates_clone.write().await;
-                for template in templates {
-                    templates_map.insert(template.id.clone(), template);
-                }
-            });
+            self.logger.warn("Failed to acquire write lock for templates");
         }
     }
 
     pub async fn get_template(&self, id: &str) -> Option<PromptTemplate> {
-        let templates = self.templates.read().await;
+        let templates = self.templates.read().ok()?;
         templates.get(id).cloned()
     }
 
     pub async fn list_templates(&self, category: Option<String>) -> Vec<PromptTemplate> {
-        let templates = self.templates.read().await;
+        let templates = match self.templates.read() {
+            Ok(t) => t,
+            Err(_) => return vec![],
+        };
         if let Some(cat) = category {
             templates
                 .values()
@@ -169,18 +158,22 @@ impl PromptManager {
 
     pub async fn add_template(&self, template: PromptTemplate) {
         let template_name = template.name.clone();
-        let mut templates = self.templates.write().await;
-        templates.insert(template.id.clone(), template);
-        self.logger.info(&format!("Added template: {}", template_name));
+        if let Ok(mut templates) = self.templates.write() {
+            templates.insert(template.id.clone(), template);
+            self.logger.info(&format!("Added template: {}", template_name));
+        }
     }
 
     pub async fn remove_template(&self, id: &str) -> bool {
-        let mut templates = self.templates.write().await;
-        let removed = templates.remove(id).is_some();
-        if removed {
-            self.logger.info(&format!("Removed template: {}", id));
+        if let Ok(mut templates) = self.templates.write() {
+            let removed = templates.remove(id).is_some();
+            if removed {
+                self.logger.info(&format!("Removed template: {}", id));
+            }
+            removed
+        } else {
+            false
         }
-        removed
     }
 }
 

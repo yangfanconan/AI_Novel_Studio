@@ -384,7 +384,7 @@ pub async fn generate_outline_with_ai(
         request.style.unwrap_or_else(|| "无特殊要求".to_string())
     );
 
-    let result = service.complete(model_id, system_prompt, &prompt).await
+    let result = service.complete(model_id, system_prompt, &prompt, None).await
         .map_err(|e| format!("AI generation failed: {}", e))?;
     
     let json_str = result.trim()

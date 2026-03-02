@@ -1,6 +1,7 @@
 pub mod ai;
 pub mod commands;
 pub mod database;
+pub mod db_utils;
 pub mod export;
 pub mod import;
 pub mod logger;
@@ -21,6 +22,7 @@ pub mod character_tags;
 pub mod character_growth_commands;
 pub mod character_dialogue;
 pub mod character_dialogue_commands;
+pub mod services;
 
 pub use ai::*;
 pub use models::*;

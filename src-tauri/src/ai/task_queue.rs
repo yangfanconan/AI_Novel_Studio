@@ -317,7 +317,7 @@ pub async fn get_project_tasks(project_id: String) -> Result<Vec<QueuedTask>, St
 }
 
 #[tauri::command]
-pub async fn cancel_task(id: String) -> Result<Option<QueuedTask>, String> {
+pub async fn cancel_queue_task(id: String) -> Result<Option<QueuedTask>, String> {
     let mut queue = TaskQueue::new();
     Ok(queue.cancel_task(&id))
 }
