@@ -9,7 +9,7 @@ export interface UILogEntry {
 
 class UILogger {
   private logs: UILogEntry[] = [];
-  private flushTimer: NodeJS.Timeout | null = null;
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
   private enabled: boolean = true;
 
   constructor() {

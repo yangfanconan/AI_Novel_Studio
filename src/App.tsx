@@ -57,6 +57,7 @@ import { ChapterMissionPanel } from "./components/ChapterMissionPanel";
 import VersionComparisonPanel from "./components/VersionComparisonPanel";
 import TaskProgressPanel from "./components/TaskProgressPanel";
 import { useProjectStore } from "./stores/projectStore";
+import { useDialogStore } from "./stores/dialogStore";
 import {
   projectService,
   chapterService,
@@ -96,38 +97,13 @@ function App() {
     updateChapter,
     removeChapter,
   } = useProjectStore();
+  
+  const { dialogs, openDialog, closeDialog } = useDialogStore();
 
   const { toasts, showToast, removeToast } = useToast();
-  const autoSaveTimerRef = useRef<NodeJS.Timeout>();
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const [isSaving, setIsSaving] = useState(false);
 
-  const [isCreateProjectDialogOpen, setIsCreateProjectDialogOpen] = useState(false);
-  const [isChapterNameDialogOpen, setIsChapterNameDialogOpen] = useState(false);
-  const [isProjectRenameDialogOpen, setIsProjectRenameDialogOpen] = useState(false);
-  const [isChapterRenameDialogOpen, setIsChapterRenameDialogOpen] = useState(false);
-  const [isCharacterDialogOpen, setIsCharacterDialogOpen] = useState(false);
-  const [isModelSettingsDialogOpen, setIsModelSettingsDialogOpen] = useState(false);
-  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-  const [isPluginManagerOpen, setIsPluginManagerOpen] = useState(false);
-  const [isPromptTemplateOpen, setIsPromptTemplateOpen] = useState(false);
-  const [isMultimediaSettingsOpen, setIsMultimediaSettingsOpen] = useState(false);
-  const [isOutlineOpen, setIsOutlineOpen] = useState(false);
-  const [isBatchGeneratorOpen, setIsBatchGeneratorOpen] = useState(false);
-  const [isReverseAnalysisOpen, setIsReverseAnalysisOpen] = useState(false);
-  const [isCharacterBibleOpen, setIsCharacterBibleOpen] = useState(false);
-  const [isBatchProductionOpen, setIsBatchProductionOpen] = useState(false);
-  const [isSceneEditorOpen, setIsSceneEditorOpen] = useState(false);
-  const [isComfyUIPanelOpen, setIsComfyUIPanelOpen] = useState(false);
-  const [isWorkflowEditorOpen, setIsWorkflowEditorOpen] = useState(false);
-  const [isSeedancePanelOpen, setIsSeedancePanelOpen] = useState(false);
-  const [isStoryboardEditorOpen, setIsStoryboardEditorOpen] = useState(false);
-  const [isChapterVersionPanelOpen, setIsChapterVersionPanelOpen] = useState(false);
-  const [isChapterOptimizerOpen, setIsChapterOptimizerOpen] = useState(false);
-  const [isBlueprintEditorOpen, setIsBlueprintEditorOpen] = useState(false);
-  const [isChapterMissionPanelOpen, setIsChapterMissionPanelOpen] = useState(false);
-  const [isVersionComparisonOpen, setIsVersionComparisonOpen] = useState(false);
-  const [isTaskProgressOpen, setIsTaskProgressOpen] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | undefined>();
   const [editingScene, setEditingScene] = useState<any>(null);
   const [exportProjectId, setExportProjectId] = useState<string | null>(null);
@@ -138,7 +114,7 @@ function App() {
   useEffect(() => {
     uiLogger.mount("App");
     return () => uiLogger.unmount("App");
-  }, [isModelSettingsDialogOpen]);
+  }, [dialogs.isModelSettingsDialogOpen]);
   const [editingCharacter, setEditingCharacter] = useState<Character | undefined>();
   const [initialCharacterName, setInitialCharacterName] = useState<string>("");
   const [initialWorldViewTitle, setInitialWorldViewTitle] = useState<string>("");
@@ -147,9 +123,7 @@ function App() {
   const [rightPanelTab, setRightPanelTab] = useState<
     "chapters" | "plot" | "worldview" | "relations" | "knowledge" | "foreshadowing" | "emotion" | "moyin"
   >("chapters");
-  const [isPlotPointEditorOpen, setIsPlotPointEditorOpen] = useState(false);
   const [editingPlotPoint, setEditingPlotPoint] = useState<PlotPointNode | null>(null);
-  const [isWorldViewEditorOpen, setIsWorldViewEditorOpen] = useState(false);
   const [editingWorldView, setEditingWorldView] = useState<WorldView | null>(null);
 
   useEffect(() => {
@@ -245,7 +219,7 @@ function App() {
       addProject(newProject);
       setCurrentProject(newProject);
       localStorage.setItem("current-project-id", newProject.id);
-      setIsCreateProjectDialogOpen(false);
+      closeDialog('isCreateProjectDialogOpen');
       showToast("项目创建成功", "success");
     } catch (error) {
       console.error("Failed to create project:", error);
@@ -281,7 +255,7 @@ function App() {
       if (currentProject?.id === updatedProject.id) {
         setCurrentProject(updatedProject);
       }
-      setIsProjectRenameDialogOpen(false);
+      closeDialog('isProjectRenameDialogOpen');
       showToast("项目重命名成功", "success");
     } catch (error) {
       console.error("Failed to rename project:", error);
@@ -320,7 +294,7 @@ function App() {
   };
 
   const handleCreateChapter = () => {
-    setIsChapterNameDialogOpen(true);
+    openDialog('isChapterNameDialogOpen');
   };
 
   const handleChapterNameSubmit = async (title: string) => {
@@ -337,7 +311,7 @@ function App() {
       addChapter(newChapter);
       setCurrentChapter(newChapter);
       setEditorContent("");
-      setIsChapterNameDialogOpen(false);
+      closeDialog('isChapterNameDialogOpen');
       showToast("章节创建成功", "success");
     } catch (error) {
       console.error("Failed to create chapter:", error);
@@ -371,7 +345,7 @@ function App() {
       const updatedChapter = await chapterService.updateChapter(currentChapter.id, newTitle);
       await loadChapters(currentProject!.id);
       setCurrentChapter(updatedChapter);
-      setIsChapterRenameDialogOpen(false);
+      closeDialog('isChapterRenameDialogOpen');
       showToast("章节重命名成功", "success");
     } catch (error) {
       console.error("Failed to rename chapter:", error);
@@ -411,23 +385,23 @@ function App() {
   }, [rightPanelTab]);
 
   const closeAllDialogs = useCallback(() => {
-    if (isCreateProjectDialogOpen) setIsCreateProjectDialogOpen(false);
-    if (isChapterNameDialogOpen) setIsChapterNameDialogOpen(false);
-    if (isCharacterDialogOpen) setIsCharacterDialogOpen(false);
-    if (isModelSettingsDialogOpen) setIsModelSettingsDialogOpen(false);
-    if (isExportDialogOpen) setIsExportDialogOpen(false);
-    if (isImportDialogOpen) setIsImportDialogOpen(false);
-    if (isPlotPointEditorOpen) setIsPlotPointEditorOpen(false);
-    if (isWorldViewEditorOpen) setIsWorldViewEditorOpen(false);
-  }, [isCreateProjectDialogOpen, isChapterNameDialogOpen, isCharacterDialogOpen, 
-      isModelSettingsDialogOpen, isExportDialogOpen, isImportDialogOpen, 
-      isPlotPointEditorOpen, isWorldViewEditorOpen]);
+    if (dialogs.isCreateProjectDialogOpen) closeDialog('isCreateProjectDialogOpen');
+    if (dialogs.isChapterNameDialogOpen) closeDialog('isChapterNameDialogOpen');
+    if (dialogs.isCharacterDialogOpen) closeDialog('isCharacterDialogOpen');
+    if (dialogs.isModelSettingsDialogOpen) closeDialog('isModelSettingsDialogOpen');
+    if (dialogs.isExportDialogOpen) closeDialog('isExportDialogOpen');
+    if (dialogs.isImportDialogOpen) closeDialog('isImportDialogOpen');
+    if (dialogs.isPlotPointEditorOpen) closeDialog('isPlotPointEditorOpen');
+    if (dialogs.isWorldViewEditorOpen) closeDialog('isWorldViewEditorOpen');
+  }, [dialogs.isCreateProjectDialogOpen, dialogs.isChapterNameDialogOpen, dialogs.isCharacterDialogOpen, 
+      dialogs.isModelSettingsDialogOpen, dialogs.isExportDialogOpen, dialogs.isImportDialogOpen, 
+      dialogs.isPlotPointEditorOpen, dialogs.isWorldViewEditorOpen]);
 
   const shortcuts = [
     { key: "s", ctrl: true, action: handleSaveChapter, description: "保存当前章节" },
-    { key: "n", ctrl: true, action: () => setIsCreateProjectDialogOpen(true), description: "新建项目" },
-    { key: "e", ctrl: true, action: () => currentProject && setIsExportDialogOpen(true), description: "导出" },
-    { key: ",", ctrl: true, action: () => setIsModelSettingsDialogOpen(true), description: "设置" },
+    { key: "n", ctrl: true, action: () => openDialog('isCreateProjectDialogOpen'), description: "新建项目" },
+    { key: "e", ctrl: true, action: () => currentProject && openDialog('isExportDialogOpen'), description: "导出" },
+    { key: ",", ctrl: true, action: () => openDialog('isModelSettingsDialogOpen'), description: "设置" },
     { key: "]", ctrl: true, action: cycleRightPanelTab, description: "切换右侧面板" },
     { key: "Escape", action: closeAllDialogs, description: "关闭对话框" },
   ];
@@ -436,12 +410,12 @@ function App() {
 
   const handleCreateCharacter = () => {
     setEditingCharacter(undefined);
-    setIsCharacterDialogOpen(true);
+    openDialog('isCharacterDialogOpen');
   };
 
   const handleEditCharacter = (character: Character) => {
     setEditingCharacter(character);
-    setIsCharacterDialogOpen(true);
+    openDialog('isCharacterDialogOpen');
   };
 
   const handleDeleteCharacter = async (characterId: string) => {
@@ -478,7 +452,7 @@ function App() {
       }
 
       await loadCharacters(currentProject!.id);
-      setIsCharacterDialogOpen(false);
+      closeDialog('isCharacterDialogOpen');
     } catch (error) {
       console.error("Failed to save character:", error);
       showToast(editingCharacter ? "更新角色失败" : "创建角色失败", "error");
@@ -489,24 +463,24 @@ function App() {
   const handleQuickCreateCharacter = (name: string) => {
     setEditingCharacter(undefined);
     setInitialCharacterName(name);
-    setIsCharacterDialogOpen(true);
+    openDialog('isCharacterDialogOpen');
   };
 
   // 从写作助手快速创建世界观
   const handleQuickCreateWorldView = (title: string) => {
     setEditingWorldView(null);
     setInitialWorldViewTitle(title);
-    setIsWorldViewEditorOpen(true);
+    openDialog('isWorldViewEditorOpen');
   };
 
   const handleEditPlotPoint = (plotPoint: PlotPointNode) => {
     setEditingPlotPoint(plotPoint);
-    setIsPlotPointEditorOpen(true);
+    openDialog('isPlotPointEditorOpen');
   };
 
   const handlePlotPointEditorClose = () => {
     setEditingPlotPoint(null);
-    setIsPlotPointEditorOpen(false);
+    closeDialog('isPlotPointEditorOpen');
   };
 
   const handlePlotPointSaved = async () => {
@@ -529,12 +503,12 @@ function App() {
 
   const handleEditWorldView = (worldView: WorldView) => {
     setEditingWorldView(worldView);
-    setIsWorldViewEditorOpen(true);
+    openDialog('isWorldViewEditorOpen');
   };
 
   const handleWorldViewEditorClose = () => {
     setEditingWorldView(null);
-    setIsWorldViewEditorOpen(false);
+    closeDialog('isWorldViewEditorOpen');
   };
 
   const handleWorldViewSaved = () => {
@@ -592,17 +566,17 @@ function App() {
   const handleExportProject = (projectId: string) => {
     setExportProjectId(projectId);
     setExportChapterId(null);
-    setIsExportDialogOpen(true);
+    openDialog('isExportDialogOpen');
   };
 
   const handleExportChapter = (chapterId: string) => {
     setExportChapterId(chapterId);
     setExportProjectId(null);
-    setIsExportDialogOpen(true);
+    openDialog('isExportDialogOpen');
   };
 
   const handleOpenMission = async (chapter: Chapter) => {
-    setIsChapterMissionPanelOpen(true);
+    openDialog('isChapterMissionPanelOpen');
     try {
       const bp = await invoke<any>("get_blueprint", {
         request: { project_id: currentProject!.id },
@@ -614,7 +588,7 @@ function App() {
   };
 
   const handleCloseExportDialog = () => {
-    setIsExportDialogOpen(false);
+    closeDialog('isExportDialogOpen');
     setExportProjectId(null);
     setExportChapterId(null);
   };
@@ -642,36 +616,36 @@ function App() {
             currentProject={currentProject}
             onSelectProject={handleSelectProject}
             onCreateProject={() => {
-              setIsCreateProjectDialogOpen(true);
+              openDialog('isCreateProjectDialogOpen');
             }}
             onDeleteProject={handleDeleteProject}
-            onRenameProject={() => setIsProjectRenameDialogOpen(true)}
+            onRenameProject={() => openDialog('isProjectRenameDialogOpen')}
             onOpenPluginManager={() => {
-              setIsPluginManagerOpen(true);
+              openDialog('isPluginManagerOpen');
             }}
             onOpenImportDialog={() => {
-              setIsImportDialogOpen(true);
+              openDialog('isImportDialogOpen');
             }}
             onOpenPromptTemplates={() => {
-              setIsPromptTemplateOpen(true);
+              openDialog('isPromptTemplateOpen');
             }}
             onOpenMultimediaSettings={() => {
-              setIsMultimediaSettingsOpen(true);
+              openDialog('isMultimediaSettingsOpen');
             }}
             onOpenOutline={() => {
-              setIsOutlineOpen(true);
+              openDialog('isOutlineOpen');
             }}
             onOpenBatchGenerator={() => {
-              setIsBatchGeneratorOpen(true);
+              openDialog('isBatchGeneratorOpen');
             }}
             onOpenReverseAnalysis={() => {
-              setIsReverseAnalysisOpen(true);
+              openDialog('isReverseAnalysisOpen');
             }}
             onOpenBlueprint={() => {
-              setIsBlueprintEditorOpen(true);
+              openDialog('isBlueprintEditorOpen');
             }}
             onOpenSettings={() => {
-              setIsModelSettingsDialogOpen(true);
+              openDialog('isModelSettingsDialogOpen');
             }}
             onRefresh={() => {
               window.location.reload();
@@ -814,10 +788,10 @@ function App() {
                   onSelectChapter={handleSelectChapter}
                   onCreateChapter={handleCreateChapter}
                   onDeleteChapter={handleDeleteChapter}
-                  onRenameChapter={() => setIsChapterRenameDialogOpen(true)}
+                  onRenameChapter={() => openDialog('isChapterRenameDialogOpen')}
                   onExportChapter={handleExportChapter}
-                  onOpenVersions={currentChapter ? () => setIsChapterVersionPanelOpen(true) : undefined}
-                  onOpenOptimizer={currentChapter ? () => setIsChapterOptimizerOpen(true) : undefined}
+                  onOpenVersions={currentChapter ? () => openDialog('isChapterVersionPanelOpen') : undefined}
+                  onOpenOptimizer={currentChapter ? () => openDialog('isChapterOptimizerOpen') : undefined}
                   onOpenMission={currentChapter ? handleOpenMission : undefined}
                 />
               </div>
@@ -900,7 +874,7 @@ function App() {
                 <div className="flex flex-col h-full">
                   <div className="flex flex-wrap gap-1 p-2 border-b bg-muted/20">
                     <button
-                      onClick={() => setIsCharacterBibleOpen(true)}
+                      onClick={() => openDialog('isCharacterBibleOpen')}
                       title="角色圣经 - 管理角色深度设定"
                       className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
                     >
@@ -908,7 +882,7 @@ function App() {
                       角色圣经
                     </button>
                     <button
-                      onClick={() => setIsBatchProductionOpen(true)}
+                      onClick={() => openDialog('isBatchProductionOpen')}
                       title="批量生产 - 批量生成场景内容"
                       className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
                     >
@@ -916,7 +890,7 @@ function App() {
                       批量生产
                     </button>
                     <button
-                      onClick={() => setIsComfyUIPanelOpen(true)}
+                      onClick={() => openDialog('isComfyUIPanelOpen')}
                       title="ComfyUI - AI图像生成工作流"
                       className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
                     >
@@ -926,7 +900,7 @@ function App() {
                     <button
                       onClick={() => {
                         setEditingTemplateId(undefined);
-                        setIsWorkflowEditorOpen(true);
+                        openDialog('isWorkflowEditorOpen');
                       }}
                       title="模板编辑器 - 创建工作流模板"
                       className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
@@ -935,7 +909,7 @@ function App() {
                       模板
                     </button>
                     <button
-                      onClick={() => setIsSeedancePanelOpen(true)}
+                      onClick={() => openDialog('isSeedancePanelOpen')}
                       title="Seedance 2.0 - AI视频生成"
                       className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
                     >
@@ -943,7 +917,7 @@ function App() {
                       Seedance
                     </button>
                     <button
-                      onClick={() => setIsStoryboardEditorOpen(true)}
+                      onClick={() => openDialog('isStoryboardEditorOpen')}
                       title="分镜编辑器 - 可视化分镜管理"
                       className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
                     >
@@ -951,7 +925,7 @@ function App() {
                       分镜
                     </button>
                     <button
-                      onClick={() => setIsVersionComparisonOpen(true)}
+                      onClick={() => openDialog('isVersionComparisonOpen')}
                       title="版本对比 - AI多版本评审"
                       className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
                     >
@@ -959,7 +933,7 @@ function App() {
                       版本对比
                     </button>
                     <button
-                      onClick={() => setIsTaskProgressOpen(true)}
+                      onClick={() => openDialog('isTaskProgressOpen')}
                       title="任务进度 - 后台任务监控"
                       className="px-2.5 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5 bg-background hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30"
                     >
@@ -998,56 +972,56 @@ function App() {
       }
     >
       <CreateProjectDialog
-        isOpen={isCreateProjectDialogOpen}
-        onClose={() => setIsCreateProjectDialogOpen(false)}
+        isOpen={dialogs.isCreateProjectDialogOpen}
+        onClose={() => closeDialog('isCreateProjectDialogOpen')}
         onSubmit={handleCreateProject}
       />
 
       <InputDialog
-        isOpen={isChapterNameDialogOpen}
+        isOpen={dialogs.isChapterNameDialogOpen}
         title="新建章节"
         message="请输入章节标题："
         defaultValue={`第${chapters.length + 1}章`}
         onSubmit={handleChapterNameSubmit}
-        onCancel={() => setIsChapterNameDialogOpen(false)}
+        onCancel={() => closeDialog('isChapterNameDialogOpen')}
       />
 
       <InputDialog
-        isOpen={isProjectRenameDialogOpen}
+        isOpen={dialogs.isProjectRenameDialogOpen}
         title="重命名项目"
         message="请输入新的项目名称："
         defaultValue={currentProject?.name}
         onSubmit={handleRenameProject}
-        onCancel={() => setIsProjectRenameDialogOpen(false)}
+        onCancel={() => closeDialog('isProjectRenameDialogOpen')}
       />
 
       <InputDialog
-        isOpen={isChapterRenameDialogOpen}
+        isOpen={dialogs.isChapterRenameDialogOpen}
         title="重命名章节"
         message="请输入新的章节标题："
         defaultValue={currentChapter?.title}
         onSubmit={handleRenameChapter}
-        onCancel={() => setIsChapterRenameDialogOpen(false)}
+        onCancel={() => closeDialog('isChapterRenameDialogOpen')}
       />
 
       <CharacterDialog
-        isOpen={isCharacterDialogOpen}
+        isOpen={dialogs.isCharacterDialogOpen}
         character={editingCharacter}
         initialName={initialCharacterName}
         onSubmit={handleCharacterSubmit}
         onCancel={() => {
-          setIsCharacterDialogOpen(false);
+          closeDialog('isCharacterDialogOpen');
           setInitialCharacterName("");
         }}
       />
 
       <ModelSettingsDialog
-        open={isModelSettingsDialogOpen}
-        onClose={() => setIsModelSettingsDialogOpen(false)}
+        open={dialogs.isModelSettingsDialogOpen}
+        onClose={() => closeDialog('isModelSettingsDialogOpen')}
       />
 
       <ExportDialog
-        isOpen={isExportDialogOpen}
+        isOpen={dialogs.isExportDialogOpen}
         onClose={handleCloseExportDialog}
         projectId={exportProjectId}
         chapterId={exportChapterId}
@@ -1055,47 +1029,47 @@ function App() {
       />
 
       <ImportDialog
-        isOpen={isImportDialogOpen}
-        onClose={() => setIsImportDialogOpen(false)}
+        isOpen={dialogs.isImportDialogOpen}
+        onClose={() => closeDialog('isImportDialogOpen')}
         projectId={currentProject?.id}
         onImportSuccess={handleImportSuccess}
       />
 
       <PromptTemplateDialog
-        isOpen={isPromptTemplateOpen}
-        onClose={() => setIsPromptTemplateOpen(false)}
+        isOpen={dialogs.isPromptTemplateOpen}
+        onClose={() => closeDialog('isPromptTemplateOpen')}
       />
 
       <MultimediaSettingsDialog
-        isOpen={isMultimediaSettingsOpen}
-        onClose={() => setIsMultimediaSettingsOpen(false)}
+        isOpen={dialogs.isMultimediaSettingsOpen}
+        onClose={() => closeDialog('isMultimediaSettingsOpen')}
       />
 
       {currentProject && (
         <OutlinePanel
           projectId={currentProject.id}
-          isOpen={isOutlineOpen}
-          onClose={() => setIsOutlineOpen(false)}
+          isOpen={dialogs.isOutlineOpen}
+          onClose={() => closeDialog('isOutlineOpen')}
         />
       )}
 
       {currentProject && (
         <BatchGenerator
-          isOpen={isBatchGeneratorOpen}
-          onClose={() => setIsBatchGeneratorOpen(false)}
+          isOpen={dialogs.isBatchGeneratorOpen}
+          onClose={() => closeDialog('isBatchGeneratorOpen')}
           projectId={currentProject.id}
         />
       )}
 
       <ReverseAnalysisDialog
-        isOpen={isReverseAnalysisOpen}
-        onClose={() => setIsReverseAnalysisOpen(false)}
+        isOpen={dialogs.isReverseAnalysisOpen}
+        onClose={() => closeDialog('isReverseAnalysisOpen')}
         onImportResults={(result) => {
           showToast("逆向分析结果已导入", "success");
         }}
       />
 
-      {isBatchProductionOpen && currentProject && (
+      {dialogs.isBatchProductionOpen && currentProject && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh] overflow-hidden">
             <BatchProductionPanel
@@ -1103,12 +1077,12 @@ function App() {
               dbPath={`~/Library/Application Support/com.infinitenote/app.db`}
               onSceneSelect={(scene) => {
                 setEditingScene(scene);
-                setIsSceneEditorOpen(true);
+                openDialog('isSceneEditorOpen');
               }}
             />
             <div className="absolute top-2 right-2">
               <button
-                onClick={() => setIsBatchProductionOpen(false)}
+                onClick={() => closeDialog('isBatchProductionOpen')}
                 className="p-2 bg-white rounded-full shadow hover:bg-gray-100"
               >
                 ×
@@ -1118,7 +1092,7 @@ function App() {
         </div>
       )}
 
-      {isSceneEditorOpen && editingScene && currentProject && (
+      {dialogs.isSceneEditorOpen && editingScene && currentProject && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl h-[85vh] overflow-hidden">
             <SceneEditor
@@ -1127,7 +1101,7 @@ function App() {
               projectId={currentProject.id}
               characters={[]}
               onClose={() => {
-                setIsSceneEditorOpen(false);
+                closeDialog('isSceneEditorOpen');
                 setEditingScene(null);
               }}
               onSaved={() => {
@@ -1138,12 +1112,12 @@ function App() {
         </div>
       )}
 
-      {isComfyUIPanelOpen && (
+      {dialogs.isComfyUIPanelOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl h-[90vh] overflow-hidden">
             <ComfyUIPanel />
             <button
-              onClick={() => setIsComfyUIPanelOpen(false)}
+              onClick={() => closeDialog('isComfyUIPanelOpen')}
               className="absolute top-4 right-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
             >
               Close
@@ -1152,26 +1126,26 @@ function App() {
         </div>
       )}
 
-      {isWorkflowEditorOpen && (
+      {dialogs.isWorkflowEditorOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[90vh] overflow-hidden">
             <WorkflowTemplateEditor
               templateId={editingTemplateId}
               onSave={(template) => {
                 showToast("模板保存成功", "success");
-                setIsWorkflowEditorOpen(false);
+                closeDialog('isWorkflowEditorOpen');
               }}
-              onCancel={() => setIsWorkflowEditorOpen(false)}
+              onCancel={() => closeDialog('isWorkflowEditorOpen')}
             />
           </div>
         </div>
       )}
 
-      {isSeedancePanelOpen && (
+      {dialogs.isSeedancePanelOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl h-[90vh] overflow-hidden">
             <button
-              onClick={() => setIsSeedancePanelOpen(false)}
+              onClick={() => closeDialog('isSeedancePanelOpen')}
               className="absolute top-4 right-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
             >
               Close
@@ -1181,11 +1155,11 @@ function App() {
         </div>
       )}
 
-      {isStoryboardEditorOpen && currentProject && (
+      {dialogs.isStoryboardEditorOpen && currentProject && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[90vh] overflow-hidden relative">
             <button
-              onClick={() => setIsStoryboardEditorOpen(false)}
+              onClick={() => closeDialog('isStoryboardEditorOpen')}
               className="absolute top-4 right-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 z-10"
             >
               关闭
@@ -1195,11 +1169,11 @@ function App() {
         </div>
       )}
 
-      {isChapterVersionPanelOpen && currentProject && currentChapter && (
+      {dialogs.isChapterVersionPanelOpen && currentProject && currentChapter && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-background dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-4xl h-[80vh] overflow-hidden relative">
             <button
-              onClick={() => setIsChapterVersionPanelOpen(false)}
+              onClick={() => closeDialog('isChapterVersionPanelOpen')}
               className="absolute top-4 right-4 px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-md z-10 text-sm transition-colors"
             >
               关闭
@@ -1218,21 +1192,21 @@ function App() {
                   }
                 }
               }}
-              onClose={() => setIsChapterVersionPanelOpen(false)}
+              onClose={() => closeDialog('isChapterVersionPanelOpen')}
             />
           </div>
         </div>
       )}
 
-      {isPluginManagerOpen && (
+      {dialogs.isPluginManagerOpen && (
         <div className="fixed inset-0 bg-background z-50">
           <ErrorBoundary>
-            <PluginManager onClose={() => setIsPluginManagerOpen(false)} />
+            <PluginManager onClose={() => closeDialog('isPluginManagerOpen')} />
           </ErrorBoundary>
         </div>
       )}
 
-      {isPlotPointEditorOpen && (
+      {dialogs.isPlotPointEditorOpen && (
         <PlotPointEditor
           plotPoint={editingPlotPoint}
           availableChapters={chapters.map((c) => ({ id: c.id, title: c.title }))}
@@ -1242,7 +1216,7 @@ function App() {
         />
       )}
 
-      {isWorldViewEditorOpen && (
+      {dialogs.isWorldViewEditorOpen && (
         <WorldViewEditor
           worldView={editingWorldView}
           projectId={currentProject?.id || ""}
@@ -1258,11 +1232,11 @@ function App() {
         />
       )}
 
-      {isChapterOptimizerOpen && currentProject && currentChapter && (
+      {dialogs.isChapterOptimizerOpen && currentProject && currentChapter && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-background dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-3xl h-[90vh] overflow-hidden relative">
             <button
-              onClick={() => setIsChapterOptimizerOpen(false)}
+              onClick={() => closeDialog('isChapterOptimizerOpen')}
               className="absolute top-4 right-4 px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-md z-10 text-sm transition-colors"
             >
               关闭
@@ -1285,28 +1259,28 @@ function App() {
         </div>
       )}
 
-      {isBlueprintEditorOpen && currentProject && (
+      {dialogs.isBlueprintEditorOpen && currentProject && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-background dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-5xl h-[90vh] overflow-hidden relative">
             <button
-              onClick={() => setIsBlueprintEditorOpen(false)}
+              onClick={() => closeDialog('isBlueprintEditorOpen')}
               className="absolute top-4 right-4 px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-md z-10 text-sm transition-colors"
             >
               关闭
             </button>
             <BlueprintEditor
               projectId={currentProject.id}
-              onClose={() => setIsBlueprintEditorOpen(false)}
+              onClose={() => closeDialog('isBlueprintEditorOpen')}
             />
           </div>
         </div>
       )}
 
-      {isChapterMissionPanelOpen && currentProject && currentChapter && (
+      {dialogs.isChapterMissionPanelOpen && currentProject && currentChapter && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-background dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-4xl h-[85vh] overflow-hidden relative">
             <button
-              onClick={() => setIsChapterMissionPanelOpen(false)}
+              onClick={() => closeDialog('isChapterMissionPanelOpen')}
               className="absolute top-4 right-4 px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-md z-10 text-sm transition-colors"
             >
               关闭
@@ -1327,22 +1301,22 @@ function App() {
         </div>
       )}
 
-      {isVersionComparisonOpen && currentChapter && (
+      {dialogs.isVersionComparisonOpen && currentChapter && (
         <VersionComparisonPanel
           chapterId={currentChapter.id}
           versions={[]}
           evaluation={undefined}
-          onClose={() => setIsVersionComparisonOpen(false)}
+          onClose={() => closeDialog('isVersionComparisonOpen')}
           onSelectVersion={(index) => {
             console.log("Selected version:", index);
-            setIsVersionComparisonOpen(false);
+            closeDialog('isVersionComparisonOpen');
           }}
         />
       )}
 
-      {isTaskProgressOpen && (
+      {dialogs.isTaskProgressOpen && (
         <TaskProgressPanel
-          onClose={() => setIsTaskProgressOpen(false)}
+          onClose={() => closeDialog('isTaskProgressOpen')}
         />
       )}
     </ResizableLayout>

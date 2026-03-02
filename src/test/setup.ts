@@ -20,7 +20,7 @@ expect.extend({
   },
 });
 
-global.console = {
+globalThis.console = {
   ...console,
   error: vi.fn(),
   warn: vi.fn(),

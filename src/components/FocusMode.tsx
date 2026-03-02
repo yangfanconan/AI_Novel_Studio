@@ -85,7 +85,7 @@ export default function FocusMode({
   }, [onExit, onSave]);
 
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
+    let timeout: ReturnType<typeof setTimeout>;
     const handleMouseMove = () => {
       setShowToolbar(true);
       clearTimeout(timeout);
