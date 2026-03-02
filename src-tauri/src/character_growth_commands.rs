@@ -7,6 +7,7 @@ use crate::character_tags::{
     CharacterTagCollection
 };
 use crate::logger::Logger;
+use crate::db_utils::get_db_path;
 use tauri::{AppHandle, Manager};
 use rusqlite::params;
 use std::collections::HashMap;
@@ -402,19 +403,6 @@ pub async fn get_tag_statistics(
     let statistics = CharacterTagManager::calculate_statistics(tags_vec, character_count);
 
     serde_json::to_string(&statistics).map_err(|e| e.to_string())
-}
-
-fn get_db_path(app: &AppHandle) -> Result<std::path::PathBuf, String> {
-    if cfg!(debug_assertions) {
-        let mut project_dir = std::env::current_dir()
-            .map_err(|e| format!("Failed to get current directory: {}", e))?;
-        project_dir.push("novel_studio_dev.db");
-        Ok(std::fs::canonicalize(&project_dir).unwrap_or(project_dir))
-    } else {
-        let app_data_dir = app.path().app_data_dir()
-            .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-        Ok(app_data_dir.join("novel_studio.db"))
-    }
 }
 
 fn get_growth_at_position(

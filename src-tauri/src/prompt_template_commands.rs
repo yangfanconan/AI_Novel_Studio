@@ -1,25 +1,11 @@
 use crate::database::get_connection;
+use crate::db_utils::get_db_path;
 use crate::logger::{Logger, log_command_start, log_command_success, log_command_error};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use rusqlite::params;
 use chrono::Utc;
 use uuid::Uuid;
-
-fn get_db_path(app: &AppHandle) -> Result<std::path::PathBuf, String> {
-    if cfg!(debug_assertions) {
-        let mut project_dir = std::env::current_dir()
-            .map_err(|e| format!("Failed to get current directory: {}", e))?;
-        project_dir.push("novel_studio_dev.db");
-        Ok(std::fs::canonicalize(&project_dir).unwrap_or(project_dir))
-    } else {
-        let app_data_dir = app.path().app_data_dir()
-            .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-        std::fs::create_dir_all(&app_data_dir)
-            .map_err(|e| format!("Failed to create app data directory: {}", e))?;
-        Ok(app_data_dir.join("novel_studio.db"))
-    }
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PromptTemplateRecord {

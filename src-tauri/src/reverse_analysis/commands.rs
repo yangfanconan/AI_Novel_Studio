@@ -1,6 +1,7 @@
 use crate::reverse_analysis::types::*;
 use crate::logger::{Logger, log_command_start, log_command_success, log_command_error};
 use crate::database::get_connection;
+use crate::db_utils::get_db_path;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use regex::Regex;
@@ -8,19 +9,6 @@ use tauri::{AppHandle, Manager};
 use uuid::Uuid;
 use chrono::Utc;
 use rusqlite::params;
-
-fn get_db_path(app: &AppHandle) -> Result<std::path::PathBuf, String> {
-    if cfg!(debug_assertions) {
-        let mut project_dir = std::env::current_dir()
-            .map_err(|e| format!("Failed to get current directory: {}", e))?;
-        project_dir.push("novel_studio_dev.db");
-        Ok(std::fs::canonicalize(&project_dir).unwrap_or(project_dir))
-    } else {
-        let app_data_dir = app.path().app_data_dir()
-            .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-        Ok(app_data_dir.join("novel_studio.db"))
-    }
-}
 
 pub async fn analyze_novel(
     _ai_service: Arc<RwLock<crate::ai::AIService>>,

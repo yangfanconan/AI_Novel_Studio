@@ -1,6 +1,7 @@
 use crate::version_control::{VersionControlManager, ProjectSnapshot, VersionDiff, VersionControlConfig};
 use crate::models::{Chapter, Character, WorldView, PlotPoint};
 use crate::logger::Logger;
+use crate::db_utils::get_db_path;
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 use rusqlite::params;
@@ -373,19 +374,6 @@ pub async fn set_version_config(
     ).map_err(|e| format!("Failed to save config: {}", e))?;
 
     Ok("{\"status\":\"success\"}".to_string())
-}
-
-fn get_db_path(app: &AppHandle) -> Result<PathBuf, String> {
-    if cfg!(debug_assertions) {
-        let mut project_dir = std::env::current_dir()
-            .map_err(|e| format!("Failed to get current directory: {}", e))?;
-        project_dir.push("novel_studio_dev.db");
-        Ok(std::fs::canonicalize(&project_dir).unwrap_or(project_dir))
-    } else {
-        let app_data_dir = app.path().app_data_dir()
-            .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-        Ok(app_data_dir.join("novel_studio.db"))
-    }
 }
 
 fn load_chapters(conn: &rusqlite::Connection, project_id: &str) -> Result<Vec<crate::version_control::ChapterSnapshot>, String> {
