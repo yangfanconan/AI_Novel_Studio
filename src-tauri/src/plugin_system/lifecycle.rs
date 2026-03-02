@@ -1,8 +1,7 @@
 use crate::plugin_system::types::*;
 use crate::plugin_system::registry::PluginRegistry;
 use crate::plugin_system::permissions::PermissionManager;
-use anyhow::{Context, Result};
-use std::path::Path;
+use anyhow::Result;
 use tokio::sync::mpsc;
 use log;
 

@@ -5535,7 +5535,7 @@ pub async fn get_foreshadowing_stats(
     log_command_start(&logger, "get_foreshadowing_stats", &project_id);
 
     let db_path = get_db_path(&app)?;
-    let conn = get_connection(&db_path).map_err(|e| e.to_string())?;
+    let _conn = get_connection(&db_path).map_err(|e| e.to_string())?;
 
     let foreshadowings = get_foreshadowings(app.clone(), project_id).await?;
 
@@ -5544,7 +5544,7 @@ pub async fn get_foreshadowing_stats(
     let paid_off = foreshadowings.iter().filter(|f| f.status.as_deref() == Some("paid_off")).count() as i32;
 
     let mut unresolved_count = 0;
-    let mut overdue_count = 0;
+    let overdue_count = 0;
     let mut total_distance = 0i32;
     let mut resolved_count = 0;
 
@@ -5619,7 +5619,7 @@ pub async fn calculate_emotion_curve(
     let arc_type = request.arc_type.as_str();
     let mut curve_data = Vec::new();
 
-    for (i, (id, title, _)) in chapters.iter().enumerate() {
+    for (i, (_id, title, _)) in chapters.iter().enumerate() {
         let chapter_num = (i + 1) as i32;
         let position = if total_chapters > 0 { (chapter_num as f32) / (total_chapters as f32) } else { 0.5 };
 
@@ -7052,11 +7052,11 @@ pub async fn get_story_beats(
         format!("迭代查询结果失败: {}", e)
     })? {
         let node_id: String = row.get(0).map_err(|e| e.to_string())?;
-        let parent_id: Option<String> = row.get(1).ok();
+        let _parent_id: Option<String> = row.get(1).ok();
         let title: String = row.get(2).map_err(|e| e.to_string())?;
         let content: String = row.get(3).map_err(|e| e.to_string())?;
         let node_type: String = row.get(4).map_err(|e| e.to_string())?;
-        let sort_order: i32 = row.get(5).map_err(|e| e.to_string())?;
+        let _sort_order: i32 = row.get(5).map_err(|e| e.to_string())?;
 
         let beat_type = if node_type == "chapter" {
             chapter_number += 1;

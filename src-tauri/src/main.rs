@@ -42,7 +42,6 @@ use cloud_sync_commands::CloudSyncState;
 use multimedia_generation_commands::MultimediaState;
 use collaboration_commands::CollaborationState;
 use rusqlite::params;
-use uuid::Uuid;
 
 fn load_api_key_from_db(db_path: &std::path::PathBuf, provider: &str) -> Option<String> {
     let conn = database::get_connection(db_path).ok()?;

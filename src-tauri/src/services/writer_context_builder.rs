@@ -31,7 +31,7 @@ impl WriterContextBuilder {
 
     pub async fn build_visibility_context(
         &self,
-        project_id: &str,
+        _project_id: &str,
         chapter_id: &str,
         mission: Option<ChapterMission>,
     ) -> Result<WriterContext, String> {

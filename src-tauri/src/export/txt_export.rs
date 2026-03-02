@@ -1,4 +1,4 @@
-use super::{ExportContent, ExportFormat};
+use super::ExportContent;
 use anyhow::{Context, Result};
 use std::fs::File;
 use std::io::Write;

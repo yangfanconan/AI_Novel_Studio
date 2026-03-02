@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::Utc;
 use rusqlite::{Connection, params, Result as SqlResult};
-use std::path::Path;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScriptScene {

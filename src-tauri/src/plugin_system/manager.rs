@@ -3,7 +3,7 @@ use crate::plugin_system::registry::PluginRegistry;
 use crate::plugin_system::lifecycle::PluginLifecycleManager;
 use crate::plugin_system::permissions::PermissionManager;
 use crate::plugin_system::sandbox::{SandboxManager, create_sandbox_config_for_plugin};
-use crate::plugin_system::script::{ScriptEngine, ScriptEngineManager, NoOpScriptEngine, ScriptContext};
+use crate::plugin_system::script::{ScriptEngine, ScriptEngineManager, NoOpScriptEngine};
 use crate::plugin_system::javascript_engine::JavaScriptEngine;
 use crate::plugin_system::python_engine::PythonEngine;
 use crate::plugin_system::lua_engine::LuaEngine;

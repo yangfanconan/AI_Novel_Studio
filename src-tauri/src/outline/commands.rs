@@ -1,10 +1,10 @@
 use crate::database::get_connection;
 use crate::db_utils::get_db_path;
-use crate::logger::{Logger, log_command_start, log_command_success, log_command_error};
+use crate::logger::{Logger, log_command_start, log_command_success};
 use crate::outline::types::*;
 use crate::ai::AIService;
 use serde_json;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use rusqlite::params;
 use chrono::Utc;
 use uuid::Uuid;
@@ -321,7 +321,7 @@ pub async fn apply_outline_template(app: AppHandle, project_id: String, template
 
 #[tauri::command]
 pub async fn generate_outline_with_ai(
-    app: AppHandle,
+    _app: AppHandle,
     ai_service: tauri::State<'_, Arc<RwLock<AIService>>>,
     request: GenerateOutlineRequest,
 ) -> Result<OutlineGenerationResult, String> {

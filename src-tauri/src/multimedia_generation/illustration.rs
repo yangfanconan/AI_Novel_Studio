@@ -327,7 +327,7 @@ impl IllustrationGenerator {
         &self,
         config: &ImageProviderConfig,
         prompt: &str,
-        style: &ArtStyle,
+        _style: &ArtStyle,
     ) -> Result<Vec<CharacterView>, String> {
         let angles = vec!["front view", "three-quarter view", "side view"];
         let mut views = Vec::new();

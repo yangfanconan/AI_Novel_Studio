@@ -10,7 +10,6 @@ pub use epub_export::export_as_epub;
 pub use txt_export::export_as_txt;
 pub use md_export::export_as_md;
 
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

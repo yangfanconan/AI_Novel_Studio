@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tauri::command;
 
-use super::storyboard_system::{Storyboard, StoryboardScene, StoryboardShot};
+use super::storyboard_system::{Storyboard, StoryboardShot};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SeedanceConstraints {

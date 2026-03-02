@@ -156,7 +156,7 @@ Return format (JSON array):
         progress: f32,
     ) -> String {
         match next {
-            Some(next_desc) => {
+            Some(_next_desc) => {
                 format!(
                     "{} (transition {:.0}%)",
                     current,
@@ -211,7 +211,7 @@ Return format (JSON array):
     pub async fn export_animation(
         &self,
         sequence: &AnimationSequence,
-        motion_data: &MotionData,
+        _motion_data: &MotionData,
         format: AnimationFormat,
     ) -> Result<String, String> {
         let output_path = format!("animation_{}.{}", sequence.id, format.extension());

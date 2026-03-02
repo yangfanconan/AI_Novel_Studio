@@ -23,7 +23,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 pub use models::*;
-pub use traits::{AIModel, ModelStream};
+pub use traits::AIModel;
 pub use openai_adapter::OpenAIAdapter;
 pub use ollama_adapter::OllamaAdapter;
 pub use bigmodel_adapter::BigModelAdapter;

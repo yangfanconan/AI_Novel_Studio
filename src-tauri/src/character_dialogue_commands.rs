@@ -6,7 +6,6 @@ use crate::database::get_connection;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::PathBuf;
 use tauri::State;
 use uuid::Uuid;
 
@@ -315,7 +314,7 @@ pub async fn send_dialogue_message(
     let now = Utc::now().to_rfc3339();
 
     let character = get_character_info(&conn, &request.session_id)?;
-    let system_prompt = get_session_system_prompt(&conn, &request.session_id)?;
+    let _system_prompt = get_session_system_prompt(&conn, &request.session_id)?;
     let conversation_history = get_session_messages(&conn, &request.session_id)?;
 
     let user_message_id = Uuid::new_v4().to_string();

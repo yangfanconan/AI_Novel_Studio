@@ -1,4 +1,4 @@
-use super::{ExportContent, ExportFormat};
+use super::ExportContent;
 use anyhow::{Context, Result};
 use epub_builder::{EpubBuilder, EpubContent, ZipLibrary};
 use std::fs::File;

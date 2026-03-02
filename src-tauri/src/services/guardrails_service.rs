@@ -41,7 +41,7 @@ impl GuardrailsService {
 
         let mut violations = Vec::new();
         let mut suggestions = Vec::new();
-        let content_len = content.chars().count() as i32;
+        let _content_len = content.chars().count() as i32;
 
         if let Some(m) = mission {
             for forbidden_char in &m.forbidden_characters {

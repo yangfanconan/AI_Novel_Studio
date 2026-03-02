@@ -1,5 +1,5 @@
-use super::{ExportContent, ExportFormat};
-use anyhow::{Context, Result};
+use super::ExportContent;
+use anyhow::Result;
 use genpdf::{elements, style, Element};
 use std::path::Path;
 

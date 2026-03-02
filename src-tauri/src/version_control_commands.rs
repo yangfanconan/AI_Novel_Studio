@@ -1,9 +1,8 @@
-use crate::version_control::{VersionControlManager, ProjectSnapshot, VersionDiff, VersionControlConfig};
+use crate::version_control::{VersionControlManager, VersionControlConfig};
 use crate::models::{Chapter, Character, WorldView, PlotPoint};
 use crate::logger::Logger;
 use crate::db_utils::get_db_path;
-use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use rusqlite::params;
 
 #[tauri::command]

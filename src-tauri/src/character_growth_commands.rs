@@ -1,6 +1,5 @@
 use crate::character_growth::{
-    CharacterGrowthManager, CharacterGrowth, GrowthChange, GrowthChangeType, GrowthSignificance, 
-    CharacterGrowthTimeline, GrowthComparison
+    CharacterGrowthManager, CharacterGrowth, GrowthChange
 };
 use crate::character_tags::{
     CharacterTagManager, CharacterTag, TagType, TagWeight, TagSource,
@@ -8,7 +7,7 @@ use crate::character_tags::{
 };
 use crate::logger::Logger;
 use crate::db_utils::get_db_path;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use rusqlite::params;
 use std::collections::HashMap;
 

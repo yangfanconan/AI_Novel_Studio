@@ -1,11 +1,11 @@
 use crate::reverse_analysis::types::*;
-use crate::logger::{Logger, log_command_start, log_command_success, log_command_error};
+use crate::logger::{Logger, log_command_start, log_command_success};
 use crate::database::get_connection;
 use crate::db_utils::get_db_path;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use regex::Regex;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use uuid::Uuid;
 use chrono::Utc;
 use rusqlite::params;

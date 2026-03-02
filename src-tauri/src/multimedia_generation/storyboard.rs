@@ -1,7 +1,7 @@
 use crate::multimedia_generation::types::*;
 use crate::multimedia_generation::scene_extractor::SceneExtractor;
 use crate::ai::traits::AIModel;
-use crate::ai::models::{AIRequest, AIResponse, AIMessage};
+use crate::ai::models::{AIRequest, AIMessage};
 use std::sync::Arc;
 
 pub struct StoryboardGenerator {

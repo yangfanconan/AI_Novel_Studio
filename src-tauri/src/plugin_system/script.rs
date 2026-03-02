@@ -2,7 +2,6 @@ use crate::plugin_system::types::*;
 use crate::plugin_system::api::*;
 use anyhow::{Context, Result};
 use serde_json::Value;
-use std::collections::HashMap;
 use std::sync::Arc;
 
 pub trait ScriptEngine: Send + Sync {

@@ -5,10 +5,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use super::scene_manager::{SceneManager, ScriptScene, CreateSceneRequest, SceneStatistics};
-use super::script_parser::{ScriptParser, ParsedScene, ParsedScreenplay};
+use super::scene_manager::{ScriptScene, CreateSceneRequest};
+use super::script_parser::ScriptParser;
 use super::prompt_compiler::{PromptCompiler, AIScene, AICharacter, GenerationConfig};
-use super::character_bible::CharacterBibleManager;
 use super::task_queue::{TaskQueue, CreateTaskRequest, QueuedTask, TaskType, TaskPriority};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

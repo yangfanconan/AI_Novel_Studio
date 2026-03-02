@@ -2,7 +2,7 @@ use crate::database::get_connection;
 use crate::db_utils::get_db_path;
 use crate::logger::{Logger, log_command_start, log_command_success, log_command_error};
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use rusqlite::params;
 use chrono::Utc;
 use uuid::Uuid;

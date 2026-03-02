@@ -150,7 +150,7 @@ impl TextAnalyzer {
         
         let mut pacing_segments = Vec::new();
         let mut total_intensity = 0.0;
-        let mut action_count = 0;
+        let action_count = 0;
         let mut dialogue_count = 0;
         let mut description_count = 0;
 

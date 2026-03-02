@@ -4,8 +4,8 @@ use tokio::sync::RwLock;
 use chrono::Utc;
 
 use crate::models::{Chapter, ChapterMission, ChapterVersion, ChapterEvaluation};
-use crate::services::writer_context_builder::{WriterContextBuilder, WriterContext};
-use crate::services::guardrails_service::{GuardrailsService, GuardrailsCheckResult};
+use crate::services::writer_context_builder::WriterContextBuilder;
+use crate::services::guardrails_service::GuardrailsService;
 use crate::services::vector_store_service::VectorStoreService;
 use crate::ai::service::AIService;
 use crate::logger::Logger;

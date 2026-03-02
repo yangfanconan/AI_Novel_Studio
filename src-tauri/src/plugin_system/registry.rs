@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use tokio::sync::RwLock as AsyncRwLock;
 
 #[derive(Clone)]

@@ -6,7 +6,6 @@ pub use txt_import::import_from_txt;
 pub use md_import::import_from_markdown;
 pub use docx_import::import_from_docx;
 
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
