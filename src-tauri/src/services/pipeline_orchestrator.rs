@@ -7,6 +7,8 @@ use crate::models::{Chapter, ChapterMission, ChapterVersion, ChapterEvaluation};
 use crate::services::writer_context_builder::WriterContextBuilder;
 use crate::services::guardrails_service::GuardrailsService;
 use crate::services::vector_store_service::VectorStoreService;
+#![allow(dead_code)]
+
 use crate::ai::service::AIService;
 use crate::logger::Logger;
 

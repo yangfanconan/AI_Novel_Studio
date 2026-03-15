@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
+use base64::{Engine as _, engine::general_purpose};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ComfyUIConfig {
@@ -522,7 +523,7 @@ pub async fn comfyui_get_image_base64(
 ) -> Result<String, String> {
     let client = ComfyUIClient::new(config.unwrap_or_default());
     let image_data = client.get_image(&filename, &subfolder, &image_type).await?;
-    Ok(base64::encode(&image_data))
+    Ok(general_purpose::STANDARD.encode(&image_data))
 }
 
 #[tauri::command]
@@ -532,7 +533,7 @@ pub async fn comfyui_upload_image(
     config: Option<ComfyUIConfig>,
 ) -> Result<String, String> {
     let client = ComfyUIClient::new(config.unwrap_or_default());
-    let image_data = base64::decode(&image_base64)
+    let image_data = general_purpose::STANDARD.decode(&image_base64)
         .map_err(|e| format!("Failed to decode base64: {}", e))?;
     client.upload_image(image_data, &filename, true).await
 }

@@ -4,6 +4,8 @@ use rusqlite::{Connection, params};
 
 use crate::models::{Chapter, ChapterVersion, ChapterEvaluation};
 use crate::services::vector_store_service::VectorStoreService;
+#![allow(dead_code)]
+
 use crate::ai::service::AIService;
 use crate::logger::Logger;
 

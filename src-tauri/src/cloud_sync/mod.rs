@@ -43,7 +43,8 @@ pub enum ProviderType {
     Dropbox,
     GoogleDrive,
     OneDrive,
-    iCloud,
+    #[serde(rename = "iCloud")]
+    ICloud,
     WebDAV,
     Custom,
 }

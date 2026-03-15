@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use serde::{Deserialize, Serialize};
 use crate::models::ChapterMission;
 use crate::logger::Logger;
