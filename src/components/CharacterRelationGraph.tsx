@@ -22,6 +22,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { CharacterNode as CustomCharacterNode } from "./CharacterNode";
 import { aiGeneratorService, relationService } from "../services/api";
+import { logger } from "../utils/logger";
 
 const nodeTypes = {
   custom: CustomCharacterNode,
@@ -74,15 +75,15 @@ export function CharacterRelationGraph({ projectId, characters }: CharacterRelat
   }, []);
 
   const loadGraphData = async () => {
-    console.log("loadGraphData called, projectId:", projectId);
+    logger.debug("loadGraphData called", { projectId });
     setLoading(true);
     try {
       const graph = await invoke<CharacterGraph>("get_character_graph", { projectId });
-      console.log("Graph data loaded:", graph);
+      logger.debug("Graph data loaded", { nodeCount: graph.nodes.length, edgeCount: graph.edges.length });
       setGraphData(graph);
       updateFlowGraph(graph, characters);
     } catch (error) {
-      console.error("Failed to load graph data:", error);
+      logger.error("Failed to load graph data", error);
     } finally {
       setLoading(false);
     }
@@ -164,7 +165,7 @@ export function CharacterRelationGraph({ projectId, characters }: CharacterRelat
       setEditingRelation(null);
       await loadGraphData();
     } catch (error) {
-      console.error("Failed to save relation:", error);
+      logger.error("Failed to save relation", error);
       alert("保存失败");
     }
   };
@@ -180,7 +181,7 @@ export function CharacterRelationGraph({ projectId, characters }: CharacterRelat
       await invoke("delete_character_relation", { id: edge.id });
       await loadGraphData();
     } catch (error) {
-      console.error("Failed to delete relation:", error);
+      logger.error("Failed to delete relation", error, { edgeId: edge.id });
       alert("删除失败");
     }
   };
@@ -235,23 +236,20 @@ export function CharacterRelationGraph({ projectId, characters }: CharacterRelat
       setGeneratedRelations(relations);
       setShowAIPreview(true);
     } catch (error) {
-      console.error("Failed to generate relations:", error);
+      logger.error("Failed to generate relations", error);
       alert("生成关系失败");
     } finally {
       setIsAIGenerating(false);
     }
   };
 
-  // 确认保存 AI 生成的关系
   const handleConfirmAIRelations = async () => {
     setSavingRelations(true);
     try {
-      // 创建角色名称到ID的映射
       const characterMap = new Map(characters.map((c) => [c.name, c.id]));
-      console.log("Character map:", Object.fromEntries(characterMap));
-      console.log("Generated relations to save:", generatedRelations);
+      logger.debug("Character map created", { count: characterMap.size });
+      logger.debug("Generated relations to save", { count: generatedRelations.length });
 
-      // 获取现有关系，用于去重
       const existingRelations = graphData?.edges || [];
       const existingKeys = new Set(existingRelations.map((r) => `${r.from}-${r.to}-${r.label}`));
 
@@ -265,16 +263,21 @@ export function CharacterRelationGraph({ projectId, characters }: CharacterRelat
         if (fromId && toId) {
           const key = `${fromId}-${toId}-${relation.relation_type}`;
           if (existingKeys.has(key)) {
-            console.log(
-              `Skipping duplicate relation: ${relation.from_character_name} -> ${relation.to_character_name} (${relation.relation_type})`
-            );
+            logger.debug("Skipping duplicate relation", { 
+              from: relation.from_character_name, 
+              to: relation.to_character_name, 
+              type: relation.relation_type 
+            });
             skippedCount++;
             continue;
           }
 
-          console.log(
-            `Saving relation: ${relation.from_character_name} (${fromId}) -> ${relation.to_character_name} (${toId})`
-          );
+          logger.debug("Saving relation", { 
+            from: relation.from_character_name, 
+            fromId, 
+            to: relation.to_character_name, 
+            toId 
+          });
           await relationService.createRelation({
             project_id: projectId,
             from_character_id: fromId,
@@ -283,21 +286,20 @@ export function CharacterRelationGraph({ projectId, characters }: CharacterRelat
             description: relation.description,
           });
           savedCount++;
-          console.log("Relation saved successfully");
         } else {
-          console.warn(
-            `Skipping relation: character not found - from: ${relation.from_character_name}, to: ${relation.to_character_name}`
-          );
+          logger.warn("Skipping relation: character not found", { 
+            from: relation.from_character_name, 
+            to: relation.to_character_name 
+          });
         }
       }
 
-      console.log(`Total relations saved: ${savedCount}, skipped (duplicates): ${skippedCount}`);
+      logger.info("Relations saved", { savedCount, skippedCount });
       setShowAIPreview(false);
       setGeneratedRelations([]);
       await loadGraphData();
-      console.log("Graph data reloaded");
     } catch (error) {
-      console.error("Failed to save relations:", error);
+      logger.error("Failed to save relations", error);
       alert("保存关系失败: " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setSavingRelations(false);

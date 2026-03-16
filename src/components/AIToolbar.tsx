@@ -159,7 +159,7 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
         feature: "ai-toolbar",
         action: "continue_result_received",
       });
-      console.log("AI continuation result:", generated);
+      logger.debug("AI continuation result", { result: generated.substring(0, 100) });
       onInsert(generated);
       logger.info("AI continuation completed", {
         feature: "ai-toolbar",
@@ -179,7 +179,7 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
         errorMessage.includes("令牌已过期");
 
       if (isAuthError) {
-        console.warn("API密钥已过期或无效，请在设置中更新");
+        logger.warn("API密钥已过期或无效，请在设置中更新");
         setError("API密钥已过期或无效，请检查设置");
         debugLogger.warn("API密钥验证失败", {
           errorMessage,
@@ -188,7 +188,7 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
           action: "continue_failed",
         });
       } else {
-        console.error("AI continuation error:", errorMessage);
+        logger.error("AI continuation error", { errorMessage });
         setError(`生成失败: ${errorMessage}`);
         logger.error("AI continuation failed", error, { feature: "ai-toolbar" });
         debugLogger.error(
@@ -242,14 +242,14 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
         instruction: "请优化这段文字，提升文采和表达。",
       });
 
-      console.log("AI rewrite result:", rewritten);
+      logger.debug("AI rewrite result", { result: rewritten.substring(0, 100) });
       onRewrite(rewritten);
       logger.info("AI rewrite completed", {
         feature: "ai-toolbar",
         resultLength: rewritten.length,
       });
     } catch (error) {
-      console.error("AI rewrite error:", error);
+      logger.error("AI rewrite error", error);
       logger.error("AI rewrite failed", error, { feature: "ai-toolbar" });
     } finally {
       setIsRewriting(false);
@@ -272,9 +272,9 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
 
       const result: FormattedContent = await aiGeneratorService.formatContent(content, options);
       onRewrite(result.formatted_content);
-      console.log("Format changes applied:", result.changes_applied);
+      logger.debug("Format changes applied", { changesApplied: result.changes_applied });
     } catch (error) {
-      console.error("Format error:", error);
+      logger.error("Format error", error);
     } finally {
       setIsFormatting(false);
       setShowFormatMenu(false);

@@ -32,7 +32,7 @@ interface APIKeyInfo {
 type TabType = "models" | "params" | "keys";
 
 export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({ open, onClose }) => {
-  console.log("ModelSettingsDialog render, open:", open);
+  logger.debug("ModelSettingsDialog render", { open });
 
   // Tab 状态
   const [activeTab, setActiveTab] = useState<TabType>("models");
@@ -62,7 +62,7 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({ open, 
 
   // 加载模型列表
   const loadModels = async () => {
-    console.log("loadModels called");
+    logger.debug("loadModels called");
     setIsLoadingModels(true);
     try {
       const availableModels = await invoke<ModelInfo[]>("get_models_with_default");
@@ -109,11 +109,11 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({ open, 
   }, [aiParams, originalAIParams]);
 
   useEffect(() => {
-    console.log("ModelSettingsDialog useEffect called, open:", open);
+    logger.debug("ModelSettingsDialog useEffect called", { open });
     uiLogger.open("ModelSettingsDialog");
 
     if (open) {
-      console.log("open is true, loading all settings");
+      logger.debug("open is true, loading all settings");
       loadModels();
       loadAIParams();
       loadAPIKeys();
@@ -212,14 +212,11 @@ export const ModelSettingsDialog: React.FC<ModelSettingsDialogProps> = ({ open, 
     setNewApiKey("");
   };
 
-  console.log("ModelSettingsDialog render check - open:", open);
+  logger.debug("ModelSettingsDialog render check", { open });
 
   if (!open) {
-    console.log("ModelSettingsDialog returning null because open is false");
     return null;
   }
-
-  console.log("ModelSettingsDialog rendering dialog");
 
   const tabs = [
     { id: "models" as TabType, label: "模型管理", icon: Star },

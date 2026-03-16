@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, type DragEvent, type ChangeEvent } from "react";
 import { X, Upload } from "lucide-react";
+import { logger } from "@/utils/logger";
 
 interface InstallPluginDialogProps {
   onClose: () => void;
@@ -9,19 +10,19 @@ interface InstallPluginDialogProps {
 export default function InstallPluginDialog({ onClose, onInstall }: InstallPluginDialogProps) {
   const [dragActive, setDragActive] = useState(false);
 
-  const handleDrag = (e: React.DragEvent) => {
+  const handleDrag = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(true);
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
@@ -35,15 +36,15 @@ export default function InstallPluginDialog({ onClose, onInstall }: InstallPlugi
   const handleFileUpload = async (file: File) => {
     try {
       const content = await file.text();
-      console.log("File uploaded:", file.name, content);
+      logger.info("File uploaded:", { name: file.name, content });
       onInstall();
     } catch (error) {
-      console.error("Failed to upload file:", error);
+      logger.error("Failed to upload file:", error);
       alert("文件上传失败");
     }
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       handleFileUpload(file);

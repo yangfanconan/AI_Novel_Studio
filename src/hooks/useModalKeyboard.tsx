@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, type ReactNode } from "react";
 
 interface UseModalKeyboardOptions {
   isOpen: boolean;
@@ -60,7 +60,7 @@ export function ModalOverlay({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 }) {
   useModalKeyboard({ isOpen, onClose });

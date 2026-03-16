@@ -8,6 +8,7 @@ import {
 import { writingAssistantService } from "../services/writingAssistant.service";
 import { Character, KnowledgeContext } from "../types";
 import { characterService } from "../services/api";
+import { logger } from "../utils/logger";
 
 interface WritingAssistantProps {
   projectId: string;
@@ -83,7 +84,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
       const chars = await characterService.getCharacters(projectId);
       setCharacters(chars);
     } catch (error) {
-      console.error("Failed to load characters:", error);
+      logger.error("Failed to load characters", error);
     }
   };
 
@@ -93,7 +94,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
       const context = await writingAssistantService.buildKnowledgeContext(projectId, chapterId);
       setKnowledgeContext(context);
     } catch (error) {
-      console.error("Failed to load knowledge context:", error);
+      logger.error("Failed to load knowledge context", error);
     } finally {
       setLoadingContext(false);
     }
@@ -114,7 +115,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
       });
       setSuggestion(result);
     } catch (error) {
-      console.error("Failed to generate choices:", error);
+      logger.error("Failed to generate choices", error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       setError(errorMessage);
     } finally {
@@ -136,7 +137,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
       setValidationResult(result);
       setActiveTab("validation");
     } catch (error) {
-      console.error("Failed to validate content:", error);
+      logger.error("Failed to validate content", error);
     } finally {
       setValidating(false);
     }
@@ -391,7 +392,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
                             {char.is_new && (
                               <button
                                 onClick={() => {
-                                  console.log("Creating character:", char.name);
+                                  logger.debug("Creating character", { name: char.name });
                                   onCreateCharacter(char.name);
                                 }}
                                 className="text-xs px-2 py-1 bg-purple-100 text-purple-600 rounded hover:bg-purple-200 transition-colors"
@@ -463,7 +464,7 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
                           {onCreateWorldView && (
                             <button
                               onClick={() => {
-                                console.log("Creating worldview:", setting);
+                                logger.debug("Creating worldview", { setting });
                                 onCreateWorldView(setting);
                               }}
                               className="text-xs px-1.5 py-1 bg-orange-200 text-orange-700 rounded hover:bg-orange-300 transition-colors"

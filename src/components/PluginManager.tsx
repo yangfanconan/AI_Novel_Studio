@@ -15,6 +15,7 @@ import {
 import { Plugin, PluginCommand, PermissionStatus } from "../types/plugin";
 import { PluginDevGuideDialog } from "./PluginDevGuideDialog";
 import InstallPluginDialog from "./InstallPluginDialog";
+import { logger } from "../utils/logger";
 
 interface PluginManagerProps {
   onClose?: () => void;
@@ -63,12 +64,12 @@ export default function PluginManager({ onClose }: PluginManagerProps) {
   const loadPlugins = async () => {
     try {
       const result = await invoke("plugin_get_all");
-      console.log("Raw plugins result:", result, typeof result);
+      logger.debug("Raw plugins result", { result, type: typeof result });
       const parsedPlugins = Array.isArray(result) ? result : [];
-      console.log("Parsed plugins:", parsedPlugins);
+      logger.debug("Parsed plugins", { count: parsedPlugins.length });
       setPlugins(parsedPlugins);
     } catch (error) {
-      console.error("Failed to load plugins:", error);
+      logger.error("Failed to load plugins", error);
       setPlugins([]);
     } finally {
       setLoading(false);
@@ -78,12 +79,12 @@ export default function PluginManager({ onClose }: PluginManagerProps) {
   const loadCommands = async () => {
     try {
       const result = await invoke("plugin_get_commands");
-      console.log("Raw commands result:", result, typeof result);
+      logger.debug("Raw commands result", { result, type: typeof result });
       const parsedCommands = Array.isArray(result) ? result : [];
-      console.log("Parsed commands:", parsedCommands);
+      logger.debug("Parsed commands", { count: parsedCommands.length });
       setCommands(parsedCommands);
     } catch (error) {
-      console.error("Failed to load commands:", error);
+      logger.error("Failed to load commands", error);
       setCommands([]);
     }
   };
@@ -94,7 +95,7 @@ export default function PluginManager({ onClose }: PluginManagerProps) {
       await loadPlugins();
       await loadCommands();
     } catch (error) {
-      console.error("Failed to activate plugin:", error);
+      logger.error("Failed to activate plugin", error, { pluginId });
       alert(`激活插件失败: ${error}`);
     }
   };
@@ -105,7 +106,7 @@ export default function PluginManager({ onClose }: PluginManagerProps) {
       await loadPlugins();
       await loadCommands();
     } catch (error) {
-      console.error("Failed to deactivate plugin:", error);
+      logger.error("Failed to deactivate plugin", error, { pluginId });
       alert(`停用插件失败: ${error}`);
     }
   };
@@ -123,7 +124,7 @@ export default function PluginManager({ onClose }: PluginManagerProps) {
         setSelectedPlugin(null);
       }
     } catch (error) {
-      console.error("Failed to uninstall plugin:", error);
+      logger.error("Failed to uninstall plugin", error, { pluginId });
       alert(`卸载插件失败: ${error}`);
     }
   };
@@ -135,7 +136,7 @@ export default function PluginManager({ onClose }: PluginManagerProps) {
         const result = await invoke<Plugin[]>("plugin_search", { query });
         setPlugins(result);
       } catch (error) {
-        console.error("Failed to search plugins:", error);
+        logger.error("Failed to search plugins", error, { query });
       }
     } else {
       await loadPlugins();
@@ -316,7 +317,7 @@ function PluginDetailPanel({
       });
       alert("设置已保存");
     } catch (error) {
-      console.error("Failed to save settings:", error);
+      logger.error("Failed to save settings", error, { pluginId: plugin.manifest.info.id });
       alert("保存设置失败");
     }
   };
@@ -557,7 +558,7 @@ function PermissionsPanel({ pluginId, permissions, onRefresh }: PermissionsPanel
       await invoke("plugin_grant_permission", { pluginId, permissionName });
       await onRefresh();
     } catch (error) {
-      console.error("Failed to grant permission:", error);
+      logger.error("Failed to grant permission", error, { pluginId, permissionName });
       alert(`授权失败: ${error}`);
     }
   };
@@ -567,7 +568,7 @@ function PermissionsPanel({ pluginId, permissions, onRefresh }: PermissionsPanel
       await invoke("plugin_revoke_permission", { pluginId, permissionName });
       await onRefresh();
     } catch (error) {
-      console.error("Failed to revoke permission:", error);
+      logger.error("Failed to revoke permission", error, { pluginId, permissionName });
       alert(`撤销授权失败: ${error}`);
     }
   };

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
+import { logger } from "./utils/logger";
 import {
   Settings,
   Layers,
@@ -1293,7 +1294,7 @@ function App() {
               chapterOutline={undefined}
               blueprint={blueprint}
               onMissionUpdated={(mission) => {
-                console.log("Mission updated:", mission);
+                logger.info("Mission updated", { mission });
                 setCurrentChapterMissionId(mission.id);
               }}
             />
@@ -1308,7 +1309,7 @@ function App() {
           evaluation={undefined}
           onClose={() => closeDialog('isVersionComparisonOpen')}
           onSelectVersion={(index) => {
-            console.log("Selected version:", index);
+            logger.info("Selected version", { index });
             closeDialog('isVersionComparisonOpen');
           }}
         />

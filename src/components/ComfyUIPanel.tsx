@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { MoyinService, WorkflowTemplate } from "../services/moyin.service";
+import { logger } from "../utils/logger";
 
 const moyinService = MoyinService.getInstance();
 
@@ -33,7 +34,7 @@ export default function ComfyUIPanel() {
       const data = await moyinService.getWorkflowTemplates();
       setTemplates(data);
     } catch (error) {
-      console.error("Failed to load templates:", error);
+      logger.error("Failed to load templates", error);
     }
   };
 
@@ -92,7 +93,7 @@ export default function ComfyUIPanel() {
     try {
       const result = await moyinService.applyWorkflowTemplate(template.id, variables);
       addLog(`Template "${template.name}" applied successfully`);
-      console.log("Applied template result:", result);
+      logger.debug("Applied template result", { result });
     } catch (error) {
       addLog("Failed to apply template: " + (error as Error).message);
     }
@@ -103,7 +104,7 @@ export default function ComfyUIPanel() {
       const updated = await moyinService.toggleFavoriteWorkflowTemplate(templateId);
       setTemplates(templates.map((t) => (t.id === templateId ? updated : t)));
     } catch (error) {
-      console.error("Failed to toggle favorite:", error);
+      logger.error("Failed to toggle favorite", error, { templateId });
     }
   };
 
