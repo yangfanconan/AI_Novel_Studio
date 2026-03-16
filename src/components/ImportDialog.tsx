@@ -2,13 +2,13 @@ import React, { useState, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 
-interface ImportedChapter {
+export interface ImportedChapter {
   title: string;
   content: string;
   word_count: number;
 }
 
-interface ImportResult {
+export interface ImportResult {
   success: boolean;
   title: string;
   content: string;

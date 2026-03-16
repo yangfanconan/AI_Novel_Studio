@@ -9,7 +9,7 @@ import {
   Sparkles,
   Loader2,
 } from "lucide-react";
-import { PlotPointNode, PlotPoint } from "../types";
+import { PlotPointNode, PlotPoint, GeneratedPlotPoint } from "../types";
 import { invoke } from "@tauri-apps/api/core";
 import { AIGenerateDialog } from "./AIGenerateDialog";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -18,7 +18,7 @@ interface PlotPointListProps {
   projectId: string;
   onEditPlotPoint: (plotPoint: PlotPointNode) => void;
   onLinkToChapter: (plotPoint: PlotPointNode) => void;
-  onAIGeneratePlotPoints?: (data: any) => Promise<void>;
+  onAIGeneratePlotPoints?: (data: unknown) => Promise<void>;
 }
 
 export function PlotPointList({
@@ -114,7 +114,7 @@ export function PlotPointList({
     setDeleteConfirm({ isOpen: false, nodeId: null, nodeTitle: "" });
   };
 
-  const handleAIConfirm = async (data: any) => {
+  const handleAIConfirm = async (data: unknown) => {
     if (onAIGeneratePlotPoints) {
       await onAIGeneratePlotPoints(data);
     }

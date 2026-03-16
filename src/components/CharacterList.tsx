@@ -9,7 +9,7 @@ interface CharacterListProps {
   onCreateCharacter: () => void;
   onEditCharacter: (character: Character) => void;
   onDeleteCharacter: (characterId: string) => void;
-  onAIGenerateCharacter?: (data: any) => Promise<void>;
+  onAIGenerateCharacter?: (data: unknown) => Promise<void>;
 }
 
 export function CharacterList({
@@ -22,7 +22,7 @@ export function CharacterList({
 }: CharacterListProps) {
   const [isAIDialogOpen, setIsAIDialogOpen] = useState(false);
 
-  const handleAIConfirm = async (data: any) => {
+  const handleAIConfirm = async (data: unknown) => {
     if (onAIGenerateCharacter) {
       await onAIGenerateCharacter(data);
     }

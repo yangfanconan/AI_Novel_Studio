@@ -15,7 +15,7 @@ interface AIGenerateDialogProps {
   onClose: () => void;
   type: GenerateType;
   projectId: string;
-  onConfirm: (data: any) => Promise<void>;
+  onConfirm: (data: unknown) => Promise<void>;
   existingCharacters?: { id: string; name: string }[];
 }
 
@@ -175,7 +175,7 @@ export function AIGenerateDialog({
               category: editingWorldView.category,
               title: editingWorldView.title,
               content: editingWorldView.content,
-              tags: editingWorldView.tags?.join(", "),
+              tags: editingWorldView.tags,
             });
           }
           break;

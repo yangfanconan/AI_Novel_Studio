@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { Plus, Edit, Trash2, Tag, Calendar, Sparkles, Loader2 } from "lucide-react";
-import { WorldView } from "../types";
+import { WorldView, GeneratedWorldView } from "../types";
 import { invoke } from "@tauri-apps/api/core";
 import { AIGenerateDialog } from "./AIGenerateDialog";
 
 interface WorldViewListProps {
   projectId: string;
   onEditWorldView: (worldView: WorldView) => void;
-  onAIGenerateWorldView?: (data: any) => Promise<void>;
+  onAIGenerateWorldView?: (data: unknown) => Promise<void>;
 }
 
 const CATEGORIES = [
@@ -67,7 +67,7 @@ export function WorldViewList({
     }
   };
 
-  const handleAIConfirm = async (data: any) => {
+  const handleAIConfirm = async (data: unknown) => {
     if (onAIGenerateWorldView) {
       await onAIGenerateWorldView(data);
     }

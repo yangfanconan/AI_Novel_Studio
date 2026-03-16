@@ -23,7 +23,7 @@ import { InputDialog } from "./components/InputDialog";
 import { CharacterDialog } from "./components/CharacterDialog";
 import { ModelSettingsDialog } from "./components/ModelSettingsDialog";
 import { ExportDialog } from "./components/ExportDialog";
-import ImportDialog from "./components/ImportDialog";
+import ImportDialog, { type ImportResult } from "./components/ImportDialog";
 import PluginManager from "./components/PluginManager";
 import PromptTemplateDialog from "./components/PromptTemplateDialog";
 import MultimediaSettingsDialog from "./components/MultimediaSettingsDialog";
@@ -75,6 +75,9 @@ import type {
   PlotPointNode,
   WorldView,
   Chapter,
+  Project,
+  CreateWorldViewRequest,
+  CreatePlotPointRequest,
 } from "./types";
 import { invoke } from "@tauri-apps/api/core";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
@@ -264,7 +267,7 @@ function App() {
     }
   };
 
-  const handleSelectProject = async (project: any) => {
+  const handleSelectProject = async (project: Project) => {
     if (currentProject?.id === project.id) return;
 
     try {
@@ -518,11 +521,11 @@ function App() {
   };
 
   // AI 生成角色
-  const handleAIGenerateCharacter = async (data: any) => {
+  const handleAIGenerateCharacter = async (data: unknown) => {
     try {
       const request: CreateCharacterRequest = {
         project_id: currentProject!.id,
-        ...data,
+        ...(data as Omit<CreateCharacterRequest, "project_id">),
       };
       await characterService.createCharacter(request);
       await loadCharacters(currentProject!.id);
@@ -550,11 +553,11 @@ function App() {
   };
 
   // AI 生成情节点
-  const handleAIGeneratePlotPoints = async (data: any) => {
+  const handleAIGeneratePlotPoints = async (data: unknown) => {
     try {
       await plotPointService.createPlotPoint({
         project_id: currentProject!.id,
-        ...data,
+        ...(data as Omit<CreatePlotPointRequest, "project_id">),
       });
       showToast("AI 生成情节点成功", "success");
     } catch (error) {
@@ -594,7 +597,7 @@ function App() {
     setExportChapterId(null);
   };
 
-  const handleImportSuccess = async (result: any) => {
+  const handleImportSuccess = async (result: ImportResult) => {
     if (currentProject && result.chapters && result.chapters.length > 0) {
       for (const chapter of result.chapters) {
         await chapterService.saveChapter({
