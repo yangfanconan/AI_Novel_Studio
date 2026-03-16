@@ -72,10 +72,10 @@ export default function WorkflowTemplateEditor({
   };
 
   const handleAddTag = () => {
-    if (tagInput.trim() && !template.tags.includes(tagInput.trim())) {
+    if (tagInput.trim() && !(template.tags ?? []).includes(tagInput.trim())) {
       setTemplate({
         ...template,
-        tags: [...template.tags, tagInput.trim()],
+        tags: [...(template.tags ?? []), tagInput.trim()],
       });
       setTagInput("");
     }
@@ -84,7 +84,7 @@ export default function WorkflowTemplateEditor({
   const handleRemoveTag = (tag: string) => {
     setTemplate({
       ...template,
-      tags: template.tags.filter((t) => t !== tag),
+      tags: (template.tags ?? []).filter((t) => t !== tag),
     });
   };
 
@@ -361,7 +361,7 @@ export default function WorkflowTemplateEditor({
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
-            {template.tags.map((tag) => (
+            {(template.tags ?? []).map((tag) => (
               <span key={tag} className="px-3 py-1 bg-gray-200 rounded flex items-center gap-2">
                 {tag}
                 <button

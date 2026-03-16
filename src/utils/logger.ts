@@ -101,11 +101,13 @@ class Logger {
     this.log(LogLevel.WARN, message);
   }
 
-  error(message: string, error?: Error, context?: LogContext): void {
+  error(message: string, error?: unknown, context?: LogContext): void {
     if (context) {
       this.context = { ...this.context, ...context };
     }
-    this.log(LogLevel.ERROR, message, error);
+    const normalizedError =
+      error instanceof Error ? error : error ? new Error(String(error)) : undefined;
+    this.log(LogLevel.ERROR, message, normalizedError);
   }
 
   withContext(context: LogContext): Logger {

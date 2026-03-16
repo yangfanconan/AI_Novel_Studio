@@ -159,11 +159,13 @@ class DebugLogger {
     this.createLog(LogLevel.WARN, message, "frontend", extra);
   }
 
-  error(message: string, error?: Error, extra: Partial<DebugLogEntry> = {}): void {
+  error(message: string, error?: unknown, extra: Partial<DebugLogEntry> = {}): void {
+    const normalizedError =
+      error instanceof Error ? error : error ? new Error(String(error)) : undefined;
     this.createLog(LogLevel.ERROR, message, "frontend", {
       ...extra,
-      error: error?.message,
-      stack: error?.stack,
+      error: normalizedError?.message,
+      stack: normalizedError?.stack,
     });
   }
 
@@ -229,7 +231,7 @@ window.addEventListener("error", (event) => {
 });
 
 window.addEventListener("unhandledrejection", (event) => {
-  debugLogger.error("Unhandled promise rejection", event.reason as Error, {
+  debugLogger.error("Unhandled promise rejection", event.reason, {
     component: "window",
     feature: "promise-handler",
   });

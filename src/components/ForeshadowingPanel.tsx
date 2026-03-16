@@ -181,14 +181,14 @@ export const ForeshadowingPanel: React.FC<ForeshadowingPanelProps> = ({
         </div>
       )}
 
-      {stats?.recommendations.length > 0 && (
+      {(stats?.recommendations ?? []).length > 0 && (
         <div className="mx-4 mb-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
           <div className="flex items-start gap-2">
             <Lightbulb className="w-5 h-5 text-amber-600 flex-shrink-0" />
             <div className="flex-1">
               <h4 className="font-medium text-amber-900 dark:text-amber-200 mb-1">建议</h4>
               <ul className="text-sm text-amber-800 dark:text-amber-300 space-y-1">
-                {stats.recommendations.map((rec, i) => (
+                {(stats?.recommendations ?? []).map((rec, i) => (
                   <li key={i}>{rec}</li>
                 ))}
               </ul>

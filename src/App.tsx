@@ -671,7 +671,7 @@ function App() {
               characters={characters}
               onCreateCharacter={handleQuickCreateCharacter}
               onCreateWorldView={handleQuickCreateWorldView}
-              chapterMissionId={currentChapterMissionId}
+              chapterMissionId={currentChapterMissionId ?? undefined}
             />
           ) : currentProject ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">

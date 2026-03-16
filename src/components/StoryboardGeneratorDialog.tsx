@@ -543,9 +543,9 @@ export function StoryboardGeneratorDialog({
                             </div>
                           )}
 
-                          {shot.soundEffects?.length > 0 && (
+                          {(shot.soundEffects ?? []).length > 0 && (
                             <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                              音效: {shot.soundEffects.join(", ")}
+                              音效: {(shot.soundEffects ?? []).join(", ")}
                             </div>
                           )}
 

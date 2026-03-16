@@ -21,6 +21,7 @@ export interface Chapter {
   project_id: string;
   title: string;
   content: string;
+  summary?: string;
   word_count: number;
   sort_order: number;
   status: string;
