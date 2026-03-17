@@ -132,6 +132,7 @@ function App() {
 
   useEffect(() => {
     loadProjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -143,6 +144,7 @@ function App() {
       setCurrentChapter(null);
       setCharacters([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProject?.id]);
 
   const loadProjects = async () => {
@@ -397,6 +399,7 @@ function App() {
     if (dialogs.isImportDialogOpen) closeDialog('isImportDialogOpen');
     if (dialogs.isPlotPointEditorOpen) closeDialog('isPlotPointEditorOpen');
     if (dialogs.isWorldViewEditorOpen) closeDialog('isWorldViewEditorOpen');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dialogs.isCreateProjectDialogOpen, dialogs.isChapterNameDialogOpen, dialogs.isCharacterDialogOpen, 
       dialogs.isModelSettingsDialogOpen, dialogs.isExportDialogOpen, dialogs.isImportDialogOpen, 
       dialogs.isPlotPointEditorOpen, dialogs.isWorldViewEditorOpen]);

@@ -86,6 +86,7 @@ export default function OutlinePanel({ projectId, isOpen, onClose }: OutlinePane
     if (isOpen && projectId) {
       loadData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, projectId]);
 
   const loadData = async () => {

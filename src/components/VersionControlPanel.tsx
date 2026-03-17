@@ -43,6 +43,7 @@ export const VersionControlPanel: React.FC<VersionControlPanelProps> = ({
   useEffect(() => {
     loadSnapshots();
     loadConfig();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   const loadSnapshots = async () => {

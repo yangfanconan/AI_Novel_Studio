@@ -58,6 +58,7 @@ export const CharacterBiblePanel: React.FC<CharacterBiblePanelProps> = ({
 
   useEffect(() => {
     loadCharacters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   const loadCharacters = async () => {

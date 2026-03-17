@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+/* eslint-disable no-console */
 import {
   X,
   Play,
@@ -85,6 +86,7 @@ export const SmartDebugPanel: React.FC = () => {
     captureConsoleLog();
     loadBackendLogs();
     loadProjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadProjects = async () => {

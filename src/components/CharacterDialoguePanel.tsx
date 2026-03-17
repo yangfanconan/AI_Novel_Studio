@@ -50,6 +50,7 @@ export const CharacterDialoguePanel: React.FC<CharacterDialoguePanelProps> = ({
 
   useEffect(() => {
     loadSessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [characterId]);
 
   const loadSessions = async () => {

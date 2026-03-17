@@ -90,6 +90,7 @@ export const BlueprintEditor: React.FC<BlueprintEditorProps> = ({ projectId, onC
 
   useEffect(() => {
     loadBlueprint();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   if (isLoading) {

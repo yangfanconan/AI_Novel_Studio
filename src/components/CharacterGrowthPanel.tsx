@@ -48,6 +48,7 @@ export const CharacterGrowthPanel: React.FC<CharacterGrowthPanelProps> = ({
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [characterId, projectId]);
 
   const loadData = async () => {

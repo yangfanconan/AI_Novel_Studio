@@ -118,6 +118,7 @@ export const ChapterMissionPanel: React.FC<ChapterMissionPanelProps> = ({
   useEffect(() => {
     loadMission();
     loadBeats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chapterId, projectId]);
 
   if (isLoading) {

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useEffect, useCallback, type ReactNode } from "react";
 
 interface UseModalKeyboardOptions {

@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
+/* eslint-disable no-console */
+
 export enum LogLevel {
   DEBUG = "DEBUG",
   INFO = "INFO",

@@ -86,6 +86,7 @@ export function WorldViewList({
 
   React.useEffect(() => {
     loadWorldViews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   return (

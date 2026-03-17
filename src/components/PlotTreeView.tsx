@@ -20,6 +20,7 @@ const PlotTreeView: React.FC<PlotTreeViewProps> = ({
 
   useEffect(() => {
     loadPlotTree();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   const loadPlotTree = async () => {

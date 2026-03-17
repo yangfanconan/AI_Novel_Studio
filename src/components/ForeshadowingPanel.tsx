@@ -48,6 +48,7 @@ export const ForeshadowingPanel: React.FC<ForeshadowingPanelProps> = ({
   useEffect(() => {
     loadForeshadowings();
     loadStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   const loadForeshadowings = async () => {

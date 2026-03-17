@@ -285,6 +285,7 @@ function PluginDetailPanel({
   useEffect(() => {
     loadPermissions();
     loadSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plugin]);
 
   const loadPermissions = async () => {

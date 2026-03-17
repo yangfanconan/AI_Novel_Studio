@@ -21,6 +21,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({ projectI
 
   useEffect(() => {
     initializeCollaboration();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   const initializeCollaboration = async () => {

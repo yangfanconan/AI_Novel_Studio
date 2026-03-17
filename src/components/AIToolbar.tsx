@@ -63,6 +63,7 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
 
   useEffect(() => {
     loadModels();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadModels = async () => {
@@ -208,14 +209,14 @@ export const AIToolbar: React.FC<AIToolbarProps> = ({
   };
 
   const handleRewrite = async () => {
-    console.log("AI Rewrite button clicked", {
+    logger.debug("AI Rewrite button clicked", {
       selectedModel,
       contentLength: content.length,
       isRewriting,
     });
 
     if (!selectedModel) {
-      console.warn("No model selected");
+      logger.warn("No model selected");
       return;
     }
 

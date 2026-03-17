@@ -71,12 +71,14 @@ const WritingAssistant: React.FC<WritingAssistantProps> = ({
 
   useEffect(() => {
     loadCharacters();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
-
-  useEffect(() => {
-    if (projectId) {
+  
+  useEffect(()=>{
+    if (projectId){
       loadKnowledgeContext();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, chapterId]);
 
   const loadCharacters = async () => {

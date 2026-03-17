@@ -26,6 +26,7 @@ export const EmotionCurvePanel: React.FC<EmotionCurvePanelProps> = ({
     if (projectId) {
       loadCurve();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, arcType]);
 
   const loadCurve = async () => {

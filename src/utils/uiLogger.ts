@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
+/* eslint-disable no-console */
+
 export interface UILogEntry {
   component: string;
   action: "open" | "close" | "mount" | "unmount" | "click" | "change" | "error";

@@ -203,6 +203,7 @@ export function PlotPointList({
 
   React.useEffect(() => {
     loadPlotPoints();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   return (

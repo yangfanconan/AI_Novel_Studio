@@ -135,6 +135,7 @@ export function CharacterRelationGraph({ projectId, characters }: CharacterRelat
 
   useEffect(() => {
     loadGraphData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, characters]);
 
   const handleSaveRelation = async () => {
@@ -186,7 +187,7 @@ export function CharacterRelationGraph({ projectId, characters }: CharacterRelat
     }
   };
 
-  const handleEditRelation = (edge: Edge) => {
+  const handleEditRelation = useCallback((edge: Edge) => {
     setSelectedEdge(edge);
     const edgeData = edge.data as CharEdge;
     setEditingRelation(edgeData);
@@ -195,7 +196,7 @@ export function CharacterRelationGraph({ projectId, characters }: CharacterRelat
     setRelationType(edgeData.label);
     setDescription(edgeData.description || "");
     setShowRelationDialog(true);
-  };
+  }, []);
 
   const edgeLabelRenderer = useCallback(() => {
     return (
